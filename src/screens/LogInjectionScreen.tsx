@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable,
   TextInput, Image, Alert, Modal, FlatList,
+  Keyboard, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -320,12 +321,17 @@ function PeptidePickerSheet({
     q ? list.filter(x => x.name.toLowerCase().includes(q.toLowerCase())) : list;
 
   return (
-    <View style={s.sheetOverlay}>
-      <Pressable style={s.sheetBackdrop} onPress={onClose} />
+    <KeyboardAvoidingView
+      style={s.sheetOverlay}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <Pressable style={s.sheetBackdrop} onPress={() => { Keyboard.dismiss(); onClose(); }} />
       <SafeAreaView style={s.sheet} edges={['bottom']}>
         <View style={s.sheetHeader}>
           <Text style={s.sheetTitle}>Select Peptide</Text>
-          <Pressable onPress={onClose}><Text style={s.sheetDone}>Done</Text></Pressable>
+          <Pressable onPress={() => { Keyboard.dismiss(); onClose(); }}>
+            <Text style={s.sheetDone}>Done</Text>
+          </Pressable>
         </View>
         <TextInput
           placeholder="Search peptides…"
@@ -333,7 +339,10 @@ function PeptidePickerSheet({
           value={q}
           onChangeText={setQ}
           style={s.sheetSearch}
-          autoFocus
+          autoCorrect={false}
+          autoCapitalize="none"
+          returnKeyType="search"
+          clearButtonMode="while-editing"
         />
         <FlatList
           data={[
@@ -344,19 +353,25 @@ function PeptidePickerSheet({
             { id: 'custom', name: 'Custom Peptide', defaultUnit: 'mcg' } as Peptide,
           ]}
           keyExtractor={(item, i) => item.__section || item.id || `i${i}`}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={s.sheetListContent}
           renderItem={({ item }) => {
             if (item.__section) {
               return <Text style={s.sheetSection}>{item.__section}</Text>;
             }
             return (
-              <Pressable style={s.sheetRow} onPress={() => onSelect(item)}>
+              <Pressable
+                style={s.sheetRow}
+                onPress={() => { Keyboard.dismiss(); onSelect(item); }}
+              >
                 <Text style={s.sheetRowName}>{item.name}</Text>
               </Pressable>
             );
           }}
         />
       </SafeAreaView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -443,7 +458,7 @@ const s = StyleSheet.create({
   sheet: {
     backgroundColor: colors.bgSheet,
     borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    maxHeight: '85%',
+    maxHeight: '82%',
   },
   sheetHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -458,6 +473,7 @@ const s = StyleSheet.create({
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
     color: colors.text, fontSize: 15,
   },
+  sheetListContent: { paddingBottom: 28 },
   sheetRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingVertical: 16,
