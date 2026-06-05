@@ -89,6 +89,16 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         <View style={{ flex: 1 }}>
           {/* Progress bar */}
           <ProgressBar step={step} total={TOTAL_STEPS - 1} width={width} />
+          <View style={s.topNav}>
+            <Pressable
+              style={s.backBtn}
+              onPress={() => setStep(s => Math.max(0, s - 1))}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <Text style={s.backIcon}>‹</Text>
+            </Pressable>
+          </View>
 
           <ScrollView
             contentContainerStyle={s.scrollContent}
@@ -326,10 +336,31 @@ const s = StyleSheet.create({
     height: '100%', backgroundColor: colors.primary,
     borderRadius: 2,
   },
+  topNav: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: 10,
+    minHeight: 46,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    color: colors.white,
+    fontSize: 30,
+    lineHeight: 32,
+    fontWeight: '500',
+  },
 
   // Step shell
   scrollContent: { paddingBottom: 24 },
-  stepShell: { paddingHorizontal: spacing.xl, paddingTop: 28 },
+  stepShell: { paddingHorizontal: spacing.xl, paddingTop: 10 },
   stepHeadline: {
     fontSize: 24, fontWeight: '800', color: colors.white,
     lineHeight: 32, letterSpacing: 0, marginBottom: 8,
