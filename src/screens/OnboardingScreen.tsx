@@ -13,37 +13,37 @@ type SingleItem = { id: string; label: string; icon: string; sub?: string };
 
 // ── Step data ────────────────────────────────────────────────
 const TRACK_OPTIONS: MultiItem[] = [
-  { id: 'compounds',     label: 'Research Compounds',    icon: '🧪' },
-  { id: 'notes',         label: 'Notes & Observations',  icon: '📝' },
-  { id: 'inventory',     label: 'Inventory',             icon: '📦' },
-  { id: 'reconstitution',label: 'Research Notes',         icon: '💧' },
-  { id: 'reminders',     label: 'Reminders',             icon: '🔔' },
-  { id: 'records',       label: 'Lab-Style Records',     icon: '🗂️' },
-  { id: 'protocols',     label: 'Record Organization',   icon: '📋' },
+  { id: 'compounds',     label: 'Compound List',      icon: '🧪' },
+  { id: 'logs',          label: 'Log Entries',        icon: '📋' },
+  { id: 'notes',         label: 'Observation Notes',  icon: '📝' },
+  { id: 'inventory',     label: 'Inventory',          icon: '📦' },
+  { id: 'photos',        label: 'Progress Photos',    icon: '📷' },
+  { id: 'reminders',     label: 'Reminders',          icon: '🔔' },
+  { id: 'references',    label: 'Reference Notes',    icon: '🗂️' },
 ];
 
 const LEVEL_OPTIONS: SingleItem[] = [
-  { id: 'beginner',     label: 'Beginner',                 icon: '🌱', sub: 'Just getting started' },
-  { id: 'intermediate', label: 'Intermediate',              icon: '📊', sub: 'Some experience tracking' },
-  { id: 'advanced',     label: 'Advanced',                  icon: '🔬', sub: 'Detailed logging routines' },
-  { id: 'organizing',   label: 'Just Organizing Info',      icon: '🗃️', sub: 'Already know what I need' },
+  { id: 'simple',      label: 'Simple',       icon: '🌱', sub: 'Quick entries with only the basics' },
+  { id: 'standard',    label: 'Standard',     icon: '📊', sub: 'Regular logs with notes and history' },
+  { id: 'detailed',    label: 'Detailed',     icon: '🔬', sub: 'More complete records and review habits' },
+  { id: 'archive',     label: 'Archive Only', icon: '🗃️', sub: 'Mostly storing information in one place' },
 ];
 
 const GOAL_OPTIONS: SingleItem[] = [
-  { id: 'organized',   label: 'Stay Organized',           icon: '✅', sub: 'Keep everything in one place' },
-  { id: 'notes',       label: 'Track Research Notes',     icon: '📝', sub: 'Log observations over time' },
-  { id: 'inventory',   label: 'Manage Inventory',         icon: '📦', sub: 'Track what I have on hand' },
-  { id: 'records',     label: 'Create Clean Records',     icon: '🗂️', sub: 'Professional-style logging' },
-  { id: 'protocols',   label: 'Save Reference Notes',     icon: '📋', sub: 'Store references and methods' },
-  { id: 'reports',     label: 'Prepare Reports',          icon: '📊', sub: 'Summarize findings clearly' },
+  { id: 'consistent', label: 'Stay Consistent',       icon: '✅', sub: 'Make logging easier to keep up with' },
+  { id: 'history',    label: 'Find Past Entries',     icon: '🕘', sub: 'Look back without digging around' },
+  { id: 'inventory',  label: 'Keep Inventory Clear',  icon: '📦', sub: 'Know what is on hand at a glance' },
+  { id: 'sites',      label: 'Review Site History',   icon: '📍', sub: 'Keep location records easy to scan' },
+  { id: 'photos',     label: 'Keep Photo Records',    icon: '📷', sub: 'Organize visual progress entries' },
+  { id: 'summaries',  label: 'Review Summaries',      icon: '📊', sub: 'See clean overviews when needed' },
 ];
 
 const CATEGORY_OPTIONS: MultiItem[] = [
-  { id: 'glp',         label: 'Compound Research',     icon: '💉' },
-  { id: 'recovery',    label: 'Recovery Research',    icon: '🩹' },
-  { id: 'longevity',   label: 'Longevity Research',   icon: '⏳' },
-  { id: 'performance', label: 'Performance Research', icon: '⚡' },
-  { id: 'wellness',    label: 'Wellness Research',    icon: '🌿' },
+  { id: 'compound',    label: 'Compound Records',     icon: '🧪' },
+  { id: 'recovery',    label: 'Recovery Category',    icon: '🩹' },
+  { id: 'longevity',   label: 'Longevity Category',   icon: '⏳' },
+  { id: 'performance', label: 'Performance Category', icon: '⚡' },
+  { id: 'wellness',    label: 'Wellness Category',    icon: '🌿' },
   { id: 'other',       label: 'Other',                icon: '🔭' },
 ];
 
@@ -107,8 +107,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           >
             {step === 1 && (
               <StepShell
-                headline="What do you want to track?"
-                sub="Select everything that applies to your research workflow."
+                headline="What do you want to organize?"
+                sub="Choose the parts of your records you want close at hand."
               >
                 <MultiSelect
                   options={TRACK_OPTIONS}
@@ -120,8 +120,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
             {step === 2 && (
               <StepShell
-                headline="How familiar are you with research tracking?"
-                sub="This helps us tailor the experience for you."
+                headline="How detailed are your records?"
+                sub="Pick the style that best matches how you like to log information."
               >
                 <SingleSelect
                   options={LEVEL_OPTIONS}
@@ -133,8 +133,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
             {step === 3 && (
               <StepShell
-                headline="What's your main goal?"
-                sub="Pick the one that best describes why you're here."
+                headline="What should feel easier first?"
+                sub="Choose the main workflow you want Monarch Prime Pin to simplify."
               >
                 <SingleSelect
                   options={GOAL_OPTIONS}
@@ -146,8 +146,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
             {step === 4 && (
               <StepShell
-                headline="What are you researching?"
-                sub="Select all categories that apply. No specific claims are made — these are organizational labels only."
+                headline="Which labels fit your records?"
+                sub="Select broad categories only. These are organizational labels, not outcome claims."
               >
                 <MultiSelect
                   options={CATEGORY_OPTIONS}
