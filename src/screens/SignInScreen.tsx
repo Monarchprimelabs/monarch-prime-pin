@@ -48,10 +48,14 @@ export function SignInScreen() {
       Alert.alert('Missing info', 'Please enter your email and password.');
       return;
     }
+    if (mode === 'signup' && !name.trim()) {
+      Alert.alert('Missing name', 'Please enter your name so Monarch Prime Pin can personalize your dashboard.');
+      return;
+    }
     setLoading(true);
     try {
       if (mode === 'signup') {
-        await signUp(email, password, name || email.split('@')[0]);
+        await signUp(email, password, name);
       } else {
         await signInEmail(email, password);
       }
@@ -94,12 +98,14 @@ export function SignInScreen() {
 
               {mode === 'signup' && (
                 <TextInput
-                  placeholder="Display name"
+                  placeholder="Name"
                   placeholderTextColor={colors.textFaint}
                   value={name}
                   onChangeText={setName}
                   style={s.input}
                   autoCapitalize="words"
+                  textContentType="name"
+                  autoComplete="name"
                 />
               )}
               <TextInput

@@ -21,7 +21,7 @@ export const PEPTIDES = {
     { id: 'ghkcu',  name: 'GHK-Cu',            defaultUnit: 'mg'  as const },
     { id: 'kpv',    name: 'KPV',               defaultUnit: 'mcg' as const },
     { id: 'dihexa', name: 'Dihexa',            defaultUnit: 'mg'  as const },
-    // Longevity / Anti-aging
+    // Longevity
     { id: 'epit',   name: 'Epithalon',         defaultUnit: 'mg'  as const },
     { id: 'tha1',   name: 'Thymosin Alpha-1',  defaultUnit: 'mg'  as const },
     { id: 'nad',    name: 'NAD+',              defaultUnit: 'mg'  as const },

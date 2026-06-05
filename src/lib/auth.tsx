@@ -7,12 +7,17 @@ type AuthContextValue = {
   loading: boolean;
   signInEmail: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
+  updateProfileName: (name: string) => Promise<void>;
   signInGuest: () => Promise<void>;
   signInDeveloper: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function cleanDisplayName(name?: string | null) {
+  return name?.trim().replace(/\s+/g, ' ') || '';
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setLocalUser] = useState<LocalUser | null>(null);
@@ -35,9 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (SUPABASE_CONFIGURED && supabase) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      const displayName = cleanDisplayName(data.user!.user_metadata?.name);
       await persist({
         id: data.user!.id,
-        name: data.user!.user_metadata?.name || email.split('@')[0],
+        name: displayName || '',
         email,
         isGuest: false,
         isDeveloper: false,
@@ -46,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Offline mode
       await persist({
         id: `local-${Date.now()}`,
-        name: email.split('@')[0],
+        name: '',
         email,
         isGuest: false,
         isDeveloper: false,
@@ -55,15 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, name: string) => {
+    const displayName = cleanDisplayName(name);
     if (SUPABASE_CONFIGURED && supabase) {
       const { data, error } = await supabase.auth.signUp({
         email, password,
-        options: { data: { name } },
+        options: { data: { name: displayName } },
       });
       if (error) throw error;
       await persist({
         id: data.user!.id,
-        name,
+        name: displayName,
         email,
         isGuest: false,
         isDeveloper: false,
@@ -71,12 +78,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       await persist({
         id: `local-${Date.now()}`,
-        name: name || email.split('@')[0],
+        name: displayName,
         email,
         isGuest: false,
         isDeveloper: false,
       });
     }
+  };
+
+  const updateProfileName = async (name: string) => {
+    if (!user) return;
+    const displayName = cleanDisplayName(name);
+
+    if (SUPABASE_CONFIGURED && supabase && !user.isGuest && !user.isDeveloper) {
+      const { error } = await supabase.auth.updateUser({
+        data: { name: displayName },
+      });
+      if (error) throw error;
+    }
+
+    await persist({ ...user, name: displayName });
   };
 
   const signInGuest = async () => {
@@ -95,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInEmail, signUp, signInGuest, signInDeveloper, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInEmail, signUp, updateProfileName, signInGuest, signInDeveloper, signOut }}>
       {children}
     </AuthContext.Provider>
   );

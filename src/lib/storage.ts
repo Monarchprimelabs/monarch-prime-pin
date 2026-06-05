@@ -134,5 +134,5 @@ export async function uploadPhoto(localUri: string): Promise<string> {
 }
 
 export async function clearLocalData(): Promise<void> {
-  await AsyncStorage.multiRemove([KEY_INJECTIONS, KEY_USER]);
+  await AsyncStorage.multiRemove([KEY_INJECTIONS, KEY_USER, KEY_ONBOARDING]);
 }

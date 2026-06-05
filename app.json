@@ -2,7 +2,7 @@
   "expo": {
     "name": "Monarch Prime Pin",
     "slug": "monarch-prime-pin",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -17,11 +17,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.monarchprime.pin",
-      "buildNumber": "2",
+      "buildNumber": "7",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your research injection logs.",
-        "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves exported reports and progress photos to your photo library.",
-        "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your research injection logs.",
+        "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your research log entries.",
+        "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library for your research records.",
+        "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -46,8 +46,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Monarch Prime Pin accesses your photos to attach progress images to your injection logs.",
-          "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your injection logs."
+          "photosPermission": "Monarch Prime Pin accesses your photos to attach progress images to your research log entries.",
+          "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries."
         }
       ]
     ],

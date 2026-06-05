@@ -16,10 +16,10 @@ const TRACK_OPTIONS: MultiItem[] = [
   { id: 'compounds',     label: 'Research Compounds',    icon: '🧪' },
   { id: 'notes',         label: 'Notes & Observations',  icon: '📝' },
   { id: 'inventory',     label: 'Inventory',             icon: '📦' },
-  { id: 'reconstitution',label: 'Reconstitution Notes',  icon: '💧' },
+  { id: 'reconstitution',label: 'Research Notes',         icon: '💧' },
   { id: 'reminders',     label: 'Reminders',             icon: '🔔' },
   { id: 'records',       label: 'Lab-Style Records',     icon: '🗂️' },
-  { id: 'protocols',     label: 'Protocol Organization', icon: '📋' },
+  { id: 'protocols',     label: 'Record Organization',   icon: '📋' },
 ];
 
 const LEVEL_OPTIONS: SingleItem[] = [
@@ -34,12 +34,12 @@ const GOAL_OPTIONS: SingleItem[] = [
   { id: 'notes',       label: 'Track Research Notes',     icon: '📝', sub: 'Log observations over time' },
   { id: 'inventory',   label: 'Manage Inventory',         icon: '📦', sub: 'Track what I have on hand' },
   { id: 'records',     label: 'Create Clean Records',     icon: '🗂️', sub: 'Professional-style logging' },
-  { id: 'protocols',   label: 'Save Protocol References', icon: '📋', sub: 'Store procedures and methods' },
+  { id: 'protocols',   label: 'Save Reference Notes',     icon: '📋', sub: 'Store references and methods' },
   { id: 'reports',     label: 'Prepare Reports',          icon: '📊', sub: 'Summarize findings clearly' },
 ];
 
 const CATEGORY_OPTIONS: MultiItem[] = [
-  { id: 'glp',         label: 'GLP Research',         icon: '💉' },
+  { id: 'glp',         label: 'Compound Research',     icon: '💉' },
   { id: 'recovery',    label: 'Recovery Research',    icon: '🩹' },
   { id: 'longevity',   label: 'Longevity Research',   icon: '⏳' },
   { id: 'performance', label: 'Performance Research', icon: '⚡' },
@@ -179,13 +179,13 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
         <Text style={s.welcomeHeadline}>Your Research Tracking System,{'\n'}Organized.</Text>
         <Text style={s.welcomeSub}>
-          Log compounds, track site rotation, review history, and stay on top of your research — all in one clean, private app.
+          Log compounds, review site history, track records, and stay on top of your research — all in one clean, private app.
         </Text>
 
         <View style={s.featureList}>
           {[
             { icon: '📋', text: 'Manual research log entries' },
-            { icon: '📍', text: 'Injection site rotation & heatmap' },
+            { icon: '📍', text: 'Site history & heatmap' },
             { icon: '📊', text: 'Analytics & history tracking' },
             { icon: '🔔', text: 'Reminders & progress photos' },
           ].map(f => (
@@ -301,7 +301,7 @@ const s = StyleSheet.create({
   },
   welcomeHeadline: {
     fontSize: 30, fontWeight: '800', color: colors.white,
-    lineHeight: 38, marginBottom: 16, letterSpacing: -0.5,
+    lineHeight: 38, marginBottom: 16, letterSpacing: 0,
   },
   welcomeSub: {
     fontSize: 15, color: colors.textMuted, lineHeight: 24, marginBottom: 28,
@@ -332,7 +332,7 @@ const s = StyleSheet.create({
   stepShell: { paddingHorizontal: spacing.xl, paddingTop: 28 },
   stepHeadline: {
     fontSize: 24, fontWeight: '800', color: colors.white,
-    lineHeight: 32, letterSpacing: -0.3, marginBottom: 8,
+    lineHeight: 32, letterSpacing: 0, marginBottom: 8,
   },
   stepSub: {
     fontSize: 13, color: colors.textMuted, lineHeight: 20, marginBottom: 24,

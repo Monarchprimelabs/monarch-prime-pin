@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
@@ -42,7 +42,27 @@ function RemindersTab() {
   const [r1, setR1] = useState(false);
   const [r2, setR2] = useState(false);
   const [r3, setR3] = useState(false);
-  const { signOut } = useAuth();
+  const { user, signOut, updateProfileName } = useAuth();
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [savingName, setSavingName] = useState(false);
+
+  const saveProfileName = async () => {
+    const trimmed = profileName.trim().replace(/\s+/g, ' ');
+    if (!trimmed) {
+      Alert.alert('Missing name', 'Please enter the name you want shown on your dashboard.');
+      return;
+    }
+    setSavingName(true);
+    try {
+      await updateProfileName(trimmed);
+      setProfileName(trimmed);
+      Alert.alert('Saved', 'Your dashboard greeting has been updated.');
+    } catch (e: any) {
+      Alert.alert('Save failed', e?.message || 'Please try again.');
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const confirmSignOut = () => {
     Alert.alert('Sign out?', 'You will need to sign back in to access this app.', [
@@ -71,6 +91,30 @@ function RemindersTab() {
 
   return (
     <>
+      <Card>
+        <CardLabel icon="👤">PROFILE</CardLabel>
+        <Text style={s.profileHelp}>
+          This name is used for your dashboard greeting.
+        </Text>
+        <TextInput
+          placeholder="Name"
+          placeholderTextColor={colors.textFaint}
+          value={profileName}
+          onChangeText={setProfileName}
+          style={s.profileInput}
+          autoCapitalize="words"
+          textContentType="name"
+          autoComplete="name"
+        />
+        <Pressable
+          style={[s.saveNameBtn, savingName && { opacity: 0.5 }]}
+          onPress={saveProfileName}
+          disabled={savingName}
+        >
+          <Text style={s.saveNameText}>{savingName ? 'Saving...' : 'Save Name'}</Text>
+        </Pressable>
+      </Card>
+
       <Card>
         <CardLabel icon="🔔">NOTIFICATION SETTINGS</CardLabel>
         <ToggleRow title="Log Reminders" sub="Daily reminder to review your research log" on={r1} setOn={setR1} />
@@ -206,6 +250,35 @@ const s = StyleSheet.create({
   },
   toggleTitle: { color: colors.white, fontSize: 15, fontWeight: '600' },
   toggleSub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+
+  profileHelp: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  profileInput: {
+    backgroundColor: colors.bgInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    color: colors.text,
+    fontSize: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    marginBottom: 12,
+  },
+  saveNameBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  saveNameText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
 
   localDataText: {
     color: '#C8D4E6',

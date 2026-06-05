@@ -12,6 +12,15 @@ type Props = {
   onNavigate: (tab: string) => void;
 };
 
+function getGreetingName(name?: string, email?: string) {
+  const cleaned = name?.trim().replace(/\s+/g, ' ') || '';
+  const emailPrefix = email?.split('@')[0]?.toLowerCase();
+  if (!cleaned || cleaned.includes('@') || cleaned.toLowerCase() === emailPrefix) {
+    return 'Researcher';
+  }
+  return cleaned.split(' ')[0];
+}
+
 export function DashboardScreen({ onNavigate }: Props) {
   const { user } = useAuth();
   const [view, setView] = useState<'front' | 'back'>('front');
@@ -42,13 +51,14 @@ export function DashboardScreen({ onNavigate }: Props) {
   }, [injections]);
 
   const lastInj = injections[0];
+  const greetingName = getGreetingName(user?.name, user?.email);
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <Header
-          title={`Hello, ${user?.name || 'Researcher'}`}
+          title={`Hello, ${greetingName}`}
           subtitle={user?.isDeveloper ? 'Developer Mode' : 'Welcome back'}
         />
 
