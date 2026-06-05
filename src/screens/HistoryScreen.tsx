@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { Injection } from '../data/peptides';
 import { getInjections, deleteInjection } from '../lib/storage';
+import { LogInjectionScreen } from './LogInjectionScreen';
 
 export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
   const [injections, setInjections] = useState<Injection[]>([]);
+  const [backdateFor, setBackdateFor] = useState<string | null>(null);
 
   const refresh = () => getInjections().then(setInjections);
   useEffect(() => { refresh(); }, []);
@@ -42,9 +44,23 @@ export function HistoryScreen() {
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         {tab === 'log' && <LogList injections={injections} onDelete={handleDelete} />}
-        {tab === 'calendar' && <CalendarView injections={injections} />}
+        {tab === 'calendar' && (
+          <CalendarView
+            injections={injections}
+            onLogForDate={(date) => setBackdateFor(date)}
+          />
+        )}
         {tab === 'photos' && <PhotosGrid injections={injections} />}
       </ScrollView>
+
+      <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}>
+        {backdateFor && (
+          <LogInjectionScreen
+            initialDate={backdateFor}
+            onDone={() => { setBackdateFor(null); refresh(); }}
+          />
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -112,10 +128,11 @@ function LogList({ injections, onDelete }: { injections: Injection[]; onDelete: 
   );
 }
 
-function CalendarView({ injections }: { injections: Injection[] }) {
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth());
-  const [selected, setSelected] = useState(new Date().getDate());
+function CalendarView({ injections, onLogForDate }: { injections: Injection[]; onLogForDate: (date: string) => void }) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [selected, setSelected] = useState(today.getDate());
 
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -128,24 +145,36 @@ function CalendarView({ injections }: { injections: Injection[] }) {
 
   const dateStr = (d: number) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+  const isFuture = (d: number) => {
+    const cellDate = new Date(year, month, d);
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return cellDate > todayMidnight;
+  };
+
   const hasInj = (d: number) => injections.some(i => i.date === dateStr(d));
   const dayInj = injections.filter(i => i.date === dateStr(selected));
+  const selectedDateStr = dateStr(selected);
+  const selectedIsFuture = isFuture(selected);
+
+  const navPrev = () => {
+    if (month === 0) { setMonth(11); setYear(y => y - 1); }
+    else setMonth(m => m - 1);
+  };
+  const navNext = () => {
+    if (month === 11) { setMonth(0); setYear(y => y + 1); }
+    else setMonth(m => m + 1);
+  };
 
   return (
     <>
       <Card>
         <View style={s.calHeader}>
-          <Pressable
-            onPress={() => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); }}
-            style={s.calNav}
-          >
+          <Pressable onPress={navPrev} style={s.calNav}>
             <Text style={s.calNavText}>‹</Text>
           </Pressable>
           <Text style={s.calMonth}>{monthNames[month]} {year}</Text>
-          <Pressable
-            onPress={() => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); }}
-            style={s.calNav}
-          >
+          <Pressable onPress={navNext} style={s.calNav}>
             <Text style={s.calNavText}>›</Text>
           </Pressable>
         </View>
@@ -153,17 +182,24 @@ function CalendarView({ injections }: { injections: Injection[] }) {
           {dayNames.map(d => (
             <Text key={d} style={s.calDayName}>{d}</Text>
           ))}
-          {cells.map((d, i) => (
-            <Pressable
-              key={i}
-              onPress={() => d && setSelected(d)}
-              style={[s.calCell, d === selected && s.calCellSel, d === null && { opacity: 0 }]}
-              disabled={d === null}
-            >
-              {d !== null && <Text style={s.calCellText}>{d}</Text>}
-              {d !== null && hasInj(d) && <View style={s.calDot} />}
-            </Pressable>
-          ))}
+          {cells.map((d, i) => {
+            const future = d !== null && isFuture(d);
+            return (
+              <Pressable
+                key={i}
+                onPress={() => d && !future && setSelected(d)}
+                style={[
+                  s.calCell,
+                  d === selected && s.calCellSel,
+                  (d === null || future) && { opacity: future ? 0.3 : 0 },
+                ]}
+                disabled={d === null || future}
+              >
+                {d !== null && <Text style={s.calCellText}>{d}</Text>}
+                {d !== null && hasInj(d) && <View style={s.calDot} />}
+              </Pressable>
+            );
+          })}
         </View>
       </Card>
       <Card>
@@ -182,6 +218,14 @@ function CalendarView({ injections }: { injections: Injection[] }) {
             </View>
           </View>
         ))}
+        {!selectedIsFuture && (
+          <Pressable
+            style={s.logForDateBtn}
+            onPress={() => onLogForDate(selectedDateStr)}
+          >
+            <Text style={s.logForDateText}>+ Log for {monthNames[month]} {selected}</Text>
+          </Pressable>
+        )}
       </Card>
     </>
   );
@@ -267,6 +311,13 @@ const s = StyleSheet.create({
   calCellText: { color: colors.white, fontSize: 14 },
   calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.teal, marginTop: 2 },
   calSelDate: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  logForDateBtn: {
+    marginTop: 14,
+    backgroundColor: 'rgba(30, 136, 229, 0.15)',
+    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.4)',
+    borderRadius: radius.md, paddingVertical: 14, alignItems: 'center',
+  },
+  logForDateText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
 
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.xl, gap: 8 },
   photoThumb: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative' },

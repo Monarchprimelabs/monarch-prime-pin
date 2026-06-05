@@ -1,31 +1,60 @@
 export const PEPTIDES = {
   singles: [
-    { id: 'reta',  name: 'Retatrutide',      range: '2–12 mg/wk',     defaultUnit: 'mg' as const },
-    { id: 'tirz',  name: 'Tirzepatide',      range: '2.5–15 mg/wk',   defaultUnit: 'mg' as const },
-    { id: 'sema',  name: 'Semaglutide',      range: '0.25–2.4 mg/wk', defaultUnit: 'mg' as const },
-    { id: 'bpc',   name: 'BPC-157',          range: '250–500 mcg',    defaultUnit: 'mcg' as const },
-    { id: 'ipa',   name: 'Ipamorelin',       range: '200–300 mcg',    defaultUnit: 'mcg' as const },
-    { id: 'tb500', name: 'TB-500',           range: '2–2.5 mg/wk',    defaultUnit: 'mg' as const },
-    { id: 'cjc',   name: 'CJC-1295',         range: '100–300 mcg',    defaultUnit: 'mcg' as const },
-    { id: 'aod',   name: 'AOD-9604',         range: '250–500 mcg',    defaultUnit: 'mcg' as const },
-    { id: 'tesa',  name: 'Tesamorelin',      range: '1–2 mg',         defaultUnit: 'mg' as const },
-    { id: 'serm',  name: 'Sermorelin',       range: '100–500 mcg',    defaultUnit: 'mcg' as const },
-    { id: 'ghkcu', name: 'GHK-Cu',           range: '1–2 mg',         defaultUnit: 'mg' as const },
-    { id: 'mt2',   name: 'Melanotan II',     range: '0.5–1 mg',       defaultUnit: 'mg' as const },
-    { id: 'pt141', name: 'PT-141',           range: '1–2 mg',         defaultUnit: 'mg' as const },
-    { id: 'tha1',  name: 'Thymosin Alpha-1', range: '1.6 mg',         defaultUnit: 'mg' as const },
-    { id: 'll37',  name: 'LL-37',            range: '100–500 mcg',    defaultUnit: 'mcg' as const },
+    // GLP-1 / Metabolic
+    { id: 'reta',   name: 'Retatrutide',       defaultUnit: 'mg'  as const },
+    { id: 'tirz',   name: 'Tirzepatide',       defaultUnit: 'mg'  as const },
+    { id: 'sema',   name: 'Semaglutide',       defaultUnit: 'mg'  as const },
+    { id: 'lira',   name: 'Liraglutide',       defaultUnit: 'mg'  as const },
+    { id: 'aod',    name: 'AOD-9604',          defaultUnit: 'mcg' as const },
+    // GH / GHRP
+    { id: 'ipa',    name: 'Ipamorelin',        defaultUnit: 'mcg' as const },
+    { id: 'cjc',    name: 'CJC-1295',          defaultUnit: 'mcg' as const },
+    { id: 'serm',   name: 'Sermorelin',        defaultUnit: 'mcg' as const },
+    { id: 'tesa',   name: 'Tesamorelin',       defaultUnit: 'mg'  as const },
+    { id: 'ghrp2',  name: 'GHRP-2',           defaultUnit: 'mcg' as const },
+    { id: 'ghrp6',  name: 'GHRP-6',           defaultUnit: 'mcg' as const },
+    { id: 'hex',    name: 'Hexarelin',         defaultUnit: 'mcg' as const },
+    { id: 'mk677',  name: 'MK-677',            defaultUnit: 'mg'  as const },
+    // Recovery / Healing
+    { id: 'bpc',    name: 'BPC-157',           defaultUnit: 'mcg' as const },
+    { id: 'tb500',  name: 'TB-500',            defaultUnit: 'mg'  as const },
+    { id: 'ghkcu',  name: 'GHK-Cu',            defaultUnit: 'mg'  as const },
+    { id: 'kpv',    name: 'KPV',               defaultUnit: 'mcg' as const },
+    { id: 'dihexa', name: 'Dihexa',            defaultUnit: 'mg'  as const },
+    // Longevity / Anti-aging
+    { id: 'epit',   name: 'Epithalon',         defaultUnit: 'mg'  as const },
+    { id: 'tha1',   name: 'Thymosin Alpha-1',  defaultUnit: 'mg'  as const },
+    { id: 'nad',    name: 'NAD+',              defaultUnit: 'mg'  as const },
+    { id: 'dsip',   name: 'DSIP',              defaultUnit: 'mcg' as const },
+    // Neurological / Mood
+    { id: 'selank', name: 'Selank',            defaultUnit: 'mcg' as const },
+    { id: 'semax',  name: 'Semax',             defaultUnit: 'mcg' as const },
+    { id: 'cerb',   name: 'Cerebrolysin',      defaultUnit: 'mg'  as const },
+    // Hormonal / Other
+    { id: 'kiss10', name: 'Kisspeptin-10',     defaultUnit: 'mcg' as const },
+    { id: 'oxyt',   name: 'Oxytocin',          defaultUnit: 'mcg' as const },
+    { id: 'gona',   name: 'Gonadorelin',       defaultUnit: 'mcg' as const },
+    { id: 'trip',   name: 'Triptorelin',       defaultUnit: 'mcg' as const },
+    // Cosmetic / Other
+    { id: 'mt2',    name: 'Melanotan II',      defaultUnit: 'mg'  as const },
+    { id: 'pt141',  name: 'PT-141',            defaultUnit: 'mg'  as const },
+    { id: 'll37',   name: 'LL-37',             defaultUnit: 'mcg' as const },
   ],
   blends: [
-    { id: 'cjc-ipa',   name: 'CJC-1295 + Ipamorelin',     defaultUnit: 'mcg' as const },
-    { id: 'bpc-tb',    name: 'BPC-157 + TB-500',          defaultUnit: 'mcg' as const },
-    { id: 'serm-ipa',  name: 'Sermorelin + Ipamorelin',   defaultUnit: 'mcg' as const },
-    { id: 'reta-tirz', name: 'Retatrutide + Tirzepatide', defaultUnit: 'mg'  as const },
-    { id: 'sema-bpc',  name: 'Semaglutide + BPC-157',     defaultUnit: 'mg'  as const },
+    { id: 'cjc-ipa',       name: 'CJC-1295 + Ipamorelin',          defaultUnit: 'mcg' as const },
+    { id: 'cjc-ghrp2',     name: 'CJC-1295 + GHRP-2',             defaultUnit: 'mcg' as const },
+    { id: 'ipa-ghrp6',     name: 'Ipamorelin + GHRP-6',           defaultUnit: 'mcg' as const },
+    { id: 'bpc-tb',        name: 'BPC-157 + TB-500',               defaultUnit: 'mcg' as const },
+    { id: 'bpc-tb-ghkcu',  name: 'BPC-157 + TB-500 + GHK-Cu',     defaultUnit: 'mcg' as const },
+    { id: 'serm-ipa',      name: 'Sermorelin + Ipamorelin',        defaultUnit: 'mcg' as const },
+    { id: 'epit-tha1',     name: 'Epithalon + Thymosin Alpha-1',   defaultUnit: 'mg'  as const },
+    { id: 'reta-tirz',     name: 'Retatrutide + Tirzepatide',      defaultUnit: 'mg'  as const },
+    { id: 'sema-bpc',      name: 'Semaglutide + BPC-157',          defaultUnit: 'mg'  as const },
+    { id: 'selank-semax',  name: 'Selank + Semax',                 defaultUnit: 'mcg' as const },
   ],
 };
 
-export type Peptide = { id: string; name: string; range?: string; defaultUnit: 'mg' | 'mcg' };
+export type Peptide = { id: string; name: string; defaultUnit: 'mg' | 'mcg' };
 export type Severity = 'none' | 'mild' | 'mod' | 'sev';
 export type DensityLevel = 'unused' | 'light' | 'moderate' | 'heavy';
 
@@ -81,17 +110,4 @@ export type Injection = {
   photoUri?: string;
 };
 
-// Demo seed data — used in Demo / Guest mode and as initial state
-export const SEED_INJECTIONS: Injection[] = [
-  { id: '1', peptide: 'BPC-157 + TB-500',      dose: '250', unit: 'mcg', date: '2026-05-01', time: '08:56', site: 'arm_r',   sev: 'none', weight: 230 },
-  { id: '2', peptide: 'CJC-1295 + Ipamorelin', dose: '250', unit: 'mcg', date: '2026-05-01', time: '08:55', site: 'thigh_r', sev: 'none', weight: 230 },
-  { id: '3', peptide: 'Semaglutide',           dose: '2',   unit: 'mg',  date: '2026-05-01', time: '08:48', site: 'abd_ll',  sev: 'sev',  weight: 230 },
-];
-
-export const ZONE_DENSITY: Record<string, DensityLevel> = {
-  abd_ll: 'light',
-  th_l: 'light',
-  th_r: 'light',
-  abd_ul: 'moderate',
-  arm_r: 'heavy',
-};
+export const ZONE_DENSITY: Record<string, DensityLevel> = {};

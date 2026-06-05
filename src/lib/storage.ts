@@ -1,9 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, SUPABASE_CONFIGURED } from './supabase';
-import { Injection, SEED_INJECTIONS } from '../data/peptides';
+import { Injection } from '../data/peptides';
 
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
+const KEY_ONBOARDING = '@mpp/onboarding_done';
+
+// ----- ONBOARDING -----
+export async function getOnboardingDone(): Promise<boolean> {
+  const val = await AsyncStorage.getItem(KEY_ONBOARDING);
+  return val === 'true';
+}
+
+export async function setOnboardingDone(): Promise<void> {
+  await AsyncStorage.setItem(KEY_ONBOARDING, 'true');
+}
 
 // ----- USER -----
 export type LocalUser = {
@@ -45,9 +56,8 @@ export async function getInjections(): Promise<Injection[]> {
   const raw = await AsyncStorage.getItem(KEY_INJECTIONS);
   if (raw) return JSON.parse(raw);
 
-  // First launch — seed with demo data
-  await AsyncStorage.setItem(KEY_INJECTIONS, JSON.stringify(SEED_INJECTIONS));
-  return SEED_INJECTIONS;
+  // First launch starts with an empty log.
+  return [];
 }
 
 export async function saveInjection(inj: Omit<Injection, 'id'>): Promise<Injection> {
@@ -87,9 +97,6 @@ export async function deleteInjection(id: string): Promise<void> {
   );
 }
 
-export async function clearLocalData(): Promise<void> {
-  await AsyncStorage.multiRemove([KEY_INJECTIONS, KEY_USER]);
-}
 
 // ----- PHOTO UPLOAD -----
 // In offline mode the local URI from expo-image-picker is fine —
@@ -124,4 +131,8 @@ export async function uploadPhoto(localUri: string): Promise<string> {
     console.warn('Photo upload failed, using local URI:', e);
     return localUri;
   }
+}
+
+export async function clearLocalData(): Promise<void> {
+  await AsyncStorage.multiRemove([KEY_INJECTIONS, KEY_USER]);
 }

@@ -11,7 +11,7 @@ import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { PEPTIDES, ALL_ZONES, Peptide, Severity } from '../data/peptides';
 import { saveInjection, uploadPhoto } from '../lib/storage';
 
-export function LogInjectionScreen({ onDone }: { onDone: () => void }) {
+export function LogInjectionScreen({ onDone, initialDate }: { onDone: () => void; initialDate?: string }) {
   const [peptide, setPeptide] = useState<Peptide | null>(null);
   const [picker, setPicker] = useState(false);
   const [dose, setDose] = useState('');
@@ -24,7 +24,8 @@ export function LogInjectionScreen({ onDone }: { onDone: () => void }) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const presets = unit === 'mcg' ? [100, 200, 250, 300, 500] : [1, 2, 3, 4, 5, 6];
+  const logDate = initialDate ?? new Date().toISOString().slice(0, 10);
+
 
   const toggle = (id: string) =>
     setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
@@ -121,9 +122,9 @@ export function LogInjectionScreen({ onDone }: { onDone: () => void }) {
         peptide: peptide.name,
         dose,
         unit,
-        date: now.toISOString().slice(0, 10),
+        date: logDate,
         time: now.toTimeString().slice(0, 5),
-        site: selected.join(', '),
+        site: selected.map(id => { const z = ALL_ZONES.find(x => x.id === id); return z ? z.label : id; }).join(", "),
         sev,
         weight: weight ? Number(weight) : 0,
         notes: notes || undefined,
@@ -155,9 +156,13 @@ export function LogInjectionScreen({ onDone }: { onDone: () => void }) {
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} keyboardShouldPersistTaps="handled">
         <Header
           title="Log Injection"
-          subtitle={new Date().toLocaleDateString('en-US', {
-            weekday: 'long', month: 'short', day: 'numeric',
-          })}
+          subtitle={
+            (initialDate
+              ? new Date(initialDate + 'T12:00:00')
+              : new Date()
+            ).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+            + (initialDate ? ' · Backdated Entry' : '')
+          }
         />
 
         {/* Peptide selector */}
@@ -193,20 +198,6 @@ export function LogInjectionScreen({ onDone }: { onDone: () => void }) {
                 </Pressable>
               ))}
             </View>
-          </View>
-          <Text style={s.presetsLabel}>
-            Quick Presets <Text style={{ color: colors.primary, fontWeight: '600' }}>· {unit}</Text>
-          </Text>
-          <View style={s.presets}>
-            {presets.map(p => (
-              <Pressable
-                key={p}
-                onPress={() => setDose(String(p))}
-                style={[s.preset, String(p) === dose && s.presetActive]}
-              >
-                <Text style={[s.presetText, String(p) === dose && s.presetTextActive]}>{p}</Text>
-              </Pressable>
-            ))}
           </View>
         </Card>
 
@@ -360,7 +351,6 @@ function PeptidePickerSheet({
             return (
               <Pressable style={s.sheetRow} onPress={() => onSelect(item)}>
                 <Text style={s.sheetRowName}>{item.name}</Text>
-                {item.range && <Text style={s.sheetRowMeta}>{item.range}</Text>}
               </Pressable>
             );
           }}
@@ -401,16 +391,6 @@ const s = StyleSheet.create({
   unitBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   unitBtnTextActive: { color: colors.white },
 
-  presetsLabel: { fontSize: 12, color: colors.textMuted, marginTop: 14, marginBottom: 8 },
-  presets: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  preset: {
-    flex: 1, minWidth: 50, backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
-    borderRadius: 10, paddingVertical: 10, alignItems: 'center',
-  },
-  presetActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
-  presetText: { color: '#C8D4E6', fontSize: 14, fontWeight: '500' },
-  presetTextActive: { color: colors.white },
 
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' },
@@ -484,6 +464,5 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: colors.borderFaint,
   },
   sheetRowName: { color: colors.white, fontSize: 16, fontWeight: '500' },
-  sheetRowMeta: { color: colors.textFaint, fontSize: 13 },
   sheetSection: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, fontSize: 11, color: colors.textFaint, fontWeight: '700', letterSpacing: 2 },
 });

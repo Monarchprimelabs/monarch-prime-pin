@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, BrandMark } from '../components/UI';
-import { colors, spacing, radius, DEV_PASSCODE } from '../theme';
+import { colors, radius, DEV_PASSCODE } from '../theme';
 import { useAuth } from '../lib/auth';
 
+declare const __DEV__: boolean;
+
 export function SignInScreen() {
-  const { signInEmail, signUp, signInGuest, signInDeveloper } = useAuth();
+  const { signInEmail, signUp, signInDeveloper } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +24,7 @@ export function SignInScreen() {
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLogoTap = () => {
+    if (!__DEV__) return;
     setLogoTaps(t => t + 1);
     if (tapTimer.current) clearTimeout(tapTimer.current);
     tapTimer.current = setTimeout(() => setLogoTaps(0), 3000);
@@ -123,25 +126,6 @@ export function SignInScreen() {
                   {loading ? '...' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
                 </Text>
               </Pressable>
-
-              <View style={s.divider}>
-                <View style={s.dividerLine} />
-                <Text style={s.dividerText}>or continue with</Text>
-                <View style={s.dividerLine} />
-              </View>
-
-              <Pressable style={s.social} onPress={() => Alert.alert('Apple Sign In', 'Will be configured in v1.1.')}>
-                <Text style={s.socialText}> Continue with Apple</Text>
-              </Pressable>
-              <Pressable style={s.social} onPress={() => Alert.alert('Google Sign In', 'Will be configured in v1.1.')}>
-                <Text style={s.socialText}>G  Continue with Google</Text>
-              </Pressable>
-
-              <Pressable style={s.guest} onPress={signInGuest}>
-                <Text style={s.guestText}>Continue as Guest / Demo</Text>
-              </Pressable>
-
-              <Text style={s.hint}>Tap the logo 5× for developer bypass</Text>
             </>
           ) : (
             <View style={s.passWrap}>
@@ -208,23 +192,6 @@ const s = StyleSheet.create({
     paddingVertical: 16, alignItems: 'center', marginTop: 6, marginBottom: 18,
   },
   primaryText: { color: colors.white, fontSize: 15, fontWeight: '700', letterSpacing: 1 },
-  divider: { flexDirection: 'row', alignItems: 'center', width: '100%', maxWidth: 360, marginBottom: 14 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.borderSubtle },
-  dividerText: { fontSize: 11, color: colors.textFaint, letterSpacing: 1, marginHorizontal: 12 },
-  social: {
-    width: '100%', maxWidth: 360,
-    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', marginBottom: 8,
-  },
-  socialText: { color: colors.white, fontSize: 14, fontWeight: '600' },
-  guest: {
-    width: '100%', maxWidth: 360,
-    borderWidth: 1.5, borderColor: 'rgba(255, 140, 0, 0.4)',
-    borderRadius: radius.md, paddingVertical: 14, alignItems: 'center',
-    marginTop: 14, marginBottom: 18,
-  },
-  guestText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
-  hint: { fontSize: 11, color: colors.textDim },
   footer: { fontSize: 10, color: colors.textDim, letterSpacing: 1.5, marginTop: 32, textAlign: 'center' },
 
   passWrap: {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '../theme';
@@ -7,11 +7,10 @@ import { colors } from '../theme';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { LogInjectionScreen } from '../screens/LogInjectionScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
-import { AICoachScreen } from '../screens/AICoachScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
-export type TabId = 'home' | 'log' | 'history' | 'ai' | 'analytics' | 'settings';
+export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
 export function BottomTabs() {
   const [active, setActive] = React.useState<TabId>('home');
@@ -22,7 +21,6 @@ export function BottomTabs() {
         {active === 'home' && <DashboardScreen onNavigate={(t) => setActive(t as TabId)} />}
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
-        {active === 'ai' && <AICoachScreen />}
         {active === 'analytics' && <AnalyticsScreen />}
         {active === 'settings' && <SettingsScreen />}
       </View>
@@ -33,7 +31,6 @@ export function BottomTabs() {
             { id: 'home' as const, label: 'Home' },
             { id: 'log' as const, label: 'Log' },
             { id: 'history' as const, label: 'History' },
-            { id: 'ai' as const, label: 'AI' },
             { id: 'analytics' as const, label: 'Analytics' },
             { id: 'settings' as const, label: 'Settings' },
           ]).map(t => (
@@ -82,17 +79,6 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
         <Svg width="22" height="22" viewBox="0 0 24 24">
           <Circle {...props} cx="12" cy="12" r="9" />
           <Path {...props} d="M12 7 V12 L15 14" />
-        </Svg>
-      );
-    case 'ai':
-      return (
-        <Svg width="22" height="22" viewBox="0 0 24 24">
-          <Path
-            {...props}
-            d="M12 2 a4 4 0 0 0 -4 4 v1 H7 a3 3 0 0 0 -3 3 v3 a3 3 0 0 0 3 3 h1 v1 a4 4 0 0 0 8 0 v-1 h1 a3 3 0 0 0 3 -3 v-3 a3 3 0 0 0 -3 -3 h-1 V6 a4 4 0 0 0 -4 -4 z"
-          />
-          <Circle cx="9" cy="11" r="0.8" fill={c} />
-          <Circle cx="15" cy="11" r="0.8" fill={c} />
         </Svg>
       );
     case 'analytics':

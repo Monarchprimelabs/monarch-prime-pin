@@ -24,12 +24,17 @@ export function Disclaimer() {
 // Brand mark — symbol for headers, full logo for splash/sign-in
 // ============================================================
 export function BrandMark({ large }: { large?: boolean }) {
-  const size = large ? 140 : 38;
+  const size = large ? 180 : 42;
   const src: ImageSourcePropType = large ? FULL_LOGO : SYMBOL;
+
   return (
     <Image
       source={src}
-      style={{ width: size, height: size, resizeMode: 'contain' }}
+      style={{
+        width: size,
+        height: size,
+        resizeMode: 'contain',
+      }}
     />
   );
 }
@@ -197,6 +202,46 @@ const s = StyleSheet.create({
   viewBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.2)' },
   viewBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   viewBtnTextActive: { color: colors.white },
+
+  logoSymbol: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 140, 0, 0.16)',
+    borderWidth: 1,
+    borderColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoSymbolText: {
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  logoWordmark: {
+    width: 160,
+    height: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.borderOrange,
+    backgroundColor: 'rgba(255, 140, 0, 0.08)',
+  },
+  logoWordmarkMain: {
+    color: colors.accent,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+  },
+  logoWordmarkSub: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginTop: 6,
+  },
 
   formatPara: { color: '#C8D4E6', fontSize: 14, lineHeight: 22, marginBottom: 8 },
 });

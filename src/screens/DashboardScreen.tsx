@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
@@ -26,8 +26,16 @@ export function DashboardScreen({ onNavigate }: Props) {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thisWeek = injections.filter(i => new Date(i.date) >= weekAgo).length;
+
+    // Count unique days with a saved log. This avoids fake/hard-coded streak numbers.
+    const uniqueLogDays = new Set(
+      injections
+        .map(i => i.date)
+        .filter(Boolean)
+    ).size;
+
     return {
-      streak: injections.length > 0 ? 14 : 0,
+      logDays: uniqueLogDays,
       total: injections.length,
       thisWeek,
     };
@@ -41,11 +49,11 @@ export function DashboardScreen({ onNavigate }: Props) {
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <Header
           title={`Hello, ${user?.name || 'Researcher'}`}
-          subtitle={user?.isGuest ? 'Demo Mode' : user?.isDeveloper ? 'Developer Mode' : 'Welcome back'}
+          subtitle={user?.isDeveloper ? 'Developer Mode' : 'Welcome back'}
         />
 
         <View style={s.statRow}>
-          <StatCard icon="🔥" value={stats.streak} label="Day Streak" />
+          <StatCard icon="🔥" value={stats.logDays} label="Log Days" />
           <StatCard icon="💉" value={stats.total} label="Total Inj." />
           <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
         </View>
@@ -57,15 +65,13 @@ export function DashboardScreen({ onNavigate }: Props) {
             </Pressable>
             <View style={s.reminderHeader}>
               <Text style={{ fontSize: 14 }}>⏰</Text>
-              <Text style={s.reminderTitle}>Smart Reminder</Text>
+              <Text style={s.reminderTitle}>Log Review</Text>
             </View>
             <Text style={s.reminderCompound}>{lastInj.peptide}</Text>
-            <Text style={s.reminderMeta}>Last injection: {lastInj.date}</Text>
+            <Text style={s.reminderMeta}>Last logged: {lastInj.date}</Text>
             <Text style={s.reminderMeta}>Last site: {lastInj.site}</Text>
             <View style={s.reminderNext}>
-              <Text style={s.reminderNextText}>
-                Next dose due in <Text style={s.reminderNextStrong}>22h 14m</Text>
-              </Text>
+              <Text style={s.reminderNextText}>Review your previous log entry</Text>
             </View>
           </View>
         )}
@@ -101,42 +107,7 @@ export function DashboardScreen({ onNavigate }: Props) {
           <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
             <Text style={s.qaPrimaryText}>💉  Log Injection</Text>
           </Pressable>
-          <Pressable style={s.qaSecondary} onPress={() => onNavigate('ai')}>
-            <Text style={s.qaSecondaryText}>🧠  Ask AI</Text>
-          </Pressable>
         </View>
-
-        <Card>
-          <CardLabel icon="📋">RETATRUTIDE TITRATION PROTOCOL</CardLabel>
-          {[
-            { phase: 1, weeks: '1-4',  dose: '0.5 mg', note: 'Initiation',   current: false },
-            { phase: 2, weeks: '5-8',  dose: '1.0 mg', note: 'Escalation',   current: true  },
-            { phase: 3, weeks: '9-12', dose: '2.0 mg', note: 'Maintenance',  current: false },
-            { phase: 4, weeks: '13+',  dose: '4.0 mg', note: 'Optimization', current: false },
-          ].map(p => (
-            <View key={p.phase} style={[s.phaseRow, p.current && s.phaseRowActive]}>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[s.phaseTitle, { color: p.current ? colors.accent : colors.white }]}>
-                    Phase {p.phase}
-                  </Text>
-                  {p.current && (
-                    <View style={s.currentBadge}>
-                      <Text style={s.currentBadgeText}>CURRENT</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={s.phaseWeeks}>Weeks {p.weeks}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[s.phaseDose, { color: p.current ? colors.accent : colors.primary }]}>
-                  {p.dose}
-                </Text>
-                <Text style={s.phaseNote}>{p.note}</Text>
-              </View>
-            </View>
-          ))}
-        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -146,7 +117,7 @@ function StatCard({ icon, value, label }: { icon: string; value: number; label: 
   return (
     <View style={s.statCard}>
       <Text style={s.statIcon}>{icon}</Text>
-      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.statVal}>{value}</Text>
       <Text style={s.statLabel}>{label}</Text>
     </View>
   );
@@ -163,67 +134,50 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
-  statRow: { flexDirection: 'row', gap: 10, paddingHorizontal: spacing.xl, marginBottom: spacing.lg },
-  statCard: {
-    flex: 1, backgroundColor: colors.bgCard,
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg,
-    paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center',
+  statRow: {
+    flexDirection: 'row', gap: 10, paddingHorizontal: spacing.xl, marginBottom: 14,
   },
-  statIcon: { fontSize: 22, marginBottom: 6 },
-  statValue: { fontSize: 28, fontWeight: '700', color: colors.primary, lineHeight: 28, marginBottom: 6 },
-  statLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '500' },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  statIcon: { fontSize: 18, marginBottom: 4 },
+  statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
+  statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
   reminderCard: {
-    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
-    backgroundColor: colors.bgCard,
-    borderWidth: 1, borderColor: 'rgba(255, 140, 0, 0.25)',
+    marginHorizontal: spacing.xl, marginBottom: 14,
+    backgroundColor: 'rgba(255, 140, 0, 0.08)',
+    borderWidth: 1, borderColor: 'rgba(255, 140, 0, 0.3)',
     borderRadius: radius.lg, padding: 16, paddingTop: 14,
   },
-  reminderClose: { position: 'absolute', top: 6, right: 8, padding: 8, zIndex: 1 },
-  reminderCloseText: { color: colors.textMuted, fontSize: 22, lineHeight: 22 },
+  reminderClose: { position: 'absolute', right: 12, top: 10, zIndex: 2 },
+  reminderCloseText: { color: colors.textMuted, fontSize: 24, lineHeight: 24 },
   reminderHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  reminderTitle: { color: colors.accent, fontSize: 14, fontWeight: '600' },
-  reminderCompound: { color: colors.white, fontSize: 19, fontWeight: '700', marginBottom: 4 },
-  reminderMeta: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
-  reminderNext: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255, 140, 0, 0.15)' },
-  reminderNextText: { fontSize: 12, color: '#C8D4E6' },
-  reminderNextStrong: { color: colors.gold, fontWeight: '700' },
+  reminderTitle: { color: colors.accent, fontSize: 13, fontWeight: '700', letterSpacing: 1.2 },
+  reminderCompound: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  reminderMeta: { color: '#C8D4E6', fontSize: 13, marginBottom: 2 },
+  reminderNext: {
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  reminderNextText: { color: colors.textMuted, fontSize: 13 },
 
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
-  legend: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12, flexWrap: 'wrap' },
+  legend: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 12, color: '#C8D4E6' },
+  legendText: { color: colors.textMuted, fontSize: 11 },
 
   lastInjPeptide: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  lastInjMeta: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
+  lastInjMeta: { color: '#C8D4E6', fontSize: 13, lineHeight: 20 },
 
-  qaRow: { flexDirection: 'row', gap: 10, paddingHorizontal: spacing.xl, marginBottom: spacing.lg },
+  qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {
-    flex: 1, backgroundColor: colors.primary, borderRadius: radius.md,
-    paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center',
+    backgroundColor: colors.primary, borderRadius: radius.md,
+    paddingVertical: 15, alignItems: 'center',
   },
   qaPrimaryText: { color: colors.white, fontSize: 15, fontWeight: '700' },
-  qaSecondary: {
-    flex: 1, backgroundColor: colors.bgCard,
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
-    paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center',
-  },
-  qaSecondaryText: { color: colors.white, fontSize: 15, fontWeight: '600' },
-
-  phaseRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, paddingHorizontal: 4,
-    borderBottomWidth: 1, borderBottomColor: colors.borderFaint,
-  },
-  phaseRowActive: {
-    backgroundColor: 'rgba(255, 140, 0, 0.08)',
-    borderRadius: 8, paddingHorizontal: 10, borderBottomWidth: 0,
-  },
-  phaseTitle: { fontSize: 15, fontWeight: '700' },
-  phaseWeeks: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  phaseDose: { fontSize: 17, fontWeight: '700' },
-  phaseNote: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  currentBadge: { paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.accent, borderRadius: 4 },
-  currentBadgeText: { fontSize: 9, color: colors.white, letterSpacing: 1, fontWeight: '700' },
 });
