@@ -82,11 +82,37 @@ export async function saveInjection(inj: Omit<Injection, 'id'>): Promise<Injecti
   return newInj;
 }
 
+export async function updateInjection(inj: Injection): Promise<Injection> {
+  if (SUPABASE_CONFIGURED && supabase) {
+    const user = await getUser();
+    if (user && !user.isGuest && !user.isDeveloper) {
+      const { id, ...changes } = inj;
+      const { data, error } = await supabase
+        .from('injections')
+        .update(changes)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      if (!data) throw new Error('The record could not be updated.');
+      return data as Injection;
+    }
+  }
+
+  const list = await getInjections();
+  const index = list.findIndex(i => i.id === inj.id);
+  if (index === -1) throw new Error('The record could not be found.');
+  const updated = list.map(i => i.id === inj.id ? inj : i);
+  await AsyncStorage.setItem(KEY_INJECTIONS, JSON.stringify(updated));
+  return inj;
+}
+
 export async function deleteInjection(id: string): Promise<void> {
   if (SUPABASE_CONFIGURED && supabase) {
     const user = await getUser();
     if (user && !user.isGuest && !user.isDeveloper) {
-      await supabase.from('injections').delete().eq('id', id);
+      const { error } = await supabase.from('injections').delete().eq('id', id);
+      if (error) throw error;
       return;
     }
   }

@@ -9,23 +9,40 @@ import * as ImagePicker from 'expo-image-picker';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
-import { PEPTIDES, ALL_ZONES, Peptide, Severity } from '../data/peptides';
-import { saveInjection, uploadPhoto } from '../lib/storage';
+import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity } from '../data/peptides';
+import { saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
 
-export function LogInjectionScreen({ onDone, initialDate }: { onDone: () => void; initialDate?: string }) {
-  const [peptide, setPeptide] = useState<Peptide | null>(null);
+type LogInjectionScreenProps = {
+  onDone: () => void;
+  initialDate?: string;
+  initialInjection?: Injection;
+  onCancel?: () => void;
+};
+
+export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCancel }: LogInjectionScreenProps) {
+  const initialPeptide = initialInjection
+    ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === initialInjection.peptide)
+      ?? { id: 'existing-custom', name: initialInjection.peptide, defaultUnit: initialInjection.unit }
+    : null;
+  const initialSites = initialInjection?.site
+    .split(', ')
+    .map(label => ALL_ZONES.find(zone => zone.label === label)?.id)
+    .filter((id): id is string => !!id) ?? [];
+
+  const [peptide, setPeptide] = useState<Peptide | null>(initialPeptide);
   const [picker, setPicker] = useState(false);
-  const [dose, setDose] = useState('');
-  const [unit, setUnit] = useState<'mcg' | 'mg'>('mcg');
+  const [dose, setDose] = useState(initialInjection?.dose ?? '');
+  const [unit, setUnit] = useState<'mcg' | 'mg'>(initialInjection?.unit ?? 'mcg');
   const [view, setView] = useState<'front' | 'back'>('front');
-  const [selected, setSelected] = useState<string[]>([]);
-  const [sev, setSev] = useState<Severity>('none');
-  const [weight, setWeight] = useState('');
-  const [notes, setNotes] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>(initialSites);
+  const [sev, setSev] = useState<Severity>(initialInjection?.sev ?? 'none');
+  const [weight, setWeight] = useState(initialInjection?.weight ? String(initialInjection.weight) : '');
+  const [notes, setNotes] = useState(initialInjection?.notes ?? '');
+  const [photoUri, setPhotoUri] = useState<string | null>(initialInjection?.photoUri ?? null);
   const [saving, setSaving] = useState(false);
 
-  const logDate = initialDate ?? new Date().toISOString().slice(0, 10);
+  const isEditing = !!initialInjection;
+  const logDate = initialInjection?.date ?? initialDate ?? new Date().toISOString().slice(0, 10);
 
 
   const toggle = (id: string) =>
@@ -113,26 +130,36 @@ export function LogInjectionScreen({ onDone, initialDate }: { onDone: () => void
 
     setSaving(true);
     try {
-      let uploadedPhotoUri: string | undefined;
+      let uploadedPhotoUri = initialInjection?.photoUri;
       if (photoUri) {
-        uploadedPhotoUri = await uploadPhoto(photoUri);
+        uploadedPhotoUri = photoUri === initialInjection?.photoUri
+          ? photoUri
+          : await uploadPhoto(photoUri);
+      } else {
+        uploadedPhotoUri = undefined;
       }
 
       const now = new Date();
-      await saveInjection({
+      const record = {
         peptide: peptide.name,
         dose,
         unit,
         date: logDate,
-        time: now.toTimeString().slice(0, 5),
+        time: initialInjection?.time ?? now.toTimeString().slice(0, 5),
         site: selected.map(id => { const z = ALL_ZONES.find(x => x.id === id); return z ? z.label : id; }).join(", "),
         sev,
         weight: weight ? Number(weight) : 0,
         notes: notes || undefined,
         photoUri: uploadedPhotoUri,
-      });
+      };
 
-      Alert.alert('Saved!', 'Your injection has been logged.', [
+      if (initialInjection) {
+        await updateInjection({ ...record, id: initialInjection.id });
+      } else {
+        await saveInjection(record);
+      }
+
+      Alert.alert(isEditing ? 'Record updated' : 'Saved!', isEditing ? 'Your changes have been saved.' : 'Your injection has been logged.', [
         { text: 'OK', onPress: () => {
           setPeptide(null);
           setDose('');
@@ -156,7 +183,7 @@ export function LogInjectionScreen({ onDone, initialDate }: { onDone: () => void
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} keyboardShouldPersistTaps="handled">
         <Header
-          title="Log Injection"
+          title={isEditing ? 'Edit Record' : 'Log Injection'}
           subtitle={
             (initialDate
               ? new Date(initialDate + 'T12:00:00')
@@ -165,10 +192,27 @@ export function LogInjectionScreen({ onDone, initialDate }: { onDone: () => void
             + (initialDate ? ' · Backdated Entry' : '')
           }
         />
+        {!!onCancel && (
+          <View style={s.cancelRow}>
+            <Pressable
+              onPress={onCancel}
+              style={s.cancelBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isEditing ? 'Cancel editing record' : 'Close logging form'}
+            >
+              <Text style={s.cancelBtnText}>‹ {isEditing ? 'Record Details' : 'History'}</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Peptide selector */}
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
-          <Pressable style={s.peptideBtn} onPress={() => setPicker(true)}>
+          <Pressable
+            style={s.peptideBtn}
+            onPress={() => setPicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel={peptide ? `Selected compound: ${peptide.name}. Change selection` : 'Select compound'}
+          >
             <Text style={peptide ? s.peptideName : s.peptidePlaceholder}>
               {peptide ? peptide.name : 'Select peptide…'}
             </Text>
@@ -296,8 +340,14 @@ export function LogInjectionScreen({ onDone, initialDate }: { onDone: () => void
         </Card>
 
         <View style={{ paddingHorizontal: spacing.xl }}>
-          <Pressable style={s.submit} onPress={handleSave} disabled={saving}>
-            <Text style={s.submitText}>{saving ? 'SAVING…' : 'SAVE INJECTION'}</Text>
+          <Pressable
+            style={s.submit}
+            onPress={handleSave}
+            disabled={saving}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: saving }}
+          >
+            <Text style={s.submitText}>{saving ? 'SAVING…' : isEditing ? 'SAVE CHANGES' : 'SAVE INJECTION'}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -378,6 +428,9 @@ function PeptidePickerSheet({
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.8, marginBottom: 12 },
+  cancelRow: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
+  cancelBtn: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingRight: 12 },
+  cancelBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
 
   peptideBtn: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

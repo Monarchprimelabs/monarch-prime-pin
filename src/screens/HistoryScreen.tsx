@@ -11,16 +11,29 @@ export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
   const [injections, setInjections] = useState<Injection[]>([]);
   const [backdateFor, setBackdateFor] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<Injection | null>(null);
+  const [editingRecord, setEditingRecord] = useState<Injection | null>(null);
 
-  const refresh = () => getInjections().then(setInjections);
+  const refresh = async () => {
+    try {
+      setInjections(await getInjections());
+    } catch (e: any) {
+      Alert.alert('Unable to load records', e?.message || 'Please try again.');
+    }
+  };
   useEffect(() => { refresh(); }, []);
 
-  const handleDelete = (id: string) => {
-    Alert.alert('Delete injection?', 'This cannot be undone.', [
+  const handleDelete = (record: Injection) => {
+    Alert.alert('Delete record?', `${record.peptide} from ${formatDate(record.date)} will be permanently deleted.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await deleteInjection(id);
-        refresh();
+        try {
+          await deleteInjection(record.id);
+          setSelectedRecord(null);
+          await refresh();
+        } catch (e: any) {
+          Alert.alert('Delete failed', e?.message || 'Please try again.');
+        }
       }},
     ]);
   };
@@ -43,14 +56,15 @@ export function HistoryScreen() {
         ))}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
-        {tab === 'log' && <LogList injections={injections} onDelete={handleDelete} />}
+        {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
         {tab === 'calendar' && (
           <CalendarView
             injections={injections}
             onLogForDate={(date) => setBackdateFor(date)}
+            onOpen={setSelectedRecord}
           />
         )}
-        {tab === 'photos' && <PhotosGrid injections={injections} />}
+        {tab === 'photos' && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
       </ScrollView>
 
       <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}>
@@ -58,6 +72,38 @@ export function HistoryScreen() {
           <LogInjectionScreen
             initialDate={backdateFor}
             onDone={() => { setBackdateFor(null); refresh(); }}
+            onCancel={() => setBackdateFor(null)}
+          />
+        )}
+      </Modal>
+
+      <Modal visible={!!selectedRecord} animationType="slide" onRequestClose={() => setSelectedRecord(null)}>
+        {selectedRecord && (
+          <RecordDetail
+            record={selectedRecord}
+            onClose={() => setSelectedRecord(null)}
+            onEdit={() => {
+              setEditingRecord(selectedRecord);
+              setSelectedRecord(null);
+            }}
+            onDelete={() => handleDelete(selectedRecord)}
+          />
+        )}
+      </Modal>
+
+      <Modal visible={!!editingRecord} animationType="slide" onRequestClose={() => setEditingRecord(null)}>
+        {editingRecord && (
+          <LogInjectionScreen
+            initialInjection={editingRecord}
+            onCancel={() => {
+              setSelectedRecord(editingRecord);
+              setEditingRecord(null);
+            }}
+            onDone={() => {
+              setEditingRecord(null);
+              setSelectedRecord(null);
+              refresh();
+            }}
           />
         )}
       </Modal>
@@ -65,7 +111,70 @@ export function HistoryScreen() {
   );
 }
 
-function LogList({ injections, onDelete }: { injections: Injection[]; onDelete: (id: string) => void }) {
+function formatDate(date: string) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  });
+}
+
+function severityLabel(value: Injection['sev']) {
+  return value === 'none' ? 'None' : value === 'mild' ? 'Mild' : value === 'mod' ? 'Moderate' : 'Severe';
+}
+
+function RecordDetail({
+  record, onClose, onEdit, onDelete,
+}: {
+  record: Injection;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <SafeAreaView style={s.app}>
+      <Disclaimer />
+      <View style={s.detailHeader}>
+        <Pressable onPress={onClose} style={s.headerAction} accessibilityRole="button" accessibilityLabel="Close record details">
+          <Text style={s.headerActionText}>‹ History</Text>
+        </Pressable>
+        <Text style={s.detailTitle}>Record Details</Text>
+        <Pressable onPress={onEdit} style={s.headerAction} accessibilityRole="button" accessibilityLabel="Edit record">
+          <Text style={[s.headerActionText, { textAlign: 'right' }]}>Edit</Text>
+        </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={s.detailContent}>
+        <View style={[s.detailHero, { borderLeftColor: sevColors[record.sev] }]}>
+          <Text style={s.detailName}>{record.peptide}</Text>
+          <Text style={s.detailDate}>{formatDate(record.date)} at {record.time}</Text>
+          <Text style={s.detailDose}>{record.dose}{record.unit}</Text>
+        </View>
+        <DetailRow label="Recorded site" value={record.site} />
+        <DetailRow label="Side effects" value={severityLabel(record.sev)} />
+        {record.weight > 0 && <DetailRow label="Weight" value={`${record.weight} lbs`} />}
+        {!!record.notes && <DetailRow label="Notes" value={record.notes} />}
+        {!!record.photoUri && (
+          <View style={s.detailSection}>
+            <Text style={s.detailLabel}>PROGRESS PHOTO</Text>
+            <Image source={{ uri: record.photoUri }} style={s.detailPhoto} />
+          </View>
+        )}
+        <Pressable onPress={onDelete} style={s.detailDelete} accessibilityRole="button" accessibilityLabel="Delete record">
+          <Text style={s.detailDeleteText}>Delete Record</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={s.detailSection}>
+      <Text style={s.detailLabel}>{label.toUpperCase()}</Text>
+      <Text style={s.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
   const [filter, setFilter] = useState<'all' | 'none' | 'mild' | 'mod' | 'sev'>('all');
   const [q, setQ] = useState('');
   const filtered = injections.filter(i => {
@@ -102,7 +211,13 @@ function LogList({ injections, onDelete }: { injections: Injection[]; onDelete: 
       {filtered.length === 0 ? (
         <Text style={s.empty}>No injections logged yet</Text>
       ) : filtered.map(i => (
-        <View key={i.id} style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}>
+        <Pressable
+          key={i.id}
+          onPress={() => onOpen(i)}
+          style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date)}`}
+        >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={s.histName}>{i.peptide}</Text>
@@ -114,21 +229,19 @@ function LogList({ injections, onDelete }: { injections: Injection[]; onDelete: 
               <Text style={s.histDose}>{i.dose}{i.unit}</Text>
               <View style={[s.sevBadge, { backgroundColor: sevColors[i.sev] + '20' }]}>
                 <Text style={[s.sevBadgeText, { color: sevColors[i.sev] }]}>
-                  {i.sev === 'none' ? 'None' : i.sev === 'mild' ? 'Mild' : i.sev === 'mod' ? 'Moderate' : 'Severe'}
+                  {severityLabel(i.sev)}
                 </Text>
               </View>
             </View>
           </View>
-          <Pressable onPress={() => onDelete(i.id)} style={s.delBtn}>
-            <Text style={s.delText}>Delete</Text>
-          </Pressable>
-        </View>
+          <Text style={s.viewDetailText}>View details ›</Text>
+        </Pressable>
       ))}
     </View>
   );
 }
 
-function CalendarView({ injections, onLogForDate }: { injections: Injection[]; onLogForDate: (date: string) => void }) {
+function CalendarView({ injections, onLogForDate, onOpen }: { injections: Injection[]; onLogForDate: (date: string) => void; onOpen: (record: Injection) => void }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -156,12 +269,16 @@ function CalendarView({ injections, onLogForDate }: { injections: Injection[]; o
   const dayInj = injections.filter(i => i.date === dateStr(selected));
   const selectedDateStr = dateStr(selected);
   const selectedIsFuture = isFuture(selected);
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
 
   const navPrev = () => {
+    setSelected(1);
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
     else setMonth(m => m - 1);
   };
   const navNext = () => {
+    if (isCurrentMonth) return;
+    setSelected(1);
     if (month === 11) { setMonth(0); setYear(y => y + 1); }
     else setMonth(m => m + 1);
   };
@@ -170,12 +287,19 @@ function CalendarView({ injections, onLogForDate }: { injections: Injection[]; o
     <>
       <Card>
         <View style={s.calHeader}>
-          <Pressable onPress={navPrev} style={s.calNav}>
+          <Pressable onPress={navPrev} style={s.calNav} accessibilityRole="button" accessibilityLabel="Previous month">
             <Text style={s.calNavText}>‹</Text>
           </Pressable>
           <Text style={s.calMonth}>{monthNames[month]} {year}</Text>
-          <Pressable onPress={navNext} style={s.calNav}>
-            <Text style={s.calNavText}>›</Text>
+          <Pressable
+            onPress={navNext}
+            style={[s.calNav, isCurrentMonth && s.calNavDisabled]}
+            disabled={isCurrentMonth}
+            accessibilityRole="button"
+            accessibilityLabel="Next month"
+            accessibilityState={{ disabled: isCurrentMonth }}
+          >
+            <Text style={[s.calNavText, isCurrentMonth && s.calNavTextDisabled]}>›</Text>
           </Pressable>
         </View>
         <View style={s.calGrid}>
@@ -207,7 +331,7 @@ function CalendarView({ injections, onLogForDate }: { injections: Injection[]; o
         {dayInj.length === 0 ? (
           <Text style={s.empty}>No injections logged</Text>
         ) : dayInj.map(i => (
-          <View key={i.id} style={[s.histCard, { borderLeftColor: sevColors[i.sev], marginHorizontal: 0 }]}>
+          <Pressable key={i.id} onPress={() => onOpen(i)} style={[s.histCard, { borderLeftColor: sevColors[i.sev], marginHorizontal: 0 }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
                 <Text style={s.histName}>{i.peptide}</Text>
@@ -216,7 +340,7 @@ function CalendarView({ injections, onLogForDate }: { injections: Injection[]; o
               </View>
               <Text style={s.histDose}>{i.dose}{i.unit}</Text>
             </View>
-          </View>
+          </Pressable>
         ))}
         {!selectedIsFuture && (
           <Pressable
@@ -231,7 +355,7 @@ function CalendarView({ injections, onLogForDate }: { injections: Injection[]; o
   );
 }
 
-function PhotosGrid({ injections }: { injections: Injection[] }) {
+function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
   const photos = injections.filter(i => i.photoUri);
   if (photos.length === 0) {
     return <Text style={[s.empty, { paddingTop: 40 }]}>No progress photos yet</Text>;
@@ -239,10 +363,16 @@ function PhotosGrid({ injections }: { injections: Injection[] }) {
   return (
     <View style={s.photoGrid}>
       {photos.map(p => (
-        <View key={p.id} style={s.photoThumb}>
+        <Pressable
+          key={p.id}
+          style={s.photoThumb}
+          onPress={() => onOpen(p)}
+          accessibilityRole="button"
+          accessibilityLabel={`Open photo record from ${formatDate(p.date)}`}
+        >
           <Image source={{ uri: p.photoUri }} style={s.photoThumbImg} />
           <Text style={s.photoThumbDate}>{p.date}</Text>
-        </View>
+        </Pressable>
       ))}
     </View>
   );
@@ -287,8 +417,7 @@ const s = StyleSheet.create({
   histDose: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   sevBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginTop: 4 },
   sevBadgeText: { fontSize: 11, fontWeight: '600' },
-  delBtn: { alignSelf: 'flex-end', paddingTop: 6 },
-  delText: { color: colors.red, fontSize: 14, fontWeight: '600' },
+  viewDetailText: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 10, alignSelf: 'flex-end' },
 
   empty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 20 },
 
@@ -300,6 +429,8 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   calNavText: { color: colors.primary, fontSize: 18, fontWeight: '700' },
+  calNavDisabled: { backgroundColor: colors.bgInput },
+  calNavTextDisabled: { color: colors.textDim },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calDayName: { width: '14.28%', textAlign: 'center', color: colors.textMuted, fontSize: 11, fontWeight: '600', paddingVertical: 6 },
   calCell: {
@@ -323,4 +454,32 @@ const s = StyleSheet.create({
   photoThumb: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative' },
   photoThumbImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   photoThumbDate: { position: 'absolute', bottom: 6, left: 8, color: colors.white, fontSize: 11, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 4 },
+
+  detailHeader: {
+    minHeight: 58, paddingHorizontal: spacing.xl, flexDirection: 'row',
+    alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.borderSubtle,
+  },
+  headerAction: { width: 86, minHeight: 44, justifyContent: 'center' },
+  headerActionText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  detailTitle: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  detailContent: { padding: spacing.xl, paddingBottom: 50 },
+  detailHero: {
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    borderLeftWidth: 4, borderRadius: radius.lg, padding: 18, marginBottom: spacing.lg,
+  },
+  detailName: { color: colors.white, fontSize: 21, fontWeight: '700', marginBottom: 5 },
+  detailDate: { color: colors.textMuted, fontSize: 13 },
+  detailDose: { color: colors.primary, fontSize: 24, fontWeight: '700', marginTop: 14 },
+  detailSection: {
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.borderSubtle,
+    borderRadius: radius.md, padding: 16, marginBottom: 10,
+  },
+  detailLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, marginBottom: 7 },
+  detailValue: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  detailPhoto: { width: '100%', aspectRatio: 1, resizeMode: 'cover', borderRadius: radius.sm },
+  detailDelete: {
+    minHeight: 48, borderWidth: 1, borderColor: colors.red, borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg,
+  },
+  detailDeleteText: { color: colors.red, fontSize: 14, fontWeight: '700' },
 });

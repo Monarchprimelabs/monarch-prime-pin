@@ -39,8 +39,7 @@ By default, the app runs entirely **offline**:
 - Sign In, Sign Up, and Continue as Guest all work locally
 - All injection logs save to device storage (AsyncStorage)
 - Photos save as local file URIs
-- AI Coach works (knowledge base, not live LLM)
-- Calculator and analytics work with your real data
+- Analytics work with your real data
 - Nothing leaves the device
 
 This means **SAVE INJECTION works immediately**, no backend setup required. Your test data persists across app launches.
@@ -144,7 +143,6 @@ MonarchPrimePin/
     ├── theme/              # Colors, spacing, typography tokens
     ├── data/
     │   ├── peptides.ts     # Peptide list, zones, types, seed data
-    │   └── aiKnowledge.ts  # AI Coach knowledge base (educational)
     ├── lib/
     │   ├── supabase.ts     # Supabase client (offline-first fallback)
     │   ├── storage.ts      # CRUD for injections, photo upload
