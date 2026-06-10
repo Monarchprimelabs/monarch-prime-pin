@@ -11,6 +11,7 @@ import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity } from '../data/peptides';
 import { saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
+import { getInjectionSiteIds } from '../lib/sites';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -24,10 +25,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
     ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === initialInjection.peptide)
       ?? { id: 'existing-custom', name: initialInjection.peptide, defaultUnit: initialInjection.unit }
     : null;
-  const initialSites = initialInjection?.site
-    .split(', ')
-    .map(label => ALL_ZONES.find(zone => zone.label === label)?.id)
-    .filter((id): id is string => !!id) ?? [];
+  const initialSites = initialInjection ? getInjectionSiteIds(initialInjection) : [];
 
   const [peptide, setPeptide] = useState<Peptide | null>(initialPeptide);
   const [picker, setPicker] = useState(false);

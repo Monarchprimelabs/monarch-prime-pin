@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { ZONES, Zone, ZONE_DENSITY, DensityLevel } from '../data/peptides';
+import { ZONES, DensityLevel } from '../data/peptides';
 import { density as densityColors } from '../theme';
 import { MannequinFront, MannequinBack } from './Mannequin';
 
@@ -10,9 +10,10 @@ type Props = {
   mode: 'heatmap' | 'select';
   selected?: string[];
   onZoneTap?: (id: string) => void;
+  densityByZone?: Record<string, DensityLevel>;
 };
 
-export function BodyDiagram({ view, mode, selected = [], onZoneTap }: Props) {
+export function BodyDiagram({ view, mode, selected = [], onZoneTap, densityByZone = {} }: Props) {
   const zones = view === 'front' ? ZONES.front : ZONES.back;
 
   return (
@@ -22,7 +23,7 @@ export function BodyDiagram({ view, mode, selected = [], onZoneTap }: Props) {
 
         {zones.map(z => {
           if (mode === 'heatmap') {
-            const lvl: DensityLevel = ZONE_DENSITY[z.id] || 'unused';
+            const lvl: DensityLevel = densityByZone[z.id] || 'unused';
             const c = densityColors[lvl];
             return (
               <G key={z.id}>

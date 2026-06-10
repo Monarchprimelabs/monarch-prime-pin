@@ -7,6 +7,7 @@ import { colors, spacing, radius, severity } from '../theme';
 import { useAuth } from '../lib/auth';
 import { getInjections } from '../lib/storage';
 import { Injection } from '../data/peptides';
+import { getSiteDensity } from '../lib/sites';
 
 type Props = {
   onNavigate: (tab: string) => void;
@@ -52,6 +53,7 @@ export function DashboardScreen({ onNavigate }: Props) {
 
   const lastInj = injections[0];
   const greetingName = getGreetingName(user?.name, user?.email);
+  const siteDensity = useMemo(() => getSiteDensity(injections), [injections]);
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
@@ -89,7 +91,7 @@ export function DashboardScreen({ onNavigate }: Props) {
         <Card>
           <CardLabel icon="📍">SITE HEATMAP</CardLabel>
           <ViewPill view={view} setView={setView} />
-          <BodyDiagram view={view} mode="heatmap" />
+          <BodyDiagram view={view} mode="heatmap" densityByZone={siteDensity} />
           <Text style={s.anteriorLabel}>{view === 'front' ? 'ANTERIOR' : 'POSTERIOR'}</Text>
           <View style={s.legend}>
             <LegendDot color={colors.primary} label="Unused" />

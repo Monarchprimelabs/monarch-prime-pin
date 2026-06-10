@@ -84,8 +84,8 @@ export const ZONES: { front: Zone[]; back: Zone[] } = {
     { id: 'th_r',   label: 'R Thigh',     short: 'Th R',   cx: 58, cy: 70, r: 2.6 },
   ],
   back: [
-    { id: 'b_sh_l',  label: 'L Shoulder',   short: 'Sh L',  cx: 32, cy: 28, r: 2.8 },
-    { id: 'b_sh_r',  label: 'R Shoulder',   short: 'Sh R',  cx: 68, cy: 28, r: 2.8 },
+    { id: 'b_sh_l',  label: 'L Back Shoulder', short: 'Back Sh L', cx: 32, cy: 28, r: 2.8 },
+    { id: 'b_sh_r',  label: 'R Back Shoulder', short: 'Back Sh R', cx: 68, cy: 28, r: 2.8 },
     { id: 'b_arm_l', label: 'L Tricep',     short: 'Tri L', cx: 24, cy: 38, r: 2.4 },
     { id: 'b_arm_r', label: 'R Tricep',     short: 'Tri R', cx: 76, cy: 38, r: 2.4 },
     { id: 'glute_l', label: 'L Glute',      short: 'Gl L',  cx: 43, cy: 53, r: 3 },
@@ -110,5 +110,3 @@ export type Injection = {
   notes?: string;
   photoUri?: string;
 };
-
-export const ZONE_DENSITY: Record<string, DensityLevel> = {};
