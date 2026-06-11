@@ -19,7 +19,7 @@ const TOOLS: { id: ToolId; icon: string; title: string; sub: string }[] = [
   { id: 'schedule', icon: '📅', title: 'Schedule Organizer', sub: 'Create your own dated research reminders' },
   { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels' },
   { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts' },
-  { id: 'conversion', icon: '↔', title: 'Conversion Tools', sub: 'Convert units and compare calendar dates' },
+  { id: 'conversion', icon: '⇄', title: 'Conversion Tools', sub: 'Reference mass, volume, and temperature units' },
   { id: 'settings', icon: '⚙', title: 'Settings', sub: 'Profile, local data, and legal information' },
 ];
 
@@ -267,100 +267,102 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-type ConversionKind = 'mass' | 'volume' | 'temperature';
 type UnitOption = { id: string; label: string };
 
-const CONVERSION_UNITS: Record<ConversionKind, UnitOption[]> = {
-  mass: [
-    { id: 'g', label: 'g' },
-    { id: 'mg', label: 'mg' },
-    { id: 'mcg', label: 'mcg' },
-  ],
-  volume: [
-    { id: 'l', label: 'L' },
-    { id: 'ml', label: 'mL' },
-    { id: 'ul', label: 'µL' },
-  ],
-  temperature: [
-    { id: 'f', label: '°F' },
-    { id: 'c', label: '°C' },
-  ],
-};
+const MASS_UNITS: UnitOption[] = [{ id: 'g', label: 'g' }, { id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }];
+const VOLUME_UNITS: UnitOption[] = [{ id: 'l', label: 'L' }, { id: 'ml', label: 'mL' }, { id: 'ul', label: 'µL' }];
+const TEMPERATURE_UNITS: UnitOption[] = [{ id: 'f', label: '°F' }, { id: 'c', label: '°C' }];
 
 function ConversionTool({ onClose }: { onClose: () => void }) {
-  const [kind, setKind] = useState<ConversionKind>('mass');
-  const [value, setValue] = useState('');
-  const [sourceUnit, setSourceUnit] = useState('mg');
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
+  const [massValue, setMassValue] = useState('');
+  const [massUnit, setMassUnit] = useState('mg');
+  const [volumeValue, setVolumeValue] = useState('');
+  const [volumeUnit, setVolumeUnit] = useState('ml');
+  const [temperatureValue, setTemperatureValue] = useState('');
+  const [temperatureUnit, setTemperatureUnit] = useState('f');
 
-  const chooseKind = (next: ConversionKind) => {
-    setKind(next);
-    setSourceUnit(CONVERSION_UNITS[next][0].id);
-    setValue('');
-  };
-
-  const conversions = useMemo(() => {
-    const n = Number(value);
+  const massResults = useMemo(() => {
+    const n = Number(massValue);
     if (!Number.isFinite(n)) return [];
-    if (kind === 'mass') {
-      const grams = sourceUnit === 'g' ? n : sourceUnit === 'mg' ? n / 1000 : n / 1_000_000;
-      return [`${formatNumber(grams)} g`, `${formatNumber(grams * 1000)} mg`, `${formatNumber(grams * 1_000_000)} mcg`];
-    }
-    if (kind === 'volume') {
-      const liters = sourceUnit === 'l' ? n : sourceUnit === 'ml' ? n / 1000 : n / 1_000_000;
-      return [`${formatNumber(liters)} L`, `${formatNumber(liters * 1000)} mL`, `${formatNumber(liters * 1_000_000)} µL`];
-    }
-    const celsius = sourceUnit === 'c' ? n : (n - 32) * 5 / 9;
-    return [`${formatNumber(celsius)} °C`, `${formatNumber((celsius * 9 / 5) + 32)} °F`];
-  }, [kind, sourceUnit, value]);
+    const grams = massUnit === 'g' ? n : massUnit === 'mg' ? n / 1000 : n / 1_000_000;
+    return [
+      { label: 'Grams', value: `${formatNumber(grams)} g` },
+      { label: 'Milligrams', value: `${formatNumber(grams * 1000)} mg` },
+      { label: 'Micrograms', value: `${formatNumber(grams * 1_000_000)} mcg` },
+    ];
+  }, [massUnit, massValue]);
 
-  const interval = useMemo(() => {
-    if (!isValidDate(startDate) || !isValidDate(endDate)) return null;
-    const start = new Date(`${startDate}T12:00:00Z`).getTime();
-    const end = new Date(`${endDate}T12:00:00Z`).getTime();
-    return Math.round((end - start) / 86_400_000);
-  }, [startDate, endDate]);
+  const volumeResults = useMemo(() => {
+    const n = Number(volumeValue);
+    if (!Number.isFinite(n)) return [];
+    const liters = volumeUnit === 'l' ? n : volumeUnit === 'ml' ? n / 1000 : n / 1_000_000;
+    return [
+      { label: 'Liters', value: `${formatNumber(liters)} L` },
+      { label: 'Milliliters', value: `${formatNumber(liters * 1000)} mL` },
+      { label: 'Microliters', value: `${formatNumber(liters * 1_000_000)} µL` },
+    ];
+  }, [volumeUnit, volumeValue]);
+
+  const temperatureResults = useMemo(() => {
+    const n = Number(temperatureValue);
+    if (!Number.isFinite(n)) return [];
+    const celsius = temperatureUnit === 'c' ? n : (n - 32) * 5 / 9;
+    return [
+      { label: 'Celsius', value: `${formatNumber(celsius)} °C` },
+      { label: 'Fahrenheit', value: `${formatNumber((celsius * 9 / 5) + 32)} °F` },
+    ];
+  }, [temperatureUnit, temperatureValue]);
 
   return (
     <ToolShell title="Conversion Tools" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Notice text="Generic reference conversions only. Results are not connected to compounds, saved records, schedules, or administration decisions." />
-        <Card>
-          <CardLabel icon="↔">UNIT CONVERSION</CardLabel>
-          <View style={s.segment}>
-            <SegmentButton label="Mass" active={kind === 'mass'} onPress={() => chooseKind('mass')} />
-            <SegmentButton label="Volume" active={kind === 'volume'} onPress={() => chooseKind('volume')} />
-            <SegmentButton label="Temperature" active={kind === 'temperature'} onPress={() => chooseKind('temperature')} />
-          </View>
-          <View style={s.unitRow}>
-            {CONVERSION_UNITS[kind].map(option => (
-              <Pressable
-                key={option.id}
-                style={[s.unitBtn, sourceUnit === option.id && s.unitBtnActive]}
-                onPress={() => setSourceUnit(option.id)}
-              >
-                <Text style={[s.unitBtnText, sourceUnit === option.id && s.unitBtnTextActive]}>{option.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <Field value={value} setValue={setValue} placeholder={`Enter value in ${CONVERSION_UNITS[kind].find(unit => unit.id === sourceUnit)?.label}`} keyboardType="decimal-pad" />
-          <View style={s.results}>
-            {conversions.length > 0
-              ? conversions.map(result => <Result key={result} value={result} />)
-              : <Result value="Enter a valid number" />}
-          </View>
-        </Card>
-        <Card>
-          <CardLabel icon="📅">DATE INTERVAL</CardLabel>
-          <View style={s.twoCol}>
-            <Field value={startDate} setValue={setStartDate} placeholder="Start YYYY-MM-DD" style={{ flex: 1 }} />
-            <Field value={endDate} setValue={setEndDate} placeholder="End YYYY-MM-DD" style={{ flex: 1 }} />
-          </View>
-          <Result value={interval === null ? 'Enter valid dates' : interval === 0 ? 'Same calendar day' : `${Math.abs(interval)} day${Math.abs(interval) === 1 ? '' : 's'} ${interval > 0 ? 'apart' : 'before start'}`} />
-        </Card>
+        <ConversionCard title="MASS REFERENCE" icon="⇄" value={massValue} setValue={setMassValue} units={MASS_UNITS} unit={massUnit} setUnit={setMassUnit} results={massResults} />
+        <ConversionCard title="VOLUME REFERENCE" icon="▣" value={volumeValue} setValue={setVolumeValue} units={VOLUME_UNITS} unit={volumeUnit} setUnit={setVolumeUnit} results={volumeResults} />
+        <ConversionCard title="TEMPERATURE REFERENCE" icon="°" value={temperatureValue} setValue={setTemperatureValue} units={TEMPERATURE_UNITS} unit={temperatureUnit} setUnit={setTemperatureUnit} results={temperatureResults} />
       </ScrollView>
     </ToolShell>
+  );
+}
+
+function ConversionCard({ title, icon, value, setValue, units, unit, setUnit, results }: {
+  title: string;
+  icon: string;
+  value: string;
+  setValue: (value: string) => void;
+  units: UnitOption[];
+  unit: string;
+  setUnit: (unit: string) => void;
+  results: { label: string; value: string }[];
+}) {
+  return (
+    <Card>
+      <CardLabel icon={icon}>{title}</CardLabel>
+      <Text style={s.fieldLabel}>SOURCE VALUE</Text>
+      <Field value={value} setValue={setValue} placeholder="Enter a number" keyboardType="decimal-pad" />
+      <Text style={s.fieldLabel}>SOURCE UNIT</Text>
+      <View style={s.unitRow}>
+        {units.map(option => (
+          <Pressable
+            key={option.id}
+            style={[s.unitBtn, unit === option.id && s.unitBtnActive]}
+            onPress={() => setUnit(option.id)}
+          >
+            <Text style={[s.unitBtnText, unit === option.id && s.unitBtnTextActive]}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={s.resultPanel}>
+        {results.length > 0 ? results.map(result => (
+          <View key={result.label} style={s.resultRow}>
+            <Text style={s.resultLabel}>{result.label}</Text>
+            <Text style={s.resultValue}>{result.value}</Text>
+          </View>
+        )) : (
+          <Text style={s.resultEmpty}>Converted values will appear here</Text>
+        )}
+      </View>
+    </Card>
   );
 }
 
@@ -381,7 +383,6 @@ function SegmentButton({ label, active, onPress }: { label: string; active: bool
 }
 function Notice({ text }: { text: string }) { return <View style={s.notice}><Text style={s.noticeText}>{text}</Text></View>; }
 function Empty({ text }: { text: string }) { return <Text style={s.empty}>{text}</Text>; }
-function Result({ value }: { value: string }) { return <View style={s.result}><Text style={s.resultText}>{value}</Text></View>; }
 function ListItem({ title, meta, onDelete, accent, actions }: { title: string; meta: string; onDelete: () => void; accent?: string; actions?: React.ReactNode }) {
   return (
     <View style={s.listItem}>
@@ -402,7 +403,7 @@ const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
   toolRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: 14 },
-  toolIcon: { width: 42, fontSize: 22 },
+  toolIcon: { width: 42, color: colors.primary, fontSize: 22, fontWeight: '700' },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   toolSub: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   chev: { color: colors.primary, fontSize: 25, marginLeft: 8 },
@@ -437,7 +438,10 @@ const s = StyleSheet.create({
   unitBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)', borderColor: colors.primary },
   unitBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   unitBtnTextActive: { color: colors.white },
-  results: { gap: 7 },
-  result: { minHeight: 58, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', padding: 12 },
-  resultText: { color: colors.primary, fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 7 },
+  resultPanel: { minHeight: 78, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center' },
+  resultRow: { minHeight: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  resultLabel: { color: colors.textMuted, fontSize: 13 },
+  resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
+  resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
 });

@@ -71,7 +71,7 @@ export function Card({ children, style }: { children: React.ReactNode; style?: a
 export function CardLabel({ icon, children }: { icon?: string; children: React.ReactNode }) {
   return (
     <View style={s.cardLabelRow}>
-      {!!icon && <Text style={{ fontSize: 14, marginRight: 6 }}>{icon}</Text>}
+      {!!icon && <Text style={s.cardLabelIcon}>{icon}</Text>}
       <Text style={s.cardLabel}>{children}</Text>
     </View>
   );
@@ -191,6 +191,7 @@ const s = StyleSheet.create({
     paddingBottom: 18,
   },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.8 },
+  cardLabelIcon: { color: colors.primary, fontSize: 14, marginRight: 6 },
   cardLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
 
   viewPillWrap: { alignItems: 'center', marginBottom: 6 },

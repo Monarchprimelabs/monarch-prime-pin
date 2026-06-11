@@ -17,7 +17,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
   const [mode, setStoredMode] = useState<ThemeMode>('system');
   const [ready, setReady] = useState(false);
-  const resolved = useColorScheme();
+  const systemScheme = useColorScheme();
+  const resolved = mode === 'system' ? systemScheme : mode;
 
   useEffect(() => {
     AsyncStorage.getItem(KEY_THEME).then(value => {
@@ -38,7 +39,7 @@ export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ mode, resolved, setMode }}>
-      {children}
+      <React.Fragment key={mode}>{children}</React.Fragment>
     </ThemeContext.Provider>
   );
 }
