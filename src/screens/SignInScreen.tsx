@@ -194,10 +194,10 @@ const s = StyleSheet.create({
   },
   primary: {
     width: '100%', maxWidth: 360,
-    backgroundColor: colors.primary, borderRadius: radius.md,
+    backgroundColor: colors.action, borderRadius: radius.md,
     paddingVertical: 16, alignItems: 'center', marginTop: 6, marginBottom: 18,
   },
-  primaryText: { color: colors.white, fontSize: 15, fontWeight: '700', letterSpacing: 1 },
+  primaryText: { color: colors.actionText, fontSize: 15, fontWeight: '700', letterSpacing: 1 },
   footer: { fontSize: 10, color: colors.textDim, letterSpacing: 1.5, marginTop: 32, textAlign: 'center' },
 
   passWrap: {

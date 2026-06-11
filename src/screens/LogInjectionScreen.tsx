@@ -552,10 +552,10 @@ const s = StyleSheet.create({
     color: colors.text, fontSize: 14, minHeight: 70, textAlignVertical: 'top',
   },
   submit: {
-    backgroundColor: colors.primary, borderRadius: radius.lg,
+    backgroundColor: colors.action, borderRadius: radius.lg,
     paddingVertical: 18, alignItems: 'center',
   },
-  submitText: { color: colors.white, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  submitText: { color: colors.actionText, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
 
   sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
   sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },

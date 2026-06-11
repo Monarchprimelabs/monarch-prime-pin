@@ -24,6 +24,8 @@ export const colors = {
 
   primary: adaptive('#1565C0', '#1E88E5'),
   primaryDark: '#1565C0',
+  action: adaptive('#D96C00', '#1E88E5'),
+  actionText: '#FFFFFF',
   accent: adaptive('#C25C00', '#FF8C00'),
   accentLight: adaptive('#874000', '#FFB066'),
   gold: adaptive('#A06B00', '#FFD700'),

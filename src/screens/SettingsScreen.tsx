@@ -317,13 +317,13 @@ const s = StyleSheet.create({
   appearanceText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   appearanceTextActive: { color: colors.white },
   saveNameBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.action,
     borderRadius: radius.md,
     paddingVertical: 13,
     alignItems: 'center',
   },
   saveNameText: {
-    color: colors.white,
+    color: colors.actionText,
     fontSize: 14,
     fontWeight: '700',
   },

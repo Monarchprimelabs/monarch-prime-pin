@@ -405,11 +405,11 @@ const s = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   ctaBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.action,
     borderRadius: radius.lg,
     paddingVertical: 18, alignItems: 'center',
   },
   ctaBtnDisabled: { opacity: 0.35 },
-  ctaBtnText: { color: colors.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
+  ctaBtnText: { color: colors.actionText, fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
   stepCount: { textAlign: 'center', fontSize: 12, color: colors.textFaint },
 });

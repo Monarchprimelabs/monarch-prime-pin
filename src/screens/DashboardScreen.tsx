@@ -188,8 +188,8 @@ const s = StyleSheet.create({
 
   qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {
-    backgroundColor: colors.primary, borderRadius: radius.md,
+    backgroundColor: colors.action, borderRadius: radius.md,
     paddingVertical: 15, alignItems: 'center',
   },
-  qaPrimaryText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  qaPrimaryText: { color: colors.actionText, fontSize: 15, fontWeight: '700' },
 });

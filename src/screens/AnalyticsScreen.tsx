@@ -182,8 +182,8 @@ const s = StyleSheet.create({
   summaryValue: { color: colors.primary, fontSize: 20, fontWeight: '700' },
   summaryLabel: { color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 3 },
   reportLine: { color: colors.text, fontSize: 12, lineHeight: 18, marginBottom: 12 },
-  shareBtn: { minHeight: 46, backgroundColor: 'rgba(30,136,229,0.15)', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  shareBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  shareBtn: { minHeight: 46, backgroundColor: colors.action, borderWidth: 1, borderColor: colors.borderOrange, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  shareBtnText: { color: colors.actionText, fontSize: 13, fontWeight: '700' },
 
   barChart: { flexDirection: 'row', height: 140, alignItems: 'flex-end', gap: 4, paddingVertical: 8 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 4 },
