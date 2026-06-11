@@ -5,15 +5,15 @@ const adaptive = (light: string, dark: string): any => (
 );
 
 export const colors = {
-  bg: adaptive('#F4F7FB', '#050810'),
-  bgCard: adaptive('#FFFFFF', 'rgba(15, 25, 45, 0.4)'),
-  bgInput: adaptive('#EDF3F9', 'rgba(10, 20, 38, 0.5)'),
-  bgPill: adaptive('#E7EEF7', 'rgba(10, 20, 38, 0.6)'),
-  bgSheet: adaptive('#FFFFFF', '#0a1019'),
+  bg: adaptive('#E8F0F9', '#050810'),
+  bgCard: adaptive('#F6FAFF', 'rgba(15, 25, 45, 0.4)'),
+  bgInput: adaptive('#DFEAF6', 'rgba(10, 20, 38, 0.5)'),
+  bgPill: adaptive('#D7E5F4', 'rgba(10, 20, 38, 0.6)'),
+  bgSheet: adaptive('#EDF5FC', '#0a1019'),
 
-  border: adaptive('rgba(21, 101, 192, 0.28)', 'rgba(30, 136, 229, 0.25)'),
-  borderSubtle: adaptive('rgba(21, 101, 192, 0.18)', 'rgba(30, 136, 229, 0.15)'),
-  borderFaint: adaptive('rgba(21, 101, 192, 0.10)', 'rgba(30, 136, 229, 0.08)'),
+  border: adaptive('rgba(21, 101, 192, 0.36)', 'rgba(30, 136, 229, 0.25)'),
+  borderSubtle: adaptive('rgba(21, 101, 192, 0.24)', 'rgba(30, 136, 229, 0.15)'),
+  borderFaint: adaptive('rgba(21, 101, 192, 0.14)', 'rgba(30, 136, 229, 0.08)'),
   borderOrange: adaptive('rgba(194, 92, 0, 0.28)', 'rgba(255, 140, 0, 0.25)'),
 
   text: adaptive('#182538', '#E8EEF7'),
@@ -30,8 +30,8 @@ export const colors = {
   teal: adaptive('#087E72', '#14b8a6'),
   red: adaptive('#C62828', '#E53935'),
 
-  disclaimerBg1: adaptive('#FFF3DE', '#2a1a08'),
-  disclaimerBg2: adaptive('#FFF8EC', '#1a1004'),
+  disclaimerBg1: adaptive('#FBE8C9', '#2a1a08'),
+  disclaimerBg2: adaptive('#FFF2DD', '#1a1004'),
 };
 
 export const severity = {
