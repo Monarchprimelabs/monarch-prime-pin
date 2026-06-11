@@ -42,7 +42,7 @@ export function AnalyticsScreen() {
   // Site usage
   const siteUsage = useMemo(() => {
     const counts = getSiteUsage(injections);
-    return ALL_ZONES.map(zone => [zone.short, counts[zone.id] || 0] as [string, number]);
+    return ALL_ZONES.map(zone => ({ id: zone.id, name: zone.short, count: counts[zone.id] || 0 }));
   }, [injections]);
 
   const weights = injections.filter(i => i.weight > 0);
@@ -147,9 +147,9 @@ export function AnalyticsScreen() {
         <Card>
           <CardLabel icon="📍">INJECTION SITE USAGE</CardLabel>
           <View style={s.siteGrid}>
-            {siteUsage.map(([name, count]) => (
+            {siteUsage.map(({ id, name, count }) => (
               <View
-                key={name}
+                key={id}
                 style={[s.siteCell, count >= 3 && s.siteCellActive]}
               >
                 <Text style={s.siteCellName}>{name}</Text>
@@ -181,7 +181,7 @@ const s = StyleSheet.create({
   summaryStat: { flex: 1, minHeight: 70, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', padding: 7 },
   summaryValue: { color: colors.primary, fontSize: 20, fontWeight: '700' },
   summaryLabel: { color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 3 },
-  reportLine: { color: '#C8D4E6', fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  reportLine: { color: colors.text, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   shareBtn: { minHeight: 46, backgroundColor: 'rgba(30,136,229,0.15)', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   shareBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 
@@ -198,7 +198,7 @@ const s = StyleSheet.create({
 
   siteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   siteCell: {
-    width: '23.5%', backgroundColor: 'rgba(10, 20, 38, 0.4)',
+    width: '23.5%', backgroundColor: colors.bgInput,
     borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.1)',
     borderRadius: 8, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center',
   },

@@ -532,7 +532,7 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', minHeight: 120,
     paddingVertical: 32, paddingHorizontal: 20,
     borderWidth: 2, borderColor: 'rgba(30, 136, 229, 0.3)', borderStyle: 'dashed',
-    borderRadius: radius.md, backgroundColor: 'rgba(10, 20, 38, 0.3)',
+    borderRadius: radius.md, backgroundColor: colors.bgInput,
   },
   photoText: { color: colors.textFaint, fontSize: 13, marginTop: 8 },
   photoImg: { width: '100%', height: 200, borderRadius: 8, resizeMode: 'cover' },

@@ -5,6 +5,7 @@ import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
+import { ThemeMode, useThemePreference } from '../lib/themePreference';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'leg'>('rem');
@@ -50,6 +51,7 @@ function RemindersTab() {
   const [r2, setR2] = useState(false);
   const [r3, setR3] = useState(false);
   const { user, signOut, updateProfileName } = useAuth();
+  const { mode, setMode } = useThemePreference();
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
 
@@ -130,6 +132,28 @@ function RemindersTab() {
       </Card>
 
       <Card>
+        <CardLabel icon="◐">APPEARANCE</CardLabel>
+        <Text style={s.profileHelp}>Choose the app appearance on this device.</Text>
+        <View style={s.appearanceRow}>
+          {([
+            { id: 'system' as ThemeMode, label: 'System' },
+            { id: 'dark' as ThemeMode, label: 'Dark' },
+            { id: 'light' as ThemeMode, label: 'Light' },
+          ]).map(option => (
+            <Pressable
+              key={option.id}
+              style={[s.appearanceBtn, mode === option.id && s.appearanceBtnActive]}
+              onPress={() => setMode(option.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Use ${option.label} appearance`}
+            >
+              <Text style={[s.appearanceText, mode === option.id && s.appearanceTextActive]}>{option.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card>
         <CardLabel icon="💾">LOCAL DATA</CardLabel>
         <Text style={s.localDataText}>
           Your research logs and organization-tool entries are stored locally on this device. Deleting your account removes the local profile, schedules, inventory, templates, and locally stored log data from this device.
@@ -200,7 +224,7 @@ function LegalTab() {
       </Text>
 
       <Text style={s.legalP}>
-        This application does not calculate, recommend, or prescribe dosages. Generic math tools are not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
+        This application does not calculate, recommend, or prescribe dosages. Generic conversion tools are not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
       </Text>
 
       <Text style={s.legalP}>By using this application, you acknowledge:</Text>
@@ -278,6 +302,20 @@ const s = StyleSheet.create({
     paddingVertical: 13,
     marginBottom: 12,
   },
+  appearanceRow: { flexDirection: 'row', gap: 7 },
+  appearanceBtn: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgInput,
+  },
+  appearanceBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  appearanceText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  appearanceTextActive: { color: colors.white },
   saveNameBtn: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,
@@ -291,7 +329,7 @@ const s = StyleSheet.create({
   },
 
   localDataText: {
-    color: '#C8D4E6',
+    color: colors.text,
     fontSize: 13,
     lineHeight: 22,
   },
@@ -326,13 +364,13 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   legalP: {
-    color: '#C8D4E6',
+    color: colors.text,
     fontSize: 13,
     lineHeight: 22,
     marginBottom: 12,
   },
   legalLi: {
-    color: '#C8D4E6',
+    color: colors.text,
     fontSize: 13,
     lineHeight: 22,
     marginBottom: 4,

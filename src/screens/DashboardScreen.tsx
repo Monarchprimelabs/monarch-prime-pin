@@ -171,7 +171,7 @@ const s = StyleSheet.create({
   reminderHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   reminderTitle: { color: colors.accent, fontSize: 13, fontWeight: '700', letterSpacing: 1.2 },
   reminderCompound: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 4 },
-  reminderMeta: { color: '#C8D4E6', fontSize: 13, marginBottom: 2 },
+  reminderMeta: { color: colors.text, fontSize: 13, marginBottom: 2 },
   reminderNext: {
     marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
   },
@@ -184,7 +184,7 @@ const s = StyleSheet.create({
   legendText: { color: colors.textMuted, fontSize: 11 },
 
   lastInjPeptide: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  lastInjMeta: { color: '#C8D4E6', fontSize: 13, lineHeight: 20 },
+  lastInjMeta: { color: colors.text, fontSize: 13, lineHeight: 20 },
 
   qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {

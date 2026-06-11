@@ -103,7 +103,7 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   tabBarSafe: {
-    backgroundColor: 'rgba(8, 15, 28, 0.98)',
+    backgroundColor: colors.bgSheet,
     borderTopWidth: 1,
     borderTopColor: 'rgba(30, 136, 229, 0.2)',
   },

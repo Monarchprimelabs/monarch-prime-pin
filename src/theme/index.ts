@@ -1,32 +1,37 @@
+import { DynamicColorIOS, Platform } from 'react-native';
+
+const adaptive = (light: string, dark: string): any => (
+  Platform.OS === 'ios' ? DynamicColorIOS({ light, dark }) : dark
+);
+
 export const colors = {
-  bg: '#050810',
-  bgCard: 'rgba(15, 25, 45, 0.4)',
-  bgInput: 'rgba(10, 20, 38, 0.5)',
-  bgPill: 'rgba(10, 20, 38, 0.6)',
-  bgSheet: '#0a1019',
+  bg: adaptive('#F4F7FB', '#050810'),
+  bgCard: adaptive('#FFFFFF', 'rgba(15, 25, 45, 0.4)'),
+  bgInput: adaptive('#EDF3F9', 'rgba(10, 20, 38, 0.5)'),
+  bgPill: adaptive('#E7EEF7', 'rgba(10, 20, 38, 0.6)'),
+  bgSheet: adaptive('#FFFFFF', '#0a1019'),
 
-  border: 'rgba(30, 136, 229, 0.25)',
-  borderSubtle: 'rgba(30, 136, 229, 0.15)',
-  borderFaint: 'rgba(30, 136, 229, 0.08)',
-  borderOrange: 'rgba(255, 140, 0, 0.25)',
+  border: adaptive('rgba(21, 101, 192, 0.28)', 'rgba(30, 136, 229, 0.25)'),
+  borderSubtle: adaptive('rgba(21, 101, 192, 0.18)', 'rgba(30, 136, 229, 0.15)'),
+  borderFaint: adaptive('rgba(21, 101, 192, 0.10)', 'rgba(30, 136, 229, 0.08)'),
+  borderOrange: adaptive('rgba(194, 92, 0, 0.28)', 'rgba(255, 140, 0, 0.25)'),
 
-  text: '#E8EEF7',
-  textMuted: '#7B8FAB',
-  textFaint: '#5A6B85',
-  textDim: '#3A4A66',
-  white: '#FFFFFF',
+  text: adaptive('#182538', '#E8EEF7'),
+  textMuted: adaptive('#52657D', '#7B8FAB'),
+  textFaint: adaptive('#6B7C91', '#5A6B85'),
+  textDim: adaptive('#8290A2', '#3A4A66'),
+  white: adaptive('#111827', '#FFFFFF'),
 
-  primary: '#1E88E5',
+  primary: adaptive('#1565C0', '#1E88E5'),
   primaryDark: '#1565C0',
-  accent: '#FF8C00',
-  accentLight: '#FFB066',
-  gold: '#FFD700',
-  teal: '#14b8a6',
-  red: '#E53935',
+  accent: adaptive('#C25C00', '#FF8C00'),
+  accentLight: adaptive('#874000', '#FFB066'),
+  gold: adaptive('#A06B00', '#FFD700'),
+  teal: adaptive('#087E72', '#14b8a6'),
+  red: adaptive('#C62828', '#E53935'),
 
-  // Disclaimer banner
-  disclaimerBg1: '#2a1a08',
-  disclaimerBg2: '#1a1004',
+  disclaimerBg1: adaptive('#FFF3DE', '#2a1a08'),
+  disclaimerBg2: adaptive('#FFF8EC', '#1a1004'),
 };
 
 export const severity = {

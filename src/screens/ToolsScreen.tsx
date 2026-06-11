@@ -13,13 +13,13 @@ import {
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
 
-type ToolId = 'schedule' | 'inventory' | 'templates' | 'math' | 'settings';
+type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'settings';
 
 const TOOLS: { id: ToolId; icon: string; title: string; sub: string }[] = [
   { id: 'schedule', icon: '📅', title: 'Schedule Organizer', sub: 'Create your own dated research reminders' },
   { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels' },
   { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts' },
-  { id: 'math', icon: '↔', title: 'Math Tools', sub: 'Generic unit conversion and arithmetic' },
+  { id: 'conversion', icon: '↔', title: 'Conversion Tools', sub: 'Convert units and compare calendar dates' },
   { id: 'settings', icon: '⚙', title: 'Settings', sub: 'Profile, local data, and legal information' },
 ];
 
@@ -64,7 +64,7 @@ export function ToolsScreen() {
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
         {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
         {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
-        {active === 'math' && <MathTool onClose={() => setActive(null)} />}
+        {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
         {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
       </Modal>
     </SafeAreaView>
@@ -267,54 +267,105 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-function MathTool({ onClose }: { onClose: () => void }) {
+type ConversionKind = 'mass' | 'volume' | 'temperature';
+type UnitOption = { id: string; label: string };
+
+const CONVERSION_UNITS: Record<ConversionKind, UnitOption[]> = {
+  mass: [
+    { id: 'g', label: 'g' },
+    { id: 'mg', label: 'mg' },
+    { id: 'mcg', label: 'mcg' },
+  ],
+  volume: [
+    { id: 'l', label: 'L' },
+    { id: 'ml', label: 'mL' },
+    { id: 'ul', label: 'µL' },
+  ],
+  temperature: [
+    { id: 'f', label: '°F' },
+    { id: 'c', label: '°C' },
+  ],
+};
+
+function ConversionTool({ onClose }: { onClose: () => void }) {
+  const [kind, setKind] = useState<ConversionKind>('mass');
   const [value, setValue] = useState('');
-  const [direction, setDirection] = useState<'mg-mcg' | 'mcg-mg'>('mg-mcg');
-  const [left, setLeft] = useState('');
-  const [right, setRight] = useState('');
-  const [op, setOp] = useState<'+' | '-' | '×' | '÷'>('+');
-  const converted = useMemo(() => {
+  const [sourceUnit, setSourceUnit] = useState('mg');
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
+
+  const chooseKind = (next: ConversionKind) => {
+    setKind(next);
+    setSourceUnit(CONVERSION_UNITS[next][0].id);
+    setValue('');
+  };
+
+  const conversions = useMemo(() => {
     const n = Number(value);
-    if (!Number.isFinite(n)) return '';
-    return direction === 'mg-mcg' ? `${n * 1000} mcg` : `${n / 1000} mg`;
-  }, [value, direction]);
-  const arithmetic = useMemo(() => {
-    const a = Number(left), b = Number(right);
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return '';
-    if (op === '+') return String(a + b);
-    if (op === '-') return String(a - b);
-    if (op === '×') return String(a * b);
-    return b === 0 ? 'Cannot divide by zero' : String(a / b);
-  }, [left, right, op]);
+    if (!Number.isFinite(n)) return [];
+    if (kind === 'mass') {
+      const grams = sourceUnit === 'g' ? n : sourceUnit === 'mg' ? n / 1000 : n / 1_000_000;
+      return [`${formatNumber(grams)} g`, `${formatNumber(grams * 1000)} mg`, `${formatNumber(grams * 1_000_000)} mcg`];
+    }
+    if (kind === 'volume') {
+      const liters = sourceUnit === 'l' ? n : sourceUnit === 'ml' ? n / 1000 : n / 1_000_000;
+      return [`${formatNumber(liters)} L`, `${formatNumber(liters * 1000)} mL`, `${formatNumber(liters * 1_000_000)} µL`];
+    }
+    const celsius = sourceUnit === 'c' ? n : (n - 32) * 5 / 9;
+    return [`${formatNumber(celsius)} °C`, `${formatNumber((celsius * 9 / 5) + 32)} °F`];
+  }, [kind, sourceUnit, value]);
+
+  const interval = useMemo(() => {
+    if (!isValidDate(startDate) || !isValidDate(endDate)) return null;
+    const start = new Date(`${startDate}T12:00:00Z`).getTime();
+    const end = new Date(`${endDate}T12:00:00Z`).getTime();
+    return Math.round((end - start) / 86_400_000);
+  }, [startDate, endDate]);
+
   return (
-    <ToolShell title="Math Tools" onClose={onClose}>
+    <ToolShell title="Conversion Tools" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        <Notice text="Generic math only. Results are not connected to compounds, records, schedules, or administration decisions." />
+        <Notice text="Generic reference conversions only. Results are not connected to compounds, saved records, schedules, or administration decisions." />
         <Card>
-          <CardLabel icon="↔">UNIT CONVERTER</CardLabel>
+          <CardLabel icon="↔">UNIT CONVERSION</CardLabel>
           <View style={s.segment}>
-            <SegmentButton label="mg → mcg" active={direction === 'mg-mcg'} onPress={() => setDirection('mg-mcg')} />
-            <SegmentButton label="mcg → mg" active={direction === 'mcg-mg'} onPress={() => setDirection('mcg-mg')} />
+            <SegmentButton label="Mass" active={kind === 'mass'} onPress={() => chooseKind('mass')} />
+            <SegmentButton label="Volume" active={kind === 'volume'} onPress={() => chooseKind('volume')} />
+            <SegmentButton label="Temperature" active={kind === 'temperature'} onPress={() => chooseKind('temperature')} />
           </View>
-          <Field value={value} setValue={setValue} placeholder="Enter a number" keyboardType="decimal-pad" />
-          <Result value={converted || 'Enter a valid number'} />
-        </Card>
-        <Card>
-          <CardLabel icon="＋">ARITHMETIC</CardLabel>
-          <View style={s.twoCol}>
-            <Field value={left} setValue={setLeft} placeholder="First number" keyboardType="decimal-pad" style={{ flex: 1 }} />
-            <Field value={right} setValue={setRight} placeholder="Second number" keyboardType="decimal-pad" style={{ flex: 1 }} />
-          </View>
-          <View style={s.segment}>
-            {(['+', '-', '×', '÷'] as const).map(symbol => (
-              <SegmentButton key={symbol} label={symbol} active={op === symbol} onPress={() => setOp(symbol)} />
+          <View style={s.unitRow}>
+            {CONVERSION_UNITS[kind].map(option => (
+              <Pressable
+                key={option.id}
+                style={[s.unitBtn, sourceUnit === option.id && s.unitBtnActive]}
+                onPress={() => setSourceUnit(option.id)}
+              >
+                <Text style={[s.unitBtnText, sourceUnit === option.id && s.unitBtnTextActive]}>{option.label}</Text>
+              </Pressable>
             ))}
           </View>
-          <Result value={arithmetic || 'Enter two valid numbers'} />
+          <Field value={value} setValue={setValue} placeholder={`Enter value in ${CONVERSION_UNITS[kind].find(unit => unit.id === sourceUnit)?.label}`} keyboardType="decimal-pad" />
+          <View style={s.results}>
+            {conversions.length > 0
+              ? conversions.map(result => <Result key={result} value={result} />)
+              : <Result value="Enter a valid number" />}
+          </View>
+        </Card>
+        <Card>
+          <CardLabel icon="📅">DATE INTERVAL</CardLabel>
+          <View style={s.twoCol}>
+            <Field value={startDate} setValue={setStartDate} placeholder="Start YYYY-MM-DD" style={{ flex: 1 }} />
+            <Field value={endDate} setValue={setEndDate} placeholder="End YYYY-MM-DD" style={{ flex: 1 }} />
+          </View>
+          <Result value={interval === null ? 'Enter valid dates' : interval === 0 ? 'Same calendar day' : `${Math.abs(interval)} day${Math.abs(interval) === 1 ? '' : 's'} ${interval > 0 ? 'apart' : 'before start'}`} />
         </Card>
       </ScrollView>
     </ToolShell>
   );
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(value);
 }
 
 function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
@@ -361,7 +412,7 @@ const s = StyleSheet.create({
   toolHeaderTitle: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   scrollContent: { paddingTop: spacing.lg, paddingBottom: 50 },
   notice: { marginHorizontal: spacing.xl, marginBottom: spacing.lg, borderLeftWidth: 3, borderLeftColor: colors.accent, backgroundColor: 'rgba(255,140,0,0.08)', padding: 12 },
-  noticeText: { color: '#C8D4E6', fontSize: 12, lineHeight: 18 },
+  noticeText: { color: colors.text, fontSize: 12, lineHeight: 18 },
   input: { minHeight: 48, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.text, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 10, fontSize: 14 },
   multiline: { minHeight: 84, textAlignVertical: 'top' },
   twoCol: { flexDirection: 'row', gap: 8 },
@@ -381,6 +432,12 @@ const s = StyleSheet.create({
   segmentBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)' },
   segmentText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   segmentTextActive: { color: colors.white },
+  unitRow: { flexDirection: 'row', gap: 7, marginBottom: 10 },
+  unitBtn: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, backgroundColor: colors.bgInput },
+  unitBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)', borderColor: colors.primary },
+  unitBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  unitBtnTextActive: { color: colors.white },
+  results: { gap: 7 },
   result: { minHeight: 58, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', padding: 12 },
   resultText: { color: colors.primary, fontSize: 20, fontWeight: '700', textAlign: 'center' },
 });

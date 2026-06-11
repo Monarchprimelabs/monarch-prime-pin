@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { colors, spacing, radius, fonts } from '../theme';
 
-const SYMBOL = require('../../assets/logo-symbol.png');
-const FULL_LOGO = require('../../assets/logo-full.png');
+const SYMBOL: number = require('../../assets/logo-symbol.png');
+const FULL_LOGO: number = require('../../assets/logo-full.png');
 
 // ============================================================
 // Disclaimer banner — required on every main screen
@@ -25,11 +25,13 @@ export function Disclaimer() {
 // ============================================================
 export function BrandMark({ large }: { large?: boolean }) {
   const size = large ? 180 : 42;
-  const src: ImageSourcePropType = large ? FULL_LOGO : SYMBOL;
+  const src = large ? FULL_LOGO : SYMBOL;
 
   return (
     <Image
       source={src}
+      defaultSource={src}
+      fadeDuration={0}
       style={{
         width: size,
         height: size,
@@ -169,7 +171,7 @@ const s = StyleSheet.create({
   },
   avatar: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(15, 25, 45, 0.6)',
+    backgroundColor: colors.bgCard,
     borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.15)',
     alignItems: 'center', justifyContent: 'center',
     marginRight: 14, overflow: 'hidden',
@@ -243,5 +245,5 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
 
-  formatPara: { color: '#C8D4E6', fontSize: 14, lineHeight: 22, marginBottom: 8 },
+  formatPara: { color: colors.text, fontSize: 14, lineHeight: 22, marginBottom: 8 },
 });

@@ -319,7 +319,7 @@ const s = StyleSheet.create({
   featureList: { gap: 12 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   featureIcon: { fontSize: 20, width: 28, textAlign: 'center' },
-  featureText: { fontSize: 15, color: '#C8D4E6', fontWeight: '500' },
+  featureText: { fontSize: 15, color: colors.text, fontWeight: '500' },
   welcomeFooter: { paddingBottom: 12, gap: 14 },
   complianceNote: {
     textAlign: 'center', fontSize: 11,
