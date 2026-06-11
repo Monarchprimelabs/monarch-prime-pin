@@ -15,14 +15,14 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
-  const [mode, setStoredMode] = useState<ThemeMode>('system');
+  const [mode, setStoredMode] = useState<ThemeMode>('dark');
   const [ready, setReady] = useState(false);
   const systemScheme = useColorScheme();
   const resolved = mode === 'system' ? systemScheme : mode;
 
   useEffect(() => {
     AsyncStorage.getItem(KEY_THEME).then(value => {
-      const saved: ThemeMode = value === 'dark' || value === 'light' ? value : 'system';
+      const saved: ThemeMode = value === 'system' || value === 'light' ? value : 'dark';
       Appearance.setColorScheme(saved === 'system' ? null : saved);
       setStoredMode(saved);
       setReady(true);
