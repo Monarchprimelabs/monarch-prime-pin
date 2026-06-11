@@ -5,7 +5,6 @@ import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
-import { ThemeMode, useThemePreference } from '../lib/themePreference';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'leg'>('rem');
@@ -51,7 +50,6 @@ function RemindersTab() {
   const [r2, setR2] = useState(false);
   const [r3, setR3] = useState(false);
   const { user, signOut, updateProfileName } = useAuth();
-  const { mode, resolved, setMode } = useThemePreference();
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
 
@@ -129,28 +127,6 @@ function RemindersTab() {
         <ToggleRow title="Log Reminders" sub="Daily reminder to review your research log" on={r1} setOn={setR1} />
         <ToggleRow title="Weekly Summary" sub="Weekly research log summary" on={r2} setOn={setR2} />
         <ToggleRow title="Progress Photo Reminder" sub="Monthly progress photo prompt" on={r3} setOn={setR3} />
-      </Card>
-
-      <Card>
-        <CardLabel icon="◐">APPEARANCE</CardLabel>
-        <Text style={s.profileHelp}>System follows your iPhone appearance automatically. Currently using {resolved === 'light' ? 'Light' : 'Dark'} mode.</Text>
-        <View style={s.appearanceRow}>
-          {([
-            { id: 'system' as ThemeMode, label: 'System' },
-            { id: 'dark' as ThemeMode, label: 'Dark' },
-            { id: 'light' as ThemeMode, label: 'Light' },
-          ]).map(option => (
-            <Pressable
-              key={option.id}
-              style={[s.appearanceBtn, mode === option.id && s.appearanceBtnActive]}
-              onPress={() => setMode(option.id)}
-              accessibilityRole="button"
-              accessibilityLabel={`Use ${option.label} appearance`}
-            >
-              <Text style={[s.appearanceText, mode === option.id && s.appearanceTextActive]}>{option.label}</Text>
-            </Pressable>
-          ))}
-        </View>
       </Card>
 
       <Card>
@@ -302,20 +278,6 @@ const s = StyleSheet.create({
     paddingVertical: 13,
     marginBottom: 12,
   },
-  appearanceRow: { flexDirection: 'row', gap: 7 },
-  appearanceBtn: {
-    flex: 1,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bgInput,
-  },
-  appearanceBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
-  appearanceText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
-  appearanceTextActive: { color: colors.white },
   saveNameBtn: {
     backgroundColor: colors.action,
     borderRadius: radius.md,

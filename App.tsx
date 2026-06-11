@@ -5,7 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import { Image } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/lib/auth';
-import { ThemePreferenceProvider, useThemePreference } from './src/lib/themePreference';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -19,21 +18,10 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ThemePreferenceProvider>
-        <AuthProvider>
-          <ThemedApp />
-        </AuthProvider>
-      </ThemePreferenceProvider>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <RootNavigator />
+      </AuthProvider>
     </SafeAreaProvider>
-  );
-}
-
-function ThemedApp() {
-  const { resolved } = useThemePreference();
-  return (
-    <>
-      <StatusBar style={resolved === 'light' ? 'dark' : 'light'} />
-      <RootNavigator />
-    </>
   );
 }
