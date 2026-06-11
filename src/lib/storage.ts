@@ -5,6 +5,46 @@ import { Injection } from '../data/peptides';
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
 const KEY_ONBOARDING = '@mpp/onboarding_done';
+const KEY_SCHEDULES = '@mpp/schedules';
+const KEY_INVENTORY = '@mpp/inventory';
+const KEY_TEMPLATES = '@mpp/templates';
+
+export type ScheduleEntry = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  notes?: string;
+};
+
+export type InventoryItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  receivedDate?: string;
+  expirationDate?: string;
+  lowStockAt?: number;
+  notes?: string;
+};
+
+export type RecordTemplate = {
+  id: string;
+  title: string;
+  compoundLabel?: string;
+  notesPrompt?: string;
+};
+
+const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+async function getLocalList<T>(key: string): Promise<T[]> {
+  const raw = await AsyncStorage.getItem(key);
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function setLocalList<T>(key: string, values: T[]): Promise<void> {
+  await AsyncStorage.setItem(key, JSON.stringify(values));
+}
 
 // ----- ONBOARDING -----
 export async function getOnboardingDone(): Promise<boolean> {
@@ -123,6 +163,42 @@ export async function deleteInjection(id: string): Promise<void> {
   );
 }
 
+// ----- MANUAL ORGANIZATION TOOLS -----
+export const getSchedules = () => getLocalList<ScheduleEntry>(KEY_SCHEDULES);
+export async function saveSchedule(entry: Omit<ScheduleEntry, 'id'>): Promise<ScheduleEntry> {
+  const saved = { ...entry, id: makeId() };
+  await setLocalList(KEY_SCHEDULES, [saved, ...(await getSchedules())]);
+  return saved;
+}
+export async function deleteSchedule(id: string): Promise<void> {
+  await setLocalList(KEY_SCHEDULES, (await getSchedules()).filter(item => item.id !== id));
+}
+
+export const getInventory = () => getLocalList<InventoryItem>(KEY_INVENTORY);
+export async function saveInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<InventoryItem> {
+  const saved = { ...item, id: makeId() };
+  await setLocalList(KEY_INVENTORY, [saved, ...(await getInventory())]);
+  return saved;
+}
+export async function updateInventoryItem(item: InventoryItem): Promise<InventoryItem> {
+  const current = await getInventory();
+  if (!current.some(value => value.id === item.id)) throw new Error('The inventory item could not be found.');
+  await setLocalList(KEY_INVENTORY, current.map(value => value.id === item.id ? item : value));
+  return item;
+}
+export async function deleteInventoryItem(id: string): Promise<void> {
+  await setLocalList(KEY_INVENTORY, (await getInventory()).filter(item => item.id !== id));
+}
+
+export const getRecordTemplates = () => getLocalList<RecordTemplate>(KEY_TEMPLATES);
+export async function saveRecordTemplate(template: Omit<RecordTemplate, 'id'>): Promise<RecordTemplate> {
+  const saved = { ...template, id: makeId() };
+  await setLocalList(KEY_TEMPLATES, [saved, ...(await getRecordTemplates())]);
+  return saved;
+}
+export async function deleteRecordTemplate(id: string): Promise<void> {
+  await setLocalList(KEY_TEMPLATES, (await getRecordTemplates()).filter(item => item.id !== id));
+}
 
 // ----- PHOTO UPLOAD -----
 // In offline mode the local URI from expo-image-picker is fine —
@@ -160,5 +236,12 @@ export async function uploadPhoto(localUri: string): Promise<string> {
 }
 
 export async function clearLocalData(): Promise<void> {
-  await AsyncStorage.multiRemove([KEY_INJECTIONS, KEY_USER, KEY_ONBOARDING]);
+  await AsyncStorage.multiRemove([
+    KEY_INJECTIONS,
+    KEY_USER,
+    KEY_ONBOARDING,
+    KEY_SCHEDULES,
+    KEY_INVENTORY,
+    KEY_TEMPLATES,
+  ]);
 }

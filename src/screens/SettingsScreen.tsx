@@ -6,13 +6,20 @@ import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
 
-export function SettingsScreen() {
+export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'leg'>('rem');
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
       <Header title="Settings" subtitle="" />
+      {!!onClose && (
+        <View style={s.closeRow}>
+          <Pressable style={s.closeBtn} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close settings">
+            <Text style={s.closeText}>‹ Tools</Text>
+          </Pressable>
+        </View>
+      )}
 
       <View style={s.subTabs}>
         {[
@@ -125,7 +132,7 @@ function RemindersTab() {
       <Card>
         <CardLabel icon="💾">LOCAL DATA</CardLabel>
         <Text style={s.localDataText}>
-          Your research logs are stored locally on this device. Deleting your account removes the local profile and locally stored log data from this device.
+          Your research logs and organization-tool entries are stored locally on this device. Deleting your account removes the local profile, schedules, inventory, templates, and locally stored log data from this device.
         </Text>
       </Card>
 
@@ -193,7 +200,7 @@ function LegalTab() {
       </Text>
 
       <Text style={s.legalP}>
-        This application does not calculate, recommend, or prescribe dosages. All entries are manually entered by the user.
+        This application does not calculate, recommend, or prescribe dosages. Generic math tools are not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
       </Text>
 
       <Text style={s.legalP}>By using this application, you acknowledge:</Text>
@@ -220,6 +227,9 @@ function LegalTab() {
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
+  closeRow: { paddingHorizontal: spacing.xl, marginTop: -8, marginBottom: 10 },
+  closeBtn: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', paddingRight: 12 },
+  closeText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
 
   subTabs: {
     flexDirection: 'row',

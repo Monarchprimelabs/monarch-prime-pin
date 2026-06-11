@@ -2,7 +2,7 @@
   "expo": {
     "name": "Monarch Prime Pin",
     "slug": "monarch-prime-pin",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.monarchprime.pin",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your research log entries.",
         "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library for your research records.",

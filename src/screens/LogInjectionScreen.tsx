@@ -10,7 +10,7 @@ import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI'
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity } from '../data/peptides';
-import { saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
+import { getRecordTemplates, RecordTemplate, saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
 import { getInjectionSiteIds } from '../lib/sites';
 
 type LogInjectionScreenProps = {
@@ -29,6 +29,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
 
   const [peptide, setPeptide] = useState<Peptide | null>(initialPeptide);
   const [picker, setPicker] = useState(false);
+  const [templatePicker, setTemplatePicker] = useState(false);
+  const [templates, setTemplates] = useState<RecordTemplate[]>([]);
   const [dose, setDose] = useState(initialInjection?.dose ?? '');
   const [unit, setUnit] = useState<'mcg' | 'mg'>(initialInjection?.unit ?? 'mcg');
   const [view, setView] = useState<'front' | 'back'>('front');
@@ -55,6 +57,19 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
     setPeptide(p);
     if (p.defaultUnit) setUnit(p.defaultUnit);
     setPicker(false);
+  };
+
+  const openTemplates = async () => {
+    setTemplates(await getRecordTemplates());
+    setTemplatePicker(true);
+  };
+
+  const applyTemplate = (template: RecordTemplate) => {
+    if (template.compoundLabel) {
+      setPeptide({ id: `template-${template.id}`, name: template.compoundLabel, defaultUnit: unit });
+    }
+    if (template.notesPrompt) setNotes(template.notesPrompt);
+    setTemplatePicker(false);
   };
 
   // ============================================================
@@ -216,6 +231,14 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
             </Text>
             <Text style={s.chev}>›</Text>
           </Pressable>
+          <Pressable
+            style={s.templateBtn}
+            onPress={openTemplates}
+            accessibilityRole="button"
+            accessibilityLabel="Use a saved record template"
+          >
+            <Text style={s.templateBtnText}>Use Record Template</Text>
+          </Pressable>
         </View>
 
         {/* Dose */}
@@ -357,6 +380,32 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
           onSelect={handlePeptideSelect}
         />
       </Modal>
+      <Modal visible={templatePicker} animationType="slide" transparent onRequestClose={() => setTemplatePicker(false)}>
+        <View style={s.sheetOverlay}>
+          <Pressable style={s.sheetBackdrop} onPress={() => setTemplatePicker(false)} />
+          <SafeAreaView style={s.sheet} edges={['bottom']}>
+            <View style={s.sheetHeader}>
+              <Text style={s.sheetTitle}>Record Templates</Text>
+              <Pressable onPress={() => setTemplatePicker(false)}><Text style={s.sheetDone}>Done</Text></Pressable>
+            </View>
+            {templates.length === 0 ? (
+              <Text style={s.templateEmpty}>No templates saved. Create one from Tools.</Text>
+            ) : (
+              <FlatList
+                data={templates}
+                keyExtractor={item => item.id}
+                contentContainerStyle={s.sheetListContent}
+                renderItem={({ item }) => (
+                  <Pressable style={s.sheetRow} onPress={() => applyTemplate(item)}>
+                    <Text style={s.sheetRowName}>{item.title}</Text>
+                    {!!item.compoundLabel && <Text style={s.templateMeta}>{item.compoundLabel}</Text>}
+                  </Pressable>
+                )}
+              />
+            )}
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -439,6 +488,10 @@ const s = StyleSheet.create({
   peptideName: { color: colors.white, fontSize: 16, fontWeight: '500' },
   peptidePlaceholder: { color: colors.textFaint, fontSize: 16 },
   chev: { color: colors.primary, fontSize: 22 },
+  templateBtn: { minHeight: 44, marginTop: 8, alignItems: 'center', justifyContent: 'center' },
+  templateBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  templateEmpty: { color: colors.textMuted, fontSize: 13, textAlign: 'center', padding: 30 },
+  templateMeta: { color: colors.textMuted, fontSize: 11, marginTop: 3 },
 
   doseRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
   doseInput: {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Pressable, Share, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Circle as SvgCircle, Text as SvgText } from 'react-native-svg';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
@@ -46,12 +46,60 @@ export function AnalyticsScreen() {
   }, [injections]);
 
   const weights = injections.filter(i => i.weight > 0);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthRecords = injections.filter(i => i.date.startsWith(currentMonth));
+  const monthDays = new Set(monthRecords.map(i => i.date)).size;
+  const monthSites = Object.values(getSiteUsage(monthRecords)).reduce((sum, count) => sum + count, 0);
+  const monthTop = Object.entries(
+    monthRecords.reduce<Record<string, number>>((counts, record) => {
+      counts[record.peptide] = (counts[record.peptide] || 0) + 1;
+      return counts;
+    }, {})
+  ).sort((a, b) => b[1] - a[1])[0];
+  const monthLabel = new Date(`${currentMonth}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const reportText = [
+    `Monarch Prime Pin Research Record Summary`,
+    monthLabel,
+    '',
+    `Saved records: ${monthRecords.length}`,
+    `Active record days: ${monthDays}`,
+    `Recorded site selections: ${monthSites}`,
+    `Most recorded compound: ${monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'None'}`,
+    '',
+    'Record lines:',
+    ...(monthRecords.length > 0
+      ? monthRecords.map(record => `${record.date} ${record.time} | ${record.peptide} | ${record.site}${record.notes ? ` | ${record.notes}` : ''}`)
+      : ['No saved records this month']),
+    '',
+    'For research organization and recordkeeping only.',
+  ].join('\n');
+
+  const shareReport = async () => {
+    try {
+      await Share.share({ message: reportText, title: `${monthLabel} Research Record Summary` });
+    } catch (e: any) {
+      Alert.alert('Unable to share report', e?.message || 'Please try again.');
+    }
+  };
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <Header title="Analytics" />
+      <Header title="Reports" subtitle="Record summaries and trends" />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+        <Card>
+          <CardLabel icon="📄">MONTHLY RECORD SUMMARY</CardLabel>
+          <Text style={s.reportMonth}>{monthLabel}</Text>
+          <View style={s.reportGrid}>
+            <SummaryStat label="Saved Records" value={monthRecords.length} />
+            <SummaryStat label="Record Days" value={monthDays} />
+            <SummaryStat label="Site Selections" value={monthSites} />
+          </View>
+          <Text style={s.reportLine}>Most recorded: {monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'No records this month'}</Text>
+          <Pressable style={s.shareBtn} onPress={shareReport} accessibilityRole="button" accessibilityLabel="Share monthly record summary">
+            <Text style={s.shareBtnText}>Share Record Summary</Text>
+          </Pressable>
+        </Card>
         <Card>
           <CardLabel icon="📊">WEEKLY INJECTION FREQUENCY</CardLabel>
           <Text style={s.sub}>Last 8 weeks</Text>
@@ -115,10 +163,27 @@ export function AnalyticsScreen() {
   );
 }
 
+function SummaryStat({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={s.summaryStat}>
+      <Text style={s.summaryValue}>{value}</Text>
+      <Text style={s.summaryLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   sub: { fontSize: 11, color: colors.textMuted, marginTop: -8, marginBottom: 14 },
   empty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
+  reportMonth: { color: colors.white, fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  reportGrid: { flexDirection: 'row', gap: 7, marginBottom: 12 },
+  summaryStat: { flex: 1, minHeight: 70, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', padding: 7 },
+  summaryValue: { color: colors.primary, fontSize: 20, fontWeight: '700' },
+  summaryLabel: { color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 3 },
+  reportLine: { color: '#C8D4E6', fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  shareBtn: { minHeight: 46, backgroundColor: 'rgba(30,136,229,0.15)', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  shareBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 
   barChart: { flexDirection: 'row', height: 140, alignItems: 'flex-end', gap: 4, paddingVertical: 8 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 4 },

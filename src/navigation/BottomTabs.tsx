@@ -8,7 +8,7 @@ import { DashboardScreen } from '../screens/DashboardScreen';
 import { LogInjectionScreen } from '../screens/LogInjectionScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
+import { ToolsScreen } from '../screens/ToolsScreen';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
@@ -22,7 +22,7 @@ export function BottomTabs() {
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
         {active === 'analytics' && <AnalyticsScreen />}
-        {active === 'settings' && <SettingsScreen />}
+        {active === 'settings' && <ToolsScreen />}
       </View>
 
       <SafeAreaView edges={['bottom']} style={s.tabBarSafe}>
@@ -31,8 +31,8 @@ export function BottomTabs() {
             { id: 'home' as const, label: 'Home' },
             { id: 'log' as const, label: 'Log' },
             { id: 'history' as const, label: 'History' },
-            { id: 'analytics' as const, label: 'Analytics' },
-            { id: 'settings' as const, label: 'Settings' },
+            { id: 'analytics' as const, label: 'Reports' },
+            { id: 'settings' as const, label: 'Tools' },
           ]).map(t => (
             <Pressable
               key={t.id}
