@@ -19,7 +19,7 @@ const TOOLS: { id: ToolId; icon: string; title: string; sub: string }[] = [
   { id: 'schedule', icon: '📅', title: 'Schedule Organizer', sub: 'Create your own dated research reminders' },
   { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels' },
   { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts' },
-  { id: 'conversion', icon: '⇄', title: 'Conversion Tools', sub: 'Reference mass, volume, and temperature units' },
+  { id: 'conversion', icon: '⇄', title: 'Conversion Tools', sub: 'Reference mass and volume units' },
   { id: 'settings', icon: '⚙', title: 'Settings', sub: 'Profile, local data, and legal information' },
 ];
 
@@ -271,15 +271,11 @@ type UnitOption = { id: string; label: string };
 
 const MASS_UNITS: UnitOption[] = [{ id: 'g', label: 'g' }, { id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }];
 const VOLUME_UNITS: UnitOption[] = [{ id: 'l', label: 'L' }, { id: 'ml', label: 'mL' }, { id: 'ul', label: 'µL' }];
-const TEMPERATURE_UNITS: UnitOption[] = [{ id: 'f', label: '°F' }, { id: 'c', label: '°C' }];
-
 function ConversionTool({ onClose }: { onClose: () => void }) {
   const [massValue, setMassValue] = useState('');
   const [massUnit, setMassUnit] = useState('mg');
   const [volumeValue, setVolumeValue] = useState('');
   const [volumeUnit, setVolumeUnit] = useState('ml');
-  const [temperatureValue, setTemperatureValue] = useState('');
-  const [temperatureUnit, setTemperatureUnit] = useState('f');
 
   const massResults = useMemo(() => {
     const n = Number(massValue);
@@ -303,23 +299,12 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     ];
   }, [volumeUnit, volumeValue]);
 
-  const temperatureResults = useMemo(() => {
-    const n = Number(temperatureValue);
-    if (!Number.isFinite(n)) return [];
-    const celsius = temperatureUnit === 'c' ? n : (n - 32) * 5 / 9;
-    return [
-      { label: 'Celsius', value: `${formatNumber(celsius)} °C` },
-      { label: 'Fahrenheit', value: `${formatNumber((celsius * 9 / 5) + 32)} °F` },
-    ];
-  }, [temperatureUnit, temperatureValue]);
-
   return (
     <ToolShell title="Conversion Tools" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Notice text="Generic reference conversions only. Results are not connected to compounds, saved records, schedules, or administration decisions." />
         <ConversionCard title="MASS REFERENCE" icon="⇄" value={massValue} setValue={setMassValue} units={MASS_UNITS} unit={massUnit} setUnit={setMassUnit} results={massResults} />
         <ConversionCard title="VOLUME REFERENCE" icon="▣" value={volumeValue} setValue={setVolumeValue} units={VOLUME_UNITS} unit={volumeUnit} setUnit={setVolumeUnit} results={volumeResults} />
-        <ConversionCard title="TEMPERATURE REFERENCE" icon="°" value={temperatureValue} setValue={setTemperatureValue} units={TEMPERATURE_UNITS} unit={temperatureUnit} setUnit={setTemperatureUnit} results={temperatureResults} />
       </ScrollView>
     </ToolShell>
   );
