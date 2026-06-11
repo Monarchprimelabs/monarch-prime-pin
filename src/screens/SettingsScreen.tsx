@@ -51,7 +51,7 @@ function RemindersTab() {
   const [r2, setR2] = useState(false);
   const [r3, setR3] = useState(false);
   const { user, signOut, updateProfileName } = useAuth();
-  const { mode, setMode } = useThemePreference();
+  const { mode, resolved, setMode } = useThemePreference();
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
 
@@ -133,7 +133,7 @@ function RemindersTab() {
 
       <Card>
         <CardLabel icon="◐">APPEARANCE</CardLabel>
-        <Text style={s.profileHelp}>Choose the app appearance on this device.</Text>
+        <Text style={s.profileHelp}>System follows your iPhone appearance automatically. Currently using {resolved === 'light' ? 'Light' : 'Dark'} mode.</Text>
         <View style={s.appearanceRow}>
           {([
             { id: 'system' as ThemeMode, label: 'System' },

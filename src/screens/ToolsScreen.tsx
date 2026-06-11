@@ -272,10 +272,24 @@ type UnitOption = { id: string; label: string };
 const MASS_UNITS: UnitOption[] = [{ id: 'g', label: 'g' }, { id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }];
 const VOLUME_UNITS: UnitOption[] = [{ id: 'l', label: 'L' }, { id: 'ml', label: 'mL' }, { id: 'ul', label: 'µL' }];
 function ConversionTool({ onClose }: { onClose: () => void }) {
+  const [solutionMass, setSolutionMass] = useState('');
+  const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
+  const [liquidVolume, setLiquidVolume] = useState('');
   const [massValue, setMassValue] = useState('');
   const [massUnit, setMassUnit] = useState('mg');
   const [volumeValue, setVolumeValue] = useState('');
   const [volumeUnit, setVolumeUnit] = useState('ml');
+
+  const concentrationResults = useMemo(() => {
+    const mass = Number(solutionMass);
+    const volume = Number(liquidVolume);
+    if (!Number.isFinite(mass) || !Number.isFinite(volume) || mass < 0 || volume <= 0) return [];
+    const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
+    return [
+      { label: 'Concentration', value: `${formatNumber(massMg / volume)} mg/mL` },
+      { label: 'Concentration', value: `${formatNumber((massMg * 1000) / volume)} mcg/mL` },
+    ];
+  }, [liquidVolume, solutionMass, solutionMassUnit]);
 
   const massResults = useMemo(() => {
     const n = Number(massValue);
@@ -302,7 +316,35 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   return (
     <ToolShell title="Conversion Tools" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        <Notice text="Generic reference conversions only. Results are not connected to compounds, saved records, schedules, or administration decisions." />
+        <Notice text="Reference worksheet only. It displays concentration from manually entered values and does not connect to saved records or schedules." />
+        <Card>
+          <CardLabel icon="▱">SOLUTION CONCENTRATION WORKSHEET</CardLabel>
+          <Text style={s.fieldLabel}>MASS AMOUNT</Text>
+          <Field value={solutionMass} setValue={setSolutionMass} placeholder="Enter mass amount" keyboardType="decimal-pad" />
+          <View style={s.unitRow}>
+            {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
+              <Pressable
+                key={option.id}
+                style={[s.unitBtn, solutionMassUnit === option.id && s.unitBtnActive]}
+                onPress={() => setSolutionMassUnit(option.id)}
+              >
+                <Text style={[s.unitBtnText, solutionMassUnit === option.id && s.unitBtnTextActive]}>{option.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={s.fieldLabel}>LIQUID VOLUME (ML)</Text>
+          <Field value={liquidVolume} setValue={setLiquidVolume} placeholder="Enter liquid volume" keyboardType="decimal-pad" />
+          <View style={s.resultPanel}>
+            {concentrationResults.length > 0 ? concentrationResults.map((result, index) => (
+              <View key={`${result.value}-${index}`} style={s.resultRow}>
+                <Text style={s.resultLabel}>{result.label}</Text>
+                <Text style={s.resultValue}>{result.value}</Text>
+              </View>
+            )) : (
+              <Text style={s.resultEmpty}>Enter mass and liquid volume to view concentration</Text>
+            )}
+          </View>
+        </Card>
         <ConversionCard title="MASS REFERENCE" icon="⇄" value={massValue} setValue={setMassValue} units={MASS_UNITS} unit={massUnit} setUnit={setMassUnit} results={massResults} />
         <ConversionCard title="VOLUME REFERENCE" icon="▣" value={volumeValue} setValue={setVolumeValue} units={VOLUME_UNITS} unit={volumeUnit} setUnit={setVolumeUnit} results={volumeResults} />
       </ScrollView>
