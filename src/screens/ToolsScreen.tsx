@@ -317,26 +317,9 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
             )}
           </View>
         </Card>
-        <Card style={s.previewCard}>
-          <View style={s.previewHeader}>
-            <View style={{ flex: 1 }}>
-              <CardLabel icon="◈">EXTENDED CALCULATOR PREVIEW</CardLabel>
-              <Text style={s.previewMeta}>Visual prototype · calculation disabled</Text>
-            </View>
-            <View style={s.previewBadge}><Text style={s.previewBadgeText}>PREVIEW</Text></View>
-          </View>
-          <Text style={s.fieldLabel}>TARGET QUANTITY</Text>
-          <View style={s.disabledInput}><Text style={s.disabledText}>Enter target quantity</Text><Text style={s.disabledSuffix}>mcg / mg</Text></View>
-          <Text style={[s.fieldLabel, { marginTop: 14 }]}>SYRINGE SCALE</Text>
-          <View style={s.disabledOptions}>
-            {['30u', '50u', '100u'].map(label => <View key={label} style={s.disabledOption}><Text style={s.disabledText}>{label}</Text></View>)}
-          </View>
-          <View style={s.previewResults}>
-            <View style={s.resultRow}><Text style={s.resultLabel}>Required volume</Text><Text style={s.previewLocked}>Locked</Text></View>
-            <View style={s.resultRow}><Text style={s.resultLabel}>Syringe units</Text><Text style={s.previewLocked}>Locked</Text></View>
-          </View>
-          <Text style={s.previewFootnote}>This section is included only to review layout and workflow. It performs no calculation.</Text>
-        </Card>
+        <Text style={s.calculatorFootnote}>
+          Calculation: entered mass divided by entered liquid volume. Verify entered values independently.
+        </Text>
       </ScrollView>
     </ToolShell>
   );
@@ -433,17 +416,5 @@ const s = StyleSheet.create({
   resultLabel: { color: colors.textMuted, fontSize: 13 },
   resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
-  previewCard: { borderStyle: 'dashed', opacity: 0.82 },
-  previewHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  previewMeta: { color: colors.textFaint, fontSize: 11, marginTop: -7, marginBottom: 14 },
-  previewBadge: { borderWidth: 1, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 7, paddingVertical: 4 },
-  previewBadgeText: { color: colors.accent, fontSize: 9, fontWeight: '800' },
-  disabledInput: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 13, opacity: 0.62 },
-  disabledSuffix: { color: colors.textFaint, fontSize: 11, fontWeight: '700' },
-  disabledText: { color: colors.textFaint, fontSize: 13 },
-  disabledOptions: { flexDirection: 'row', gap: 7 },
-  disabledOption: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.sm, opacity: 0.62 },
-  previewResults: { marginTop: 14, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 8 },
-  previewLocked: { color: colors.textFaint, fontSize: 12, fontWeight: '700' },
-  previewFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 12 },
+  calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
 });
