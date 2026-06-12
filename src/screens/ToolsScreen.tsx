@@ -19,7 +19,7 @@ const TOOLS: { id: ToolId; icon: string; title: string; sub: string }[] = [
   { id: 'schedule', icon: '📅', title: 'Schedule Organizer', sub: 'Create your own dated research reminders' },
   { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels' },
   { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts' },
-  { id: 'conversion', icon: '⇄', title: 'Conversion Tools', sub: 'Reference mass and volume units' },
+  { id: 'conversion', icon: '▱', title: 'Solution Calculator', sub: 'Calculate concentration from entered values' },
   { id: 'settings', icon: '⚙', title: 'Settings', sub: 'Profile, local data, and legal information' },
 ];
 
@@ -267,23 +267,15 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-type UnitOption = { id: string; label: string };
-
-const MASS_UNITS: UnitOption[] = [{ id: 'g', label: 'g' }, { id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }];
-const VOLUME_UNITS: UnitOption[] = [{ id: 'l', label: 'L' }, { id: 'ml', label: 'mL' }, { id: 'ul', label: 'µL' }];
 function ConversionTool({ onClose }: { onClose: () => void }) {
   const [solutionMass, setSolutionMass] = useState('');
   const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
   const [liquidVolume, setLiquidVolume] = useState('');
-  const [massValue, setMassValue] = useState('');
-  const [massUnit, setMassUnit] = useState('mg');
-  const [volumeValue, setVolumeValue] = useState('');
-  const [volumeUnit, setVolumeUnit] = useState('ml');
 
   const concentrationResults = useMemo(() => {
-    const mass = Number(solutionMass);
-    const volume = Number(liquidVolume);
-    if (!Number.isFinite(mass) || !Number.isFinite(volume) || mass < 0 || volume <= 0) return [];
+    const mass = parsePositiveNumber(solutionMass);
+    const volume = parsePositiveNumber(liquidVolume);
+    if (!mass || !volume) return [];
     const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
     return [
       { label: 'Concentration', value: `${formatNumber(massMg / volume)} mg/mL` },
@@ -291,48 +283,28 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     ];
   }, [liquidVolume, solutionMass, solutionMassUnit]);
 
-  const massResults = useMemo(() => {
-    const n = Number(massValue);
-    if (!Number.isFinite(n)) return [];
-    const grams = massUnit === 'g' ? n : massUnit === 'mg' ? n / 1000 : n / 1_000_000;
-    return [
-      { label: 'Grams', value: `${formatNumber(grams)} g` },
-      { label: 'Milligrams', value: `${formatNumber(grams * 1000)} mg` },
-      { label: 'Micrograms', value: `${formatNumber(grams * 1_000_000)} mcg` },
-    ];
-  }, [massUnit, massValue]);
-
-  const volumeResults = useMemo(() => {
-    const n = Number(volumeValue);
-    if (!Number.isFinite(n)) return [];
-    const liters = volumeUnit === 'l' ? n : volumeUnit === 'ml' ? n / 1000 : n / 1_000_000;
-    return [
-      { label: 'Liters', value: `${formatNumber(liters)} L` },
-      { label: 'Milliliters', value: `${formatNumber(liters * 1000)} mL` },
-      { label: 'Microliters', value: `${formatNumber(liters * 1_000_000)} µL` },
-    ];
-  }, [volumeUnit, volumeValue]);
-
   return (
-    <ToolShell title="Conversion Tools" onClose={onClose}>
+    <ToolShell title="Solution Calculator" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        <Notice text="Reference worksheet only. It displays concentration from manually entered values and does not connect to saved records or schedules." />
+        <Notice text="Reference calculator only. It displays concentration from manually entered values and does not connect to saved records or schedules." />
         <Card>
-          <CardLabel icon="▱">SOLUTION CONCENTRATION WORKSHEET</CardLabel>
-          <Text style={s.fieldLabel}>MASS AMOUNT</Text>
-          <Field value={solutionMass} setValue={setSolutionMass} placeholder="Enter mass amount" keyboardType="decimal-pad" />
-          <View style={s.unitRow}>
-            {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
-              <Pressable
-                key={option.id}
-                style={[s.unitBtn, solutionMassUnit === option.id && s.unitBtnActive]}
-                onPress={() => setSolutionMassUnit(option.id)}
-              >
-                <Text style={[s.unitBtnText, solutionMassUnit === option.id && s.unitBtnTextActive]}>{option.label}</Text>
-              </Pressable>
-            ))}
+          <CardLabel icon="▱">SOLUTION CONCENTRATION</CardLabel>
+          <Text style={s.fieldLabel}>TOTAL MASS</Text>
+          <View style={s.inlineInputRow}>
+            <Field value={solutionMass} setValue={setSolutionMass} placeholder="Enter amount" keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
+            <View style={s.compactToggle}>
+              {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
+                <Pressable
+                  key={option.id}
+                  style={[s.compactBtn, solutionMassUnit === option.id && s.compactBtnActive]}
+                  onPress={() => setSolutionMassUnit(option.id)}
+                >
+                  <Text style={[s.compactText, solutionMassUnit === option.id && s.compactTextActive]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-          <Text style={s.fieldLabel}>LIQUID VOLUME (ML)</Text>
+          <Text style={[s.fieldLabel, { marginTop: 14 }]}>LIQUID VOLUME</Text>
           <Field value={liquidVolume} setValue={setLiquidVolume} placeholder="Enter liquid volume" keyboardType="decimal-pad" />
           <View style={s.resultPanel}>
             {concentrationResults.length > 0 ? concentrationResults.map((result, index) => (
@@ -345,52 +317,36 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
             )}
           </View>
         </Card>
-        <ConversionCard title="MASS REFERENCE" icon="⇄" value={massValue} setValue={setMassValue} units={MASS_UNITS} unit={massUnit} setUnit={setMassUnit} results={massResults} />
-        <ConversionCard title="VOLUME REFERENCE" icon="▣" value={volumeValue} setValue={setVolumeValue} units={VOLUME_UNITS} unit={volumeUnit} setUnit={setVolumeUnit} results={volumeResults} />
+        <Card style={s.previewCard}>
+          <View style={s.previewHeader}>
+            <View style={{ flex: 1 }}>
+              <CardLabel icon="◈">EXTENDED CALCULATOR PREVIEW</CardLabel>
+              <Text style={s.previewMeta}>Visual prototype · calculation disabled</Text>
+            </View>
+            <View style={s.previewBadge}><Text style={s.previewBadgeText}>PREVIEW</Text></View>
+          </View>
+          <Text style={s.fieldLabel}>TARGET QUANTITY</Text>
+          <View style={s.disabledInput}><Text style={s.disabledText}>Enter target quantity</Text><Text style={s.disabledSuffix}>mcg / mg</Text></View>
+          <Text style={[s.fieldLabel, { marginTop: 14 }]}>SYRINGE SCALE</Text>
+          <View style={s.disabledOptions}>
+            {['30u', '50u', '100u'].map(label => <View key={label} style={s.disabledOption}><Text style={s.disabledText}>{label}</Text></View>)}
+          </View>
+          <View style={s.previewResults}>
+            <View style={s.resultRow}><Text style={s.resultLabel}>Required volume</Text><Text style={s.previewLocked}>Locked</Text></View>
+            <View style={s.resultRow}><Text style={s.resultLabel}>Syringe units</Text><Text style={s.previewLocked}>Locked</Text></View>
+          </View>
+          <Text style={s.previewFootnote}>This section is included only to review layout and workflow. It performs no calculation.</Text>
+        </Card>
       </ScrollView>
     </ToolShell>
   );
 }
 
-function ConversionCard({ title, icon, value, setValue, units, unit, setUnit, results }: {
-  title: string;
-  icon: string;
-  value: string;
-  setValue: (value: string) => void;
-  units: UnitOption[];
-  unit: string;
-  setUnit: (unit: string) => void;
-  results: { label: string; value: string }[];
-}) {
-  return (
-    <Card>
-      <CardLabel icon={icon}>{title}</CardLabel>
-      <Text style={s.fieldLabel}>SOURCE VALUE</Text>
-      <Field value={value} setValue={setValue} placeholder="Enter a number" keyboardType="decimal-pad" />
-      <Text style={s.fieldLabel}>SOURCE UNIT</Text>
-      <View style={s.unitRow}>
-        {units.map(option => (
-          <Pressable
-            key={option.id}
-            style={[s.unitBtn, unit === option.id && s.unitBtnActive]}
-            onPress={() => setUnit(option.id)}
-          >
-            <Text style={[s.unitBtnText, unit === option.id && s.unitBtnTextActive]}>{option.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={s.resultPanel}>
-        {results.length > 0 ? results.map(result => (
-          <View key={result.label} style={s.resultRow}>
-            <Text style={s.resultLabel}>{result.label}</Text>
-            <Text style={s.resultValue}>{result.value}</Text>
-          </View>
-        )) : (
-          <Text style={s.resultEmpty}>Converted values will appear here</Text>
-        )}
-      </View>
-    </Card>
-  );
+function parsePositiveNumber(value: string): number {
+  const normalized = value.trim().replace(',', '.');
+  if (!/^\d*\.?\d+$/.test(normalized)) return 0;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
 function formatNumber(value: number): string {
@@ -466,9 +422,28 @@ const s = StyleSheet.create({
   unitBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   unitBtnTextActive: { color: colors.white },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 7 },
+  inlineInputRow: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
+  compactToggle: { flexDirection: 'row', backgroundColor: colors.bgPill, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 3 },
+  compactBtn: { minWidth: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
+  compactBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)' },
+  compactText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
+  compactTextActive: { color: colors.white },
   resultPanel: { minHeight: 78, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center' },
   resultRow: { minHeight: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   resultLabel: { color: colors.textMuted, fontSize: 13 },
   resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
+  previewCard: { borderStyle: 'dashed', opacity: 0.82 },
+  previewHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  previewMeta: { color: colors.textFaint, fontSize: 11, marginTop: -7, marginBottom: 14 },
+  previewBadge: { borderWidth: 1, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 7, paddingVertical: 4 },
+  previewBadgeText: { color: colors.accent, fontSize: 9, fontWeight: '800' },
+  disabledInput: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 13, opacity: 0.62 },
+  disabledSuffix: { color: colors.textFaint, fontSize: 11, fontWeight: '700' },
+  disabledText: { color: colors.textFaint, fontSize: 13 },
+  disabledOptions: { flexDirection: 'row', gap: 7 },
+  disabledOption: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.sm, opacity: 0.62 },
+  previewResults: { marginTop: 14, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 8 },
+  previewLocked: { color: colors.textFaint, fontSize: 12, fontWeight: '700' },
+  previewFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 12 },
 });
