@@ -271,6 +271,9 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const [solutionMass, setSolutionMass] = useState('');
   const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
   const [liquidVolume, setLiquidVolume] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [targetUnit, setTargetUnit] = useState('mcg');
+  const [syringeMax, setSyringeMax] = useState(100);
 
   const concentrationResults = useMemo(() => {
     const mass = parsePositiveNumber(solutionMass);
@@ -283,10 +286,30 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     ];
   }, [liquidVolume, solutionMass, solutionMassUnit]);
 
+  const volumeResults = useMemo(() => {
+    const mass = parsePositiveNumber(solutionMass);
+    const volume = parsePositiveNumber(liquidVolume);
+    const target = parsePositiveNumber(targetAmount);
+    if (!mass || !volume || !target) return null;
+    const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
+    const targetMg = targetUnit === 'mg' ? target : target / 1000;
+    const concentration = massMg / volume;
+    const volumeRequired = targetMg / concentration;
+    const units = volumeRequired * 100;
+    const portions = Math.floor(massMg / targetMg);
+    return {
+      volumeRequired,
+      units,
+      portions,
+      exceedsSolution: targetMg > massMg,
+      exceedsSyringe: units > syringeMax,
+    };
+  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit, syringeMax]);
+
   return (
     <ToolShell title="Solution Calculator" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        <Notice text="Reference calculator only. It displays concentration from manually entered values and does not connect to saved records or schedules." />
+        <Notice text="Reference calculator only. It displays unit-conversion math from manually entered values and does not connect to saved records or schedules. It does not suggest or recommend any amount." />
         <Card>
           <CardLabel icon="▱">SOLUTION CONCENTRATION</CardLabel>
           <Text style={s.fieldLabel}>TOTAL MASS</Text>
@@ -317,8 +340,67 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
             )}
           </View>
         </Card>
+
+        <Card>
+          <CardLabel icon="▱">VOLUME CONVERSION</CardLabel>
+          <Text style={s.fieldLabel}>TARGET AMOUNT</Text>
+          <View style={s.inlineInputRow}>
+            <Field value={targetAmount} setValue={setTargetAmount} placeholder="Enter amount" keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
+            <View style={s.compactToggle}>
+              {[{ id: 'mcg', label: 'mcg' }, { id: 'mg', label: 'mg' }].map(option => (
+                <Pressable
+                  key={option.id}
+                  style={[s.compactBtn, targetUnit === option.id && s.compactBtnActive]}
+                  onPress={() => setTargetUnit(option.id)}
+                >
+                  <Text style={[s.compactText, targetUnit === option.id && s.compactTextActive]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <Text style={[s.fieldLabel, { marginTop: 14 }]}>SYRINGE</Text>
+          <Text style={s.syringeCaption}>U-100 scale · 100 units = 1 mL</Text>
+          <View style={s.compactToggle}>
+            {[{ v: 100, label: '1.0 mL · 100u' }, { v: 50, label: '0.5 mL · 50u' }, { v: 30, label: '0.3 mL · 30u' }].map(option => (
+              <Pressable
+                key={option.v}
+                style={[s.compactBtn, { flex: 1 }, syringeMax === option.v && s.compactBtnActive]}
+                onPress={() => setSyringeMax(option.v)}
+              >
+                <Text style={[s.compactText, syringeMax === option.v && s.compactTextActive]}>{option.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={s.resultPanel}>
+            {volumeResults ? (
+              <>
+                <View style={s.resultRow}>
+                  <Text style={s.resultLabel}>Volume required</Text>
+                  <Text style={s.resultValue}>{formatNumber(volumeResults.volumeRequired)} mL</Text>
+                </View>
+                <View style={s.resultRow}>
+                  <Text style={s.resultLabel}>Syringe units</Text>
+                  <Text style={s.resultValue}>{formatNumber(volumeResults.units)} units</Text>
+                </View>
+                <View style={s.resultRow}>
+                  <Text style={s.resultLabel}>Portions per solution (theoretical)</Text>
+                  <Text style={s.resultValue}>{volumeResults.portions}</Text>
+                </View>
+                {volumeResults.exceedsSolution && (
+                  <Text style={s.resultWarn}>Target amount exceeds the total mass entered for the solution.</Text>
+                )}
+                {!volumeResults.exceedsSolution && volumeResults.exceedsSyringe && (
+                  <Text style={s.resultWarn}>Result exceeds the selected syringe capacity ({syringeMax} units).</Text>
+                )}
+              </>
+            ) : (
+              <Text style={s.resultEmpty}>Enter solution values above and a target amount to convert</Text>
+            )}
+          </View>
+        </Card>
+
         <Text style={s.calculatorFootnote}>
-          Calculation: entered mass divided by entered liquid volume. Verify entered values independently.
+          Calculation: concentration = entered mass ÷ entered liquid volume; volume required = target amount ÷ concentration; units = volume × 100 (U-100 scale). Verify all entered values and results independently.
         </Text>
       </ScrollView>
     </ToolShell>
@@ -416,5 +498,7 @@ const s = StyleSheet.create({
   resultLabel: { color: colors.textMuted, fontSize: 13 },
   resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
+  syringeCaption: { color: colors.textFaint, fontSize: 11, marginBottom: spacing.sm },
+  resultWarn: { color: colors.accentLight, fontSize: 12, lineHeight: 17, marginTop: spacing.sm },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
 });
