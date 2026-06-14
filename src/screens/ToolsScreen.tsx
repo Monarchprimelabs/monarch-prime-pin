@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
@@ -9,18 +9,22 @@ import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
   getInventory, getRecordTemplates, getSchedules,
   InventoryItem, RecordTemplate, saveInventoryItem, saveRecordTemplate,
-  saveSchedule, ScheduleEntry, updateInventoryItem,
+  saveSchedule, ScheduleEntry, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
+import { UpgradeScreen } from './UpgradeScreen';
+import { useEntitlements } from '../lib/entitlements';
+import { useAuth } from '../lib/auth';
+import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'settings';
 
-const TOOLS: { id: ToolId; icon: string; title: string; sub: string }[] = [
-  { id: 'schedule', icon: '📅', title: 'Schedule Organizer', sub: 'Create your own dated research reminders' },
-  { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels' },
-  { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts' },
-  { id: 'conversion', icon: '▱', title: 'Solution Calculator', sub: 'Calculate concentration from entered values' },
-  { id: 'settings', icon: '⚙', title: 'Settings', sub: 'Profile, local data, and legal information' },
+const TOOLS: { id: ToolId; icon: string; title: string; sub: string; pro?: boolean }[] = [
+  { id: 'schedule', icon: '📅', title: 'Schedule & Reminders', sub: 'Create your own dated reminders', pro: true },
+  { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels', pro: true },
+  { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts', pro: true },
+  { id: 'conversion', icon: '▱', title: 'Concentration Worksheet', sub: 'Calculate concentration from entered mass and volume', pro: true },
+  { id: 'settings', icon: '⚙', title: 'Settings & Access', sub: 'Profile, Pro access, local data, and legal information' },
 ];
 
 function isValidDate(value: string): boolean {
@@ -37,7 +41,10 @@ function isValidTime(value: string): boolean {
 }
 
 export function ToolsScreen() {
-  const [active, setActive] = useState<ToolId | null>(null);
+  const [active, setActive] = useState<ToolId | 'upgrade' | null>(null);
+  const { hasPro } = useEntitlements();
+  const { user } = useAuth();
+  const canUsePro = hasPro || !!user?.isDeveloper;
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
@@ -47,13 +54,16 @@ export function ToolsScreen() {
           <Pressable
             key={tool.id}
             style={s.toolRow}
-            onPress={() => setActive(tool.id)}
+            onPress={() => setActive(tool.pro && !canUsePro ? 'upgrade' : tool.id)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${tool.title}`}
           >
             <Text style={s.toolIcon}>{tool.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={s.toolTitle}>{tool.title}</Text>
+              <View style={s.toolTitleRow}>
+                <Text style={s.toolTitle}>{tool.title}</Text>
+                {!!tool.pro && <Text style={s.proBadge}>PRO</Text>}
+              </View>
               <Text style={s.toolSub}>{tool.sub}</Text>
             </View>
             <Text style={s.chev}>›</Text>
@@ -66,6 +76,7 @@ export function ToolsScreen() {
         {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
         {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
         {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
+        {active === 'upgrade' && <UpgradeScreen onClose={() => setActive(null)} />}
       </Modal>
     </SafeAreaView>
   );
@@ -93,6 +104,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState('09:00');
   const [notes, setNotes] = useState('');
+  const [reminderEnabled, setReminderEnabled] = useState(true);
   const refresh = () => getSchedules().then(values => setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))));
   useEffect(() => { refresh(); }, []);
 
@@ -101,8 +113,39 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
       Alert.alert('Check entry', 'Enter a title, date as YYYY-MM-DD, and time as HH:MM.');
       return;
     }
-    await saveSchedule({ title: title.trim(), date, time, notes: notes.trim() || undefined });
+    const saved = await saveSchedule({
+      title: title.trim(),
+      date,
+      time,
+      notes: notes.trim() || undefined,
+      reminderEnabled: false,
+    });
+    if (reminderEnabled) {
+      try {
+        const notificationId = await scheduleLocalReminder(saved.id, saved.title, saved.date, saved.time);
+        await updateSchedule({ ...saved, reminderEnabled: true, notificationId });
+      } catch (error: any) {
+        Alert.alert('Entry saved without reminder', error?.message || 'The reminder could not be scheduled.');
+      }
+    }
     setTitle(''); setNotes(''); refresh();
+  };
+
+  const toggleComplete = async (item: ScheduleEntry) => {
+    if (!item.completedAt) await cancelLocalReminder(item.notificationId);
+    await updateSchedule({
+      ...item,
+      completedAt: item.completedAt ? undefined : new Date().toISOString(),
+      notificationId: item.completedAt ? item.notificationId : undefined,
+      reminderEnabled: item.completedAt ? item.reminderEnabled : false,
+    });
+    refresh();
+  };
+
+  const remove = async (item: ScheduleEntry) => {
+    await cancelLocalReminder(item.notificationId);
+    await deleteSchedule(item.id);
+    refresh();
   };
 
   return (
@@ -117,6 +160,18 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
             <Field value={time} setValue={setTime} placeholder="HH:MM" style={{ flex: 1 }} />
           </View>
           <Field value={notes} setValue={setNotes} placeholder="Optional notes" multiline />
+          <View style={s.reminderToggle}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.reminderToggleTitle}>Local reminder</Text>
+              <Text style={s.reminderToggleSub}>Notify at the date and time you entered</Text>
+            </View>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={setReminderEnabled}
+              trackColor={{ false: 'rgba(120,130,150,0.4)', true: colors.primary }}
+              thumbColor={colors.white}
+            />
+          </View>
           <PrimaryButton label="Add Entry" onPress={add} />
         </Card>
         <Card>
@@ -125,8 +180,14 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
             <ListItem
               key={item.id}
               title={item.title}
-              meta={`${item.date} · ${item.time}${item.notes ? `\n${item.notes}` : ''}`}
-              onDelete={() => confirmDelete('schedule entry', () => deleteSchedule(item.id).then(refresh))}
+              meta={`${item.date} · ${item.time}${item.completedAt ? ' · Completed' : item.reminderEnabled ? ' · Reminder on' : ''}${item.notes ? `\n${item.notes}` : ''}`}
+              accent={item.completedAt ? colors.teal : undefined}
+              actions={(
+                <Pressable style={s.completeBtn} onPress={() => toggleComplete(item)}>
+                  <Text style={s.completeBtnText}>{item.completedAt ? 'Undo' : 'Done'}</Text>
+                </Pressable>
+              )}
+              onDelete={() => confirmDelete('schedule entry', () => remove(item))}
             />
           ))}
         </Card>
@@ -271,9 +332,6 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const [solutionMass, setSolutionMass] = useState('');
   const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
   const [liquidVolume, setLiquidVolume] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [targetUnit, setTargetUnit] = useState('mcg');
-  const [syringeMax, setSyringeMax] = useState(100);
 
   const concentrationResults = useMemo(() => {
     const mass = parsePositiveNumber(solutionMass);
@@ -286,30 +344,10 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     ];
   }, [liquidVolume, solutionMass, solutionMassUnit]);
 
-  const volumeResults = useMemo(() => {
-    const mass = parsePositiveNumber(solutionMass);
-    const volume = parsePositiveNumber(liquidVolume);
-    const target = parsePositiveNumber(targetAmount);
-    if (!mass || !volume || !target) return null;
-    const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
-    const targetMg = targetUnit === 'mg' ? target : target / 1000;
-    const concentration = massMg / volume;
-    const volumeRequired = targetMg / concentration;
-    const units = volumeRequired * 100;
-    const portions = Math.floor(massMg / targetMg);
-    return {
-      volumeRequired,
-      units,
-      portions,
-      exceedsSolution: targetMg > massMg,
-      exceedsSyringe: units > syringeMax,
-    };
-  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit, syringeMax]);
-
   return (
-    <ToolShell title="Solution Calculator" onClose={onClose}>
+    <ToolShell title="Concentration Worksheet" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        <Notice text="Reference calculator only. It displays unit-conversion math from manually entered values and does not connect to saved records or schedules. It does not suggest or recommend any amount." />
+        <Notice text="This worksheet only calculates concentration from a total mass and liquid volume that you enter. It does not calculate target amounts, syringe units, schedules, or recommendations." />
         <Card>
           <CardLabel icon="▱">SOLUTION CONCENTRATION</CardLabel>
           <Text style={s.fieldLabel}>TOTAL MASS</Text>
@@ -341,66 +379,8 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
           </View>
         </Card>
 
-        <Card>
-          <CardLabel icon="▱">VOLUME CONVERSION</CardLabel>
-          <Text style={s.fieldLabel}>TARGET AMOUNT</Text>
-          <View style={s.inlineInputRow}>
-            <Field value={targetAmount} setValue={setTargetAmount} placeholder="Enter amount" keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
-            <View style={s.compactToggle}>
-              {[{ id: 'mcg', label: 'mcg' }, { id: 'mg', label: 'mg' }].map(option => (
-                <Pressable
-                  key={option.id}
-                  style={[s.compactBtn, targetUnit === option.id && s.compactBtnActive]}
-                  onPress={() => setTargetUnit(option.id)}
-                >
-                  <Text style={[s.compactText, targetUnit === option.id && s.compactTextActive]}>{option.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          <Text style={[s.fieldLabel, { marginTop: 14 }]}>SYRINGE</Text>
-          <Text style={s.syringeCaption}>U-100 scale · 100 units = 1 mL</Text>
-          <View style={s.compactToggle}>
-            {[{ v: 100, label: '1.0 mL · 100u' }, { v: 50, label: '0.5 mL · 50u' }, { v: 30, label: '0.3 mL · 30u' }].map(option => (
-              <Pressable
-                key={option.v}
-                style={[s.compactBtn, { flex: 1 }, syringeMax === option.v && s.compactBtnActive]}
-                onPress={() => setSyringeMax(option.v)}
-              >
-                <Text style={[s.compactText, syringeMax === option.v && s.compactTextActive]}>{option.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <View style={s.resultPanel}>
-            {volumeResults ? (
-              <>
-                <View style={s.resultRow}>
-                  <Text style={s.resultLabel}>Volume required</Text>
-                  <Text style={s.resultValue}>{formatNumber(volumeResults.volumeRequired)} mL</Text>
-                </View>
-                <View style={s.resultRow}>
-                  <Text style={s.resultLabel}>Syringe units</Text>
-                  <Text style={s.resultValue}>{formatNumber(volumeResults.units)} units</Text>
-                </View>
-                <View style={s.resultRow}>
-                  <Text style={s.resultLabel}>Portions per solution (theoretical)</Text>
-                  <Text style={s.resultValue}>{volumeResults.portions}</Text>
-                </View>
-                {volumeResults.exceedsSolution && (
-                  <Text style={s.resultWarn}>Target amount exceeds the total mass entered for the solution.</Text>
-                )}
-                {!volumeResults.exceedsSolution && volumeResults.exceedsSyringe && (
-                  <Text style={s.resultWarn}>Result exceeds the selected syringe capacity ({syringeMax} units).</Text>
-                )}
-              </>
-            ) : (
-              <Text style={s.resultEmpty}>Enter solution values above and a target amount to convert</Text>
-            )}
-          </View>
-        </Card>
-
         <Text style={s.calculatorFootnote}>
-          Calculation: concentration = entered mass ÷ entered liquid volume; volume required = target amount ÷ concentration; units = volume × 100 (U-100 scale). Verify all entered values and results independently.
+          Calculation: concentration = entered total mass ÷ entered liquid volume. Verify all entered values and results independently.
         </Text>
       </ScrollView>
     </ToolShell>
@@ -452,7 +432,9 @@ const s = StyleSheet.create({
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
   toolRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: 14 },
   toolIcon: { width: 42, color: colors.primary, fontSize: 22, fontWeight: '700' },
+  toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  proBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   toolSub: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   chev: { color: colors.primary, fontSize: 25, marginLeft: 8 },
   toolHeader: { minHeight: 58, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.borderSubtle, paddingHorizontal: spacing.xl },
@@ -475,6 +457,11 @@ const s = StyleSheet.create({
   stepper: { flexDirection: 'row', gap: 4 },
   stepBtn: { width: 36, height: 36, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput },
   stepText: { color: colors.primary, fontSize: 20, fontWeight: '700' },
+  completeBtn: { minWidth: 48, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.teal, borderRadius: radius.sm },
+  completeBtnText: { color: colors.teal, fontSize: 11, fontWeight: '700' },
+  reminderToggle: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12, paddingVertical: 4 },
+  reminderToggleTitle: { color: colors.white, fontSize: 13, fontWeight: '700' },
+  reminderToggleSub: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
   empty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 18 },
   segment: { flexDirection: 'row', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 3, marginBottom: 10 },
   segmentBtn: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
@@ -498,7 +485,5 @@ const s = StyleSheet.create({
   resultLabel: { color: colors.textMuted, fontSize: 13 },
   resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
-  syringeCaption: { color: colors.textFaint, fontSize: 11, marginBottom: spacing.sm },
-  resultWarn: { color: colors.accentLight, fontSize: 12, lineHeight: 17, marginTop: spacing.sm },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
 });

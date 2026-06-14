@@ -5,9 +5,10 @@ import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI'
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity } from '../theme';
 import { useAuth } from '../lib/auth';
-import { getInjections } from '../lib/storage';
+import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
+import { useEntitlements } from '../lib/entitlements';
 
 type Props = {
   onNavigate: (tab: string) => void;
@@ -24,12 +25,15 @@ function getGreetingName(name?: string, email?: string) {
 
 export function DashboardScreen({ onNavigate }: Props) {
   const { user } = useAuth();
+  const { hasPro } = useEntitlements();
   const [view, setView] = useState<'front' | 'back'>('front');
   const [injections, setInjections] = useState<Injection[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [reminderDismissed, setReminderDismissed] = useState(false);
 
   useEffect(() => {
     getInjections().then(setInjections);
+    getSchedules().then(setSchedules);
   }, []);
 
   const stats = useMemo(() => {
@@ -37,15 +41,16 @@ export function DashboardScreen({ onNavigate }: Props) {
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thisWeek = injections.filter(i => new Date(i.date) >= weekAgo).length;
 
-    // Count unique days with a saved log. This avoids fake/hard-coded streak numbers.
-    const uniqueLogDays = new Set(
-      injections
-        .map(i => i.date)
-        .filter(Boolean)
-    ).size;
+    const logDays = new Set(injections.map(i => i.date).filter(Boolean));
+    let streak = 0;
+    const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    while (logDays.has(cursor.toISOString().slice(0, 10))) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
 
     return {
-      logDays: uniqueLogDays,
+      streak,
       total: injections.length,
       thisWeek,
     };
@@ -54,6 +59,11 @@ export function DashboardScreen({ onNavigate }: Props) {
   const lastInj = injections[0];
   const greetingName = getGreetingName(user?.name, user?.email);
   const siteDensity = useMemo(() => getSiteDensity(injections), [injections]);
+  const nextSchedule = useMemo(() => schedules
+    .filter(item => !item.completedAt && new Date(`${item.date}T${item.time}:00`).getTime() >= Date.now())
+    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
+  const completedScheduleCount = schedules.filter(item => item.completedAt).length;
+  const canUsePro = hasPro || !!user?.isDeveloper;
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
@@ -65,7 +75,7 @@ export function DashboardScreen({ onNavigate }: Props) {
         />
 
         <View style={s.statRow}>
-          <StatCard icon="🔥" value={stats.logDays} label="Log Days" />
+          <StatCard icon="🔥" value={stats.streak} label="Day Streak" />
           <StatCard icon="💉" value={stats.total} label="Total Inj." />
           <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
         </View>
@@ -86,6 +96,20 @@ export function DashboardScreen({ onNavigate }: Props) {
               <Text style={s.reminderNextText}>Review your previous log entry</Text>
             </View>
           </View>
+        )}
+
+        {canUsePro && nextSchedule && (
+          <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.scheduleEyebrow}>NEXT SCHEDULED ENTRY</Text>
+              <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
+              <Text style={s.scheduleMeta}>{nextSchedule.date} · {nextSchedule.time}</Text>
+            </View>
+            <View style={s.scheduleDone}>
+              <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
+              <Text style={s.scheduleDoneLabel}>done</Text>
+            </View>
+          </Pressable>
         )}
 
         <Card>
@@ -176,6 +200,18 @@ const s = StyleSheet.create({
     marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
   },
   reminderNextText: { color: colors.textMuted, fontSize: 13 },
+  scheduleCard: {
+    marginHorizontal: spacing.xl, marginBottom: 14, padding: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(20,184,166,0.08)', borderWidth: 1,
+    borderColor: 'rgba(20,184,166,0.3)', borderRadius: radius.lg,
+  },
+  scheduleEyebrow: { color: colors.teal, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 5 },
+  scheduleTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  scheduleMeta: { color: colors.textMuted, fontSize: 12 },
+  scheduleDone: { minWidth: 50, alignItems: 'center' },
+  scheduleDoneValue: { color: colors.teal, fontSize: 20, fontWeight: '700' },
+  scheduleDoneLabel: { color: colors.textMuted, fontSize: 10 },
 
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
   legend: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 },

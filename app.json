@@ -2,7 +2,7 @@
   "expo": {
     "name": "Monarch Prime Pin",
     "slug": "monarch-prime-pin",
-    "version": "1.0.5",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -43,6 +43,8 @@
       "bundler": "metro"
     },
     "plugins": [
+      "expo-notifications",
+      "react-native-iap",
       [
         "expo-image-picker",
         {

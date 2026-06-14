@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
+import { useEntitlements } from '../lib/entitlements';
+import { cancelAllLocalReminders } from '../lib/notifications';
+import { UpgradeScreen } from './UpgradeScreen';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
-  const [tab, setTab] = useState<'rem' | 'leg'>('rem');
+  const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
@@ -24,6 +28,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       <View style={s.subTabs}>
         {[
           { id: 'rem' as const, label: 'Reminders' },
+          { id: 'acc' as const, label: 'Access' },
           { id: 'leg' as const, label: 'Legal' },
         ].map(t => (
           <Pressable
@@ -39,16 +44,18 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
-        {tab === 'rem' ? <RemindersTab /> : <LegalTab />}
+        {tab === 'rem' && <RemindersTab />}
+        {tab === 'acc' && <AccessTab onOpen={() => setUpgradeOpen(true)} />}
+        {tab === 'leg' && <LegalTab />}
       </ScrollView>
+      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}>
+        <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
+      </Modal>
     </SafeAreaView>
   );
 }
 
 function RemindersTab() {
-  const [r1, setR1] = useState(false);
-  const [r2, setR2] = useState(false);
-  const [r3, setR3] = useState(false);
   const { user, signOut, updateProfileName } = useAuth();
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
@@ -88,6 +95,7 @@ function RemindersTab() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            await cancelAllLocalReminders();
             await clearLocalData();
             await signOut();
           },
@@ -124,9 +132,9 @@ function RemindersTab() {
 
       <Card>
         <CardLabel icon="🔔">NOTIFICATION SETTINGS</CardLabel>
-        <ToggleRow title="Log Reminders" sub="Daily reminder to review your research log" on={r1} setOn={setR1} />
-        <ToggleRow title="Weekly Summary" sub="Weekly research log summary" on={r2} setOn={setR2} />
-        <ToggleRow title="Progress Photo Reminder" sub="Monthly progress photo prompt" on={r3} setOn={setR3} />
+        <Text style={s.localDataText}>
+          Create and manage local notifications from Tools → Schedule & Reminders. Monarch only reminds you about dates and times that you enter yourself.
+        </Text>
       </Card>
 
       <Card>
@@ -149,30 +157,29 @@ function RemindersTab() {
   );
 }
 
-function ToggleRow({
-  title,
-  sub,
-  on,
-  setOn,
-}: {
-  title: string;
-  sub: string;
-  on: boolean;
-  setOn: (v: boolean) => void;
-}) {
+function AccessTab({ onOpen }: { onOpen: () => void }) {
+  const { source, monetizationEnabled } = useEntitlements();
+  const label = source === 'paid-app' || source === 'legacy-install'
+    ? 'Founding purchaser · Lifetime Pro'
+    : source === 'lifetime'
+      ? 'Lifetime Pro'
+      : source === 'early-access'
+        ? 'Early access · Pro preview'
+        : 'Free plan';
   return (
-    <View style={s.toggleRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={s.toggleTitle}>{title}</Text>
-        <Text style={s.toggleSub}>{sub}</Text>
-      </View>
-      <Switch
-        value={on}
-        onValueChange={setOn}
-        trackColor={{ false: 'rgba(120, 130, 150, 0.4)', true: colors.primary }}
-        thumbColor={colors.white}
-      />
-    </View>
+    <Card>
+      <CardLabel icon="◆">YOUR ACCESS</CardLabel>
+      <Text style={s.accessTitle}>{label}</Text>
+      <Text style={s.localDataText}>
+        Core tracking, history, calendar review, and site rotation stay free. Prior paid-download customers keep full access permanently.
+      </Text>
+      {!monetizationEnabled && (
+        <Text style={s.accessPreview}>All Pro tools are open during early access.</Text>
+      )}
+      <Pressable style={s.saveNameBtn} onPress={onOpen}>
+        <Text style={s.saveNameText}>View Access Details</Text>
+      </Pressable>
+    </Card>
   );
 }
 
@@ -200,7 +207,7 @@ function LegalTab() {
       </Text>
 
       <Text style={s.legalP}>
-        This application does not calculate, recommend, or prescribe dosages. Generic conversion tools are not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
+        This application does not calculate, recommend, or prescribe dosages. The concentration worksheet only divides a user-entered total mass by a user-entered liquid volume. It is not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
       </Text>
 
       <Text style={s.legalP}>By using this application, you acknowledge:</Text>
@@ -220,7 +227,7 @@ function LegalTab() {
         If you are experiencing a medical emergency, contact emergency services immediately.
       </Text>
 
-      <Text style={s.legalFooter}>Monarch Prime Pin Tracker v1.0 — Research Use Only</Text>
+      <Text style={s.legalFooter}>Monarch Prime Pin Tracker v1.1 — Research Use Only</Text>
     </Card>
   );
 }
@@ -250,16 +257,6 @@ const s = StyleSheet.create({
   subTabActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)' },
   subTabText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   subTabTextActive: { color: colors.white },
-
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderFaint,
-  },
-  toggleTitle: { color: colors.white, fontSize: 15, fontWeight: '600' },
-  toggleSub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
 
   profileHelp: {
     color: colors.textMuted,
@@ -295,6 +292,8 @@ const s = StyleSheet.create({
     fontSize: 13,
     lineHeight: 22,
   },
+  accessTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  accessPreview: { color: colors.teal, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 12 },
 
   signOutBtn: {
     backgroundColor: 'rgba(229, 57, 53, 0.08)',

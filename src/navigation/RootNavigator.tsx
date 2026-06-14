@@ -6,9 +6,11 @@ import { SignInScreen } from '../screens/SignInScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { BottomTabs } from './BottomTabs';
 import { colors } from '../theme';
+import { useEntitlements } from '../lib/entitlements';
 
 export function RootNavigator() {
   const { user, loading } = useAuth();
+  const { loading: entitlementLoading } = useEntitlements();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
 
@@ -23,7 +25,7 @@ export function RootNavigator() {
     });
   }, [user]);
 
-  if (loading || (user && !onboardingChecked)) {
+  if (loading || entitlementLoading || (user && !onboardingChecked)) {
     return (
       <View style={s.center}>
         <ActivityIndicator color={colors.primary} size="large" />

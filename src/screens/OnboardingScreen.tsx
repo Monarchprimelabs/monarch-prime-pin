@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  Animated, useWindowDimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
@@ -22,13 +22,6 @@ const TRACK_OPTIONS: MultiItem[] = [
   { id: 'references',    label: 'Reference Notes',    icon: '🗂️' },
 ];
 
-const LEVEL_OPTIONS: SingleItem[] = [
-  { id: 'simple',      label: 'Simple',       icon: '🌱', sub: 'Quick entries with only the basics' },
-  { id: 'standard',    label: 'Standard',     icon: '📊', sub: 'Regular logs with notes and history' },
-  { id: 'detailed',    label: 'Detailed',     icon: '🔬', sub: 'More complete records and review habits' },
-  { id: 'archive',     label: 'Archive Only', icon: '🗃️', sub: 'Mostly storing information in one place' },
-];
-
 const GOAL_OPTIONS: SingleItem[] = [
   { id: 'consistent', label: 'Stay Consistent',       icon: '✅', sub: 'Make logging easier to keep up with' },
   { id: 'history',    label: 'Find Past Entries',     icon: '🕘', sub: 'Look back without digging around' },
@@ -38,23 +31,12 @@ const GOAL_OPTIONS: SingleItem[] = [
   { id: 'summaries',  label: 'Review Summaries',      icon: '📊', sub: 'See clean overviews when needed' },
 ];
 
-const CATEGORY_OPTIONS: MultiItem[] = [
-  { id: 'compound',    label: 'Compound Records',     icon: '🧪' },
-  { id: 'recovery',    label: 'Recovery Category',    icon: '🩹' },
-  { id: 'longevity',   label: 'Longevity Category',   icon: '⏳' },
-  { id: 'performance', label: 'Performance Category', icon: '⚡' },
-  { id: 'wellness',    label: 'Wellness Category',    icon: '🌿' },
-  { id: 'other',       label: 'Other',                icon: '🔭' },
-];
-
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 3;
 
 export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
   const [trackSelected, setTrackSelected] = useState<string[]>([]);
-  const [levelSelected, setLevelSelected] = useState<string>('');
   const [goalSelected, setGoalSelected] = useState<string>('');
-  const [categorySelected, setCategorySelected] = useState<string[]>([]);
 
   const { width } = useWindowDimensions();
 
@@ -65,10 +47,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   ) => setState(state.includes(id) ? state.filter(x => x !== id) : [...state, id]);
 
   const canContinue = () => {
-    if (step === 1) return trackSelected.length > 0;
-    if (step === 2) return levelSelected !== '';
-    if (step === 3) return goalSelected !== '';
-    if (step === 4) return categorySelected.length > 0;
+    if (step === 1) return goalSelected !== '';
+    if (step === 2) return trackSelected.length > 0;
     return true;
   };
 
@@ -107,34 +87,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           >
             {step === 1 && (
               <StepShell
-                headline="What do you want to organize?"
-                sub="Choose the parts of your records you want close at hand."
-              >
-                <MultiSelect
-                  options={TRACK_OPTIONS}
-                  selected={trackSelected}
-                  onToggle={id => toggleMulti(id, trackSelected, setTrackSelected)}
-                />
-              </StepShell>
-            )}
-
-            {step === 2 && (
-              <StepShell
-                headline="How detailed are your records?"
-                sub="Pick the style that best matches how you like to log information."
-              >
-                <SingleSelect
-                  options={LEVEL_OPTIONS}
-                  selected={levelSelected}
-                  onSelect={setLevelSelected}
-                />
-              </StepShell>
-            )}
-
-            {step === 3 && (
-              <StepShell
                 headline="What should feel easier first?"
-                sub="Choose the main workflow you want Monarch Prime Pin to simplify."
+                sub="Choose the workflow you want Monarch to simplify."
               >
                 <SingleSelect
                   options={GOAL_OPTIONS}
@@ -144,15 +98,15 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               </StepShell>
             )}
 
-            {step === 4 && (
+            {step === 2 && (
               <StepShell
-                headline="Which labels fit your records?"
-                sub="Select broad categories only. These are organizational labels, not outcome claims."
+                headline="What do you want close at hand?"
+                sub="Choose what you want to track. You can start logging immediately."
               >
                 <MultiSelect
-                  options={CATEGORY_OPTIONS}
-                  selected={categorySelected}
-                  onToggle={id => toggleMulti(id, categorySelected, setCategorySelected)}
+                  options={TRACK_OPTIONS}
+                  selected={trackSelected}
+                  onToggle={id => toggleMulti(id, trackSelected, setTrackSelected)}
                 />
               </StepShell>
             )}
@@ -187,17 +141,17 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
 
       <View style={s.welcomeBody}>
         <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
-        <Text style={s.welcomeHeadline}>Your Research Tracking System,{'\n'}Organized.</Text>
+        <Text style={s.welcomeHeadline}>Private peptide tracking,{'\n'}without the clutter.</Text>
         <Text style={s.welcomeSub}>
-          Log compounds, review site history, track records, and stay on top of your research — all in one clean, private app.
+          Start with free core tracking. Build a complete history, review site rotation, and keep your records on your device.
         </Text>
 
         <View style={s.featureList}>
           {[
             { icon: '📋', text: 'Manual research log entries' },
-            { icon: '📍', text: 'Site history & heatmap' },
-            { icon: '📊', text: 'Analytics & history tracking' },
-            { icon: '🔔', text: 'Reminders & progress photos' },
+            { icon: '📍', text: 'Site history and rotation heatmap' },
+            { icon: '🕘', text: 'Complete history and calendar' },
+            { icon: '◆', text: 'Optional Lifetime Pro, no forced monthly plan' },
           ].map(f => (
             <View key={f.text} style={s.featureRow}>
               <Text style={s.featureIcon}>{f.icon}</Text>
@@ -212,7 +166,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
           <Text style={s.ctaBtnText}>Get Started</Text>
         </Pressable>
         <Text style={s.complianceNote}>
-          For research organization and educational tracking only.{'\n'}Not medical advice.
+          Core tracking stays free.{'\n'}For research organization only. Not medical advice.
         </Text>
       </View>
     </View>

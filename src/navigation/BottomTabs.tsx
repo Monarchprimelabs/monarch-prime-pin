@@ -9,11 +9,17 @@ import { LogInjectionScreen } from '../screens/LogInjectionScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
+import { UpgradeScreen } from '../screens/UpgradeScreen';
+import { useEntitlements } from '../lib/entitlements';
+import { useAuth } from '../lib/auth';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
 export function BottomTabs() {
   const [active, setActive] = React.useState<TabId>('home');
+  const { hasPro } = useEntitlements();
+  const { user } = useAuth();
+  const canUsePro = hasPro || !!user?.isDeveloper;
 
   return (
     <View style={s.app}>
@@ -21,7 +27,7 @@ export function BottomTabs() {
         {active === 'home' && <DashboardScreen onNavigate={(t) => setActive(t as TabId)} />}
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
-        {active === 'analytics' && <AnalyticsScreen />}
+        {active === 'analytics' && (canUsePro ? <AnalyticsScreen /> : <UpgradeScreen />)}
         {active === 'settings' && <ToolsScreen />}
       </View>
 

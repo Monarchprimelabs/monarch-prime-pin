@@ -198,9 +198,15 @@ eas submit --platform android
 
 ## App Store Listing — Pricing
 
-This app is configured to launch as a **paid app at $4.99**. Set this in:
-- **App Store Connect**: Pricing and Availability → Tier 5 ($4.99)
-- **Google Play Console**: Monetization setup → Paid app, $4.99
+The next monetization phase uses a **free core + optional Lifetime Pro** model:
+
+- Free: tracking, complete history, calendar review, and site rotation
+- Lifetime Pro: reports, schedules/reminders, inventory, templates, and concentration worksheet
+- Existing paid-download customers are grandfathered into Lifetime Pro
+
+Keep `EXPO_PUBLIC_MONETIZATION_ENABLED` unset until the non-consumable product
+`com.monarchprime.pin.pro.lifetime` is configured and approved. See
+`docs/app-store-phase-2.md` for the required rollout order.
 
 ## Troubleshooting
 

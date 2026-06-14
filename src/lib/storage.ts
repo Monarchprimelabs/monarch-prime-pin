@@ -15,6 +15,9 @@ export type ScheduleEntry = {
   date: string;
   time: string;
   notes?: string;
+  reminderEnabled?: boolean;
+  notificationId?: string;
+  completedAt?: string;
 };
 
 export type InventoryItem = {
@@ -169,6 +172,12 @@ export async function saveSchedule(entry: Omit<ScheduleEntry, 'id'>): Promise<Sc
   const saved = { ...entry, id: makeId() };
   await setLocalList(KEY_SCHEDULES, [saved, ...(await getSchedules())]);
   return saved;
+}
+export async function updateSchedule(entry: ScheduleEntry): Promise<ScheduleEntry> {
+  const current = await getSchedules();
+  if (!current.some(value => value.id === entry.id)) throw new Error('The schedule entry could not be found.');
+  await setLocalList(KEY_SCHEDULES, current.map(value => value.id === entry.id ? entry : value));
+  return entry;
 }
 export async function deleteSchedule(id: string): Promise<void> {
   await setLocalList(KEY_SCHEDULES, (await getSchedules()).filter(item => item.id !== id));
