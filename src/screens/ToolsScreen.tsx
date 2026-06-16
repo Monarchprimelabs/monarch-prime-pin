@@ -333,21 +333,31 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
   const [liquidVolume, setLiquidVolume] = useState('');
 
-  const concentrationResults = useMemo(() => {
+  const worksheetResults = useMemo(() => {
     const mass = parsePositiveNumber(solutionMass);
     const volume = parsePositiveNumber(liquidVolume);
-    if (!mass || !volume) return [];
+    if (!mass || !volume) return { concentration: [], u100: [] };
     const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
-    return [
-      { label: 'Concentration', value: `${formatNumber(massMg / volume)} mg/mL` },
-      { label: 'Concentration', value: `${formatNumber((massMg * 1000) / volume)} mcg/mL` },
-    ];
+    const totalU100Units = volume * 100;
+    const mcgPerUnit = (massMg * 1000) / totalU100Units;
+
+    return {
+      concentration: [
+        { label: 'Concentration', value: `${formatNumber(massMg / volume)} mg/mL` },
+        { label: 'Concentration', value: `${formatNumber((massMg * 1000) / volume)} mcg/mL` },
+      ],
+      u100: [
+        { label: 'Entered volume', value: `${formatNumber(totalU100Units)} U-100 units` },
+        { label: '1 unit equals', value: formatMassReference(mcgPerUnit) },
+        { label: '10 units equals', value: formatMassReference(mcgPerUnit * 10) },
+      ],
+    };
   }, [liquidVolume, solutionMass, solutionMassUnit]);
 
   return (
     <ToolShell title="Concentration Worksheet" onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        <Notice text="This worksheet only calculates concentration from a total mass and liquid volume that you enter. It does not calculate target amounts, syringe units, schedules, or recommendations." />
+        <Notice text="This worksheet only calculates concentration and U-100 marking references from values you enter. It does not recommend a target amount, schedule, or protocol." />
         <Card>
           <CardLabel icon="▱">SOLUTION CONCENTRATION</CardLabel>
           <Text style={s.fieldLabel}>TOTAL MASS</Text>
@@ -365,10 +375,10 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
               ))}
             </View>
           </View>
-          <Text style={[s.fieldLabel, { marginTop: 14 }]}>LIQUID VOLUME</Text>
-          <Field value={liquidVolume} setValue={setLiquidVolume} placeholder="Enter liquid volume" keyboardType="decimal-pad" />
+          <Text style={[s.fieldLabel, { marginTop: 14 }]}>LIQUID VOLUME (mL)</Text>
+          <Field value={liquidVolume} setValue={setLiquidVolume} placeholder="Enter liquid volume in mL" keyboardType="decimal-pad" />
           <View style={s.resultPanel}>
-            {concentrationResults.length > 0 ? concentrationResults.map((result, index) => (
+            {worksheetResults.concentration.length > 0 ? worksheetResults.concentration.map((result, index) => (
               <View key={`${result.value}-${index}`} style={s.resultRow}>
                 <Text style={s.resultLabel}>{result.label}</Text>
                 <Text style={s.resultValue}>{result.value}</Text>
@@ -379,8 +389,25 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
           </View>
         </Card>
 
+        <Card>
+          <CardLabel icon="▱">U-100 MARKING REFERENCE</CardLabel>
+          <Text style={s.referenceText}>
+            Standard U-100 markings use 100 units per 1 mL. This reference only converts the liquid volume you entered into unit markings and shows how much mass each marking represents.
+          </Text>
+          <View style={s.resultPanel}>
+            {worksheetResults.u100.length > 0 ? worksheetResults.u100.map((result, index) => (
+              <View key={`${result.value}-${index}`} style={s.resultRow}>
+                <Text style={s.resultLabel}>{result.label}</Text>
+                <Text style={s.resultValue}>{result.value}</Text>
+              </View>
+            )) : (
+              <Text style={s.resultEmpty}>Enter mass and liquid volume to view U-100 reference</Text>
+            )}
+          </View>
+        </Card>
+
         <Text style={s.calculatorFootnote}>
-          Calculation: concentration = entered total mass ÷ entered liquid volume. Verify all entered values and results independently.
+          Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100. Verify all entered values and results independently.
         </Text>
       </ScrollView>
     </ToolShell>
@@ -396,6 +423,13 @@ function parsePositiveNumber(value: string): number {
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(value);
+}
+
+function formatMassReference(mcg: number): string {
+  if (mcg >= 1000) {
+    return `${formatNumber(mcg / 1000)} mg (${formatNumber(mcg)} mcg)`;
+  }
+  return `${formatNumber(mcg)} mcg`;
 }
 
 function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
@@ -485,5 +519,6 @@ const s = StyleSheet.create({
   resultLabel: { color: colors.textMuted, fontSize: 13 },
   resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
+  referenceText: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
 });

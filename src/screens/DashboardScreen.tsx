@@ -8,7 +8,7 @@ import { useAuth } from '../lib/auth';
 import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
-import { useEntitlements } from '../lib/entitlements';
+import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 
 type Props = {
   onNavigate: (tab: string) => void;
@@ -25,7 +25,7 @@ function getGreetingName(name?: string, email?: string) {
 
 export function DashboardScreen({ onNavigate }: Props) {
   const { user } = useAuth();
-  const { hasPro } = useEntitlements();
+  const { hasPro, monetizationEnabled } = useEntitlements();
   const [view, setView] = useState<'front' | 'back'>('front');
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
@@ -64,6 +64,8 @@ export function DashboardScreen({ onNavigate }: Props) {
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
   const completedScheduleCount = schedules.filter(item => item.completedAt).length;
   const canUsePro = hasPro || !!user?.isDeveloper;
+  const freeTrialActive = monetizationEnabled && !canUsePro;
+  const freeLogsRemaining = Math.max(0, FREE_INJECTION_LIMIT - stats.total);
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
@@ -79,6 +81,23 @@ export function DashboardScreen({ onNavigate }: Props) {
           <StatCard icon="💉" value={stats.total} label="Total Inj." />
           <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
         </View>
+
+        {freeTrialActive && (
+          <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.unlockEyebrow}>FREE TRIAL</Text>
+              <Text style={s.unlockTitle}>
+                {freeLogsRemaining > 0
+                  ? `${freeLogsRemaining} free ${freeLogsRemaining === 1 ? 'log' : 'logs'} remaining`
+                  : 'Lifetime Pro unlock needed'}
+              </Text>
+              <Text style={s.unlockBody}>
+                Save {FREE_INJECTION_LIMIT} records free. Unlock unlimited usage for {LIFETIME_PRO_PRICE_LABEL}.
+              </Text>
+            </View>
+            <Text style={s.unlockChev}>›</Text>
+          </Pressable>
+        )}
 
         {!reminderDismissed && lastInj && (
           <View style={s.reminderCard}>
@@ -212,6 +231,16 @@ const s = StyleSheet.create({
   scheduleDone: { minWidth: 50, alignItems: 'center' },
   scheduleDoneValue: { color: colors.teal, fontSize: 20, fontWeight: '700' },
   scheduleDoneLabel: { color: colors.textMuted, fontSize: 10 },
+  unlockCard: {
+    marginHorizontal: spacing.xl, marginBottom: 14, padding: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(20,184,166,0.08)', borderWidth: 1,
+    borderColor: 'rgba(20,184,166,0.3)', borderRadius: radius.lg,
+  },
+  unlockEyebrow: { color: colors.teal, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 5 },
+  unlockTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  unlockBody: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
+  unlockChev: { color: colors.teal, fontSize: 24, fontWeight: '700' },
 
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
   legend: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 },

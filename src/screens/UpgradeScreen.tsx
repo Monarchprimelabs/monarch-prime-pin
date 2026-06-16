@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
-import { useEntitlements } from '../lib/entitlements';
+import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { colors, radius, spacing } from '../theme';
 
 const PRO_FEATURES = [
-  'Advanced reports and shareable summaries',
+  'Unlimited injection logging',
+  'Full reports and shareable summaries',
   'User-created schedules and local reminders',
-  'Inventory and reusable record templates',
+  'Inventory and record templates',
   'Concentration worksheet',
 ];
 
@@ -37,12 +38,13 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
       : source === 'early-access'
         ? 'Early access: Pro tools are currently open'
         : 'Free plan';
+  const price = product?.displayPrice || LIFETIME_PRO_PRICE_LABEL;
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-        <Header title="Monarch Pro" subtitle="Core tracking always stays free" />
+        <Header title="Monarch Pro" subtitle={`Unlock unlimited usage for ${price}`} />
         {!!onClose && (
           <View style={s.closeRow}>
             <Pressable onPress={onClose} style={s.closeBtn}>
@@ -55,17 +57,17 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
           <Text style={s.statusEyebrow}>YOUR ACCESS</Text>
           <Text style={s.statusTitle}>{status}</Text>
           <Text style={s.statusBody}>
-            Tracking, complete history, calendar review, and site rotation remain available without a subscription.
+            Free users can explore the app and save {FREE_INJECTION_LIMIT} injection records. Unlock Lifetime Pro for {price} to keep logging without limits.
           </Text>
         </Card>
 
         <Card>
           <CardLabel icon="✓">ALWAYS FREE</CardLabel>
           {[
-            'Unlimited manual tracking',
-            'Complete log history and calendar',
-            'Injection-site selection and heatmap',
-            'Basic activity overview',
+            'Explore the dashboard, history, and tools',
+            `${FREE_INJECTION_LIMIT} saved injection records included`,
+            'View, edit, and delete your saved free records',
+            'Site rotation heatmap for saved records',
           ].map(item => <Feature key={item} text={item} />)}
         </Card>
 
@@ -79,7 +81,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
               onPress={() => run(purchaseLifetime)}
             >
               <Text style={s.primaryText}>
-                {working ? 'PLEASE WAIT...' : `UNLOCK LIFETIME PRO${product ? ` · ${product.displayPrice}` : ''}`}
+                {working ? 'PLEASE WAIT...' : `UNLOCK UNLIMITED USAGE · ${price}`}
               </Text>
             </Pressable>
           )}

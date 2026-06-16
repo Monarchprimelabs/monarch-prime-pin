@@ -5,7 +5,7 @@ import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
-import { useEntitlements } from '../lib/entitlements';
+import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { UpgradeScreen } from './UpgradeScreen';
 
@@ -171,7 +171,7 @@ function AccessTab({ onOpen }: { onOpen: () => void }) {
       <CardLabel icon="◆">YOUR ACCESS</CardLabel>
       <Text style={s.accessTitle}>{label}</Text>
       <Text style={s.localDataText}>
-        Core tracking, history, calendar review, and site rotation stay free. Prior paid-download customers keep full access permanently.
+        Free installs include app exploration and {FREE_INJECTION_LIMIT} saved injection records. Lifetime Pro unlocks unlimited usage for {LIFETIME_PRO_PRICE_LABEL}. Prior paid-download customers keep full access permanently.
       </Text>
       {!monetizationEnabled && (
         <Text style={s.accessPreview}>All Pro tools are open during early access.</Text>
@@ -207,7 +207,7 @@ function LegalTab() {
       </Text>
 
       <Text style={s.legalP}>
-        This application does not calculate, recommend, or prescribe dosages. The concentration worksheet only divides a user-entered total mass by a user-entered liquid volume. It is not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
+        This application does not calculate, recommend, or prescribe dosages. The concentration worksheet only divides a user-entered total mass by a user-entered liquid volume and converts that user-entered volume into U-100 marking references. It is not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
       </Text>
 
       <Text style={s.legalP}>By using this application, you acknowledge:</Text>

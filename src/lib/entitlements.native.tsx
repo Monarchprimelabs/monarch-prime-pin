@@ -1,19 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
-import {
-  endConnection,
-  fetchProducts,
-  finishTransaction,
-  getAppTransactionIOS,
-  getAvailablePurchases,
-  initConnection,
-  Product,
-  purchaseUpdatedListener,
-  requestPurchase,
-} from 'react-native-iap';
+import type { Product } from 'react-native-iap';
 
 const KEY_ENTITLEMENT = '@mpp/pro_entitlement';
+const KEY_FREEMIUM_SEEN = '@mpp/freemium_seen';
 const LEGACY_STORAGE_KEYS = [
   '@mpp/user',
   '@mpp/onboarding_done',
@@ -24,9 +15,11 @@ const LEGACY_STORAGE_KEYS = [
 ];
 
 export const LIFETIME_PRO_PRODUCT_ID = 'com.monarchprime.pin.pro.lifetime';
-// Ship 1.1.0 while the app is still paid so buyers during the transition are
-// also recognized as founding purchasers.
-export const LAST_PAID_APP_VERSION = '1.1.0';
+export const FREE_INJECTION_LIMIT = 2;
+export const LIFETIME_PRO_PRICE_LABEL = '$4.99';
+// 1.0.5 build 9 is the approved paid App Store release. Free-download builds
+// after this point should not be grandfathered as founding purchasers.
+export const LAST_PAID_APP_VERSION = '1.0.5';
 
 // Keep false until Lifetime Pro is configured and approved in App Store Connect.
 export const MONETIZATION_ENABLED = process.env.EXPO_PUBLIC_MONETIZATION_ENABLED === 'true';
@@ -50,6 +43,16 @@ type EntitlementContextValue = {
 };
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
+
+type IapModule = typeof import('react-native-iap');
+let iapModulePromise: Promise<IapModule | null> | null = null;
+
+async function getIapModule(): Promise<IapModule | null> {
+  if (!iapModulePromise) {
+    iapModulePromise = import('react-native-iap').catch(() => null);
+  }
+  return iapModulePromise;
+}
 
 function compareVersions(a: string, b: string): number {
   const left = a.split('.').map(Number);
@@ -91,15 +94,15 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
     await saveEntitlement(entitlement);
   };
 
-  const refreshStoreEntitlements = async (): Promise<boolean> => {
-    const purchases = await getAvailablePurchases();
+  const refreshStoreEntitlements = async (iap: IapModule): Promise<boolean> => {
+    const purchases = await iap.getAvailablePurchases();
     if (purchases.some(purchase => purchase.productId === LIFETIME_PRO_PRODUCT_ID)) {
       await grant('lifetime');
       return true;
     }
 
     if (Platform.OS === 'ios') {
-      const transaction = await getAppTransactionIOS();
+      const transaction = await iap.getAppTransactionIOS();
       if (
         transaction?.originalAppVersion
         && compareVersions(transaction.originalAppVersion, LAST_PAID_APP_VERSION) <= 0
@@ -120,31 +123,37 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
       try {
         const saved = await readStoredEntitlement();
         if (saved && active) setStored(saved);
+        const freemiumSeen = await AsyncStorage.getItem(KEY_FREEMIUM_SEEN);
 
         // This update is the first free-tier-aware build. Local data proves the
         // app existed before the transition, so preserve full access immediately.
-        if (!saved && await hasLegacyLocalInstall()) {
+        if (!saved && !freemiumSeen && await hasLegacyLocalInstall()) {
           await grant('legacy-install');
         }
+        if (!freemiumSeen) await AsyncStorage.setItem(KEY_FREEMIUM_SEEN, 'true');
 
-        await initConnection();
-
-        purchaseSubscription = purchaseUpdatedListener(async purchase => {
-          if (purchase.productId !== LIFETIME_PRO_PRODUCT_ID) return;
-          await grant('lifetime');
-          await finishTransaction({ purchase, isConsumable: false });
-        });
+        const iap = await getIapModule();
+        if (!iap) return;
 
         try {
-          const products = await fetchProducts({ skus: [LIFETIME_PRO_PRODUCT_ID], type: 'in-app' });
+          await iap.initConnection();
+
+          purchaseSubscription = iap.purchaseUpdatedListener(async purchase => {
+            if (purchase.productId !== LIFETIME_PRO_PRODUCT_ID) return;
+            await grant('lifetime');
+            await iap.finishTransaction({ purchase, isConsumable: false });
+          });
+
+          const products = await iap.fetchProducts({ skus: [LIFETIME_PRO_PRODUCT_ID], type: 'in-app' });
           const lifetimeProduct = products.find(value => value.type === 'in-app') as Product | undefined;
           if (active) setProduct(lifetimeProduct || null);
         } catch {
-          // The product will be unavailable until it exists in App Store Connect.
+          // Expo Go and unavailable App Store products both land here. Stored
+          // entitlements and the free trial still work without a live IAP module.
         }
 
         try {
-          await refreshStoreEntitlements();
+          await refreshStoreEntitlements(iap);
         } catch {
           // Stored and legacy-install entitlements keep working while offline.
         }
@@ -156,13 +165,15 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
       purchaseSubscription?.remove();
-      endConnection().catch(() => undefined);
+      getIapModule().then(iap => iap?.endConnection().catch(() => undefined)).catch(() => undefined);
     };
   }, []);
 
   const restorePurchases = async () => {
-    await initConnection();
-    return refreshStoreEntitlements();
+    const iap = await getIapModule();
+    if (!iap) throw new Error('Purchase restore requires TestFlight or a development build.');
+    await iap.initConnection();
+    return refreshStoreEntitlements(iap);
   };
 
   const purchaseLifetime = async () => {
@@ -172,7 +183,9 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
     if (!product) {
       throw new Error('Lifetime Pro is temporarily unavailable. Please try again later.');
     }
-    await requestPurchase({
+    const iap = await getIapModule();
+    if (!iap) throw new Error('Purchases require TestFlight or a development build.');
+    await iap.requestPurchase({
       request: {
         apple: { sku: LIFETIME_PRO_PRODUCT_ID },
         google: { skus: [LIFETIME_PRO_PRODUCT_ID] },

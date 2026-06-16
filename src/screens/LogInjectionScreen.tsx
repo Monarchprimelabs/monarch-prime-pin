@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Pressable,
   TextInput, Image, Alert, Modal, FlatList,
@@ -10,8 +10,11 @@ import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI'
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity } from '../data/peptides';
-import { getRecordTemplates, RecordTemplate, saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
+import { getInjections, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
 import { getInjectionSiteIds } from '../lib/sites';
+import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
+import { useAuth } from '../lib/auth';
+import { UpgradeScreen } from './UpgradeScreen';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -21,6 +24,8 @@ type LogInjectionScreenProps = {
 };
 
 export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCancel }: LogInjectionScreenProps) {
+  const { hasPro, monetizationEnabled } = useEntitlements();
+  const { user } = useAuth();
   const initialPeptide = initialInjection
     ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === initialInjection.peptide)
       ?? { id: 'existing-custom', name: initialInjection.peptide, defaultUnit: initialInjection.unit }
@@ -40,10 +45,28 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
   const [notes, setNotes] = useState(initialInjection?.notes ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(initialInjection?.photoUri ?? null);
   const [saving, setSaving] = useState(false);
+  const [freeLogCount, setFreeLogCount] = useState<number | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const isEditing = !!initialInjection;
   const logDate = initialInjection?.date ?? initialDate ?? new Date().toISOString().slice(0, 10);
+  const canUsePro = hasPro || !!user?.isDeveloper;
+  const freeTrialActive = monetizationEnabled && !canUsePro && !isEditing;
+  const freeLogsRemaining = freeLogCount === null
+    ? FREE_INJECTION_LIMIT
+    : Math.max(0, FREE_INJECTION_LIMIT - freeLogCount);
 
+  useEffect(() => {
+    let active = true;
+    if (!freeTrialActive) {
+      setFreeLogCount(null);
+      return () => { active = false; };
+    }
+    getInjections()
+      .then(records => { if (active) setFreeLogCount(records.length); })
+      .catch(() => { if (active) setFreeLogCount(0); });
+    return () => { active = false; };
+  }, [freeTrialActive]);
 
   const toggle = (id: string) =>
     setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
@@ -141,6 +164,28 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
       return;
     }
 
+    let freeTrialSaveNumber: number | null = null;
+    if (freeTrialActive) {
+      try {
+        const existing = await getInjections();
+        if (existing.length >= FREE_INJECTION_LIMIT) {
+          Alert.alert(
+            'Unlock unlimited usage',
+            `You used your ${FREE_INJECTION_LIMIT} free injection logs. Unlock unlimited logging for ${LIFETIME_PRO_PRICE_LABEL}.`,
+            [
+              { text: 'Not Now', style: 'cancel' },
+              { text: 'Unlock', onPress: () => setUpgradeOpen(true) },
+            ],
+          );
+          return;
+        }
+        freeTrialSaveNumber = existing.length + 1;
+      } catch (e: any) {
+        Alert.alert('Unable to check access', e?.message || 'Please try again.');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       let uploadedPhotoUri = initialInjection?.photoUri;
@@ -172,7 +217,15 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
         await saveInjection(record);
       }
 
-      Alert.alert(isEditing ? 'Record updated' : 'Saved!', isEditing ? 'Your changes have been saved.' : 'Your injection has been logged.', [
+      const savedMessage = isEditing
+        ? 'Your changes have been saved.'
+        : freeTrialSaveNumber
+          ? freeTrialSaveNumber >= FREE_INJECTION_LIMIT
+            ? `Your second free log has been saved. Unlock unlimited usage for ${LIFETIME_PRO_PRICE_LABEL} whenever you are ready.`
+            : `Your first free log has been saved. You have ${FREE_INJECTION_LIMIT - freeTrialSaveNumber} free log remaining.`
+          : 'Your injection has been logged.';
+
+      Alert.alert(isEditing ? 'Record updated' : 'Saved!', savedMessage, [
         { text: 'OK', onPress: () => {
           setPeptide(null);
           setDose('');
@@ -190,6 +243,10 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
       setSaving(false);
     }
   };
+
+  if (freeTrialActive && freeLogCount !== null && freeLogCount >= FREE_INJECTION_LIMIT) {
+    return <UpgradeScreen onClose={onCancel || onDone} />;
+  }
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
@@ -217,6 +274,17 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
             </Pressable>
           </View>
         )}
+        {freeTrialActive && freeLogCount !== null && (
+          <Card style={s.trialCard}>
+            <CardLabel icon="◆">FREE TRIAL</CardLabel>
+            <Text style={s.trialTitle}>
+              {freeLogsRemaining} of {FREE_INJECTION_LIMIT} free logs remaining
+            </Text>
+            <Text style={s.trialBody}>
+              Try the tracker with two saved injection records. Unlock unlimited usage for {LIFETIME_PRO_PRICE_LABEL}.
+            </Text>
+          </Card>
+        )}
 
         {/* Peptide selector */}
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
@@ -233,11 +301,11 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
           </Pressable>
           <Pressable
             style={s.templateBtn}
-            onPress={openTemplates}
+            onPress={freeTrialActive ? () => setUpgradeOpen(true) : openTemplates}
             accessibilityRole="button"
             accessibilityLabel="Use a saved record template"
           >
-            <Text style={s.templateBtnText}>Use Record Template</Text>
+            <Text style={s.templateBtnText}>{freeTrialActive ? 'Unlock Record Templates' : 'Use Record Template'}</Text>
           </Pressable>
         </View>
 
@@ -406,6 +474,9 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
           </SafeAreaView>
         </View>
       </Modal>
+      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}>
+        <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -475,6 +546,9 @@ function PeptidePickerSheet({
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.8, marginBottom: 12 },
+  trialCard: { borderColor: colors.teal, backgroundColor: 'rgba(20,184,166,0.08)' },
+  trialTitle: { color: colors.white, fontSize: 17, fontWeight: '700', marginBottom: 6 },
+  trialBody: { color: colors.text, fontSize: 12, lineHeight: 18 },
   cancelRow: { paddingHorizontal: spacing.xl, marginBottom: spacing.md },
   cancelBtn: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingRight: 12 },
   cancelBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
