@@ -407,7 +407,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
         </Card>
 
         <Text style={s.calculatorFootnote}>
-          Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100. Verify all entered values and results independently.
+          Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100, with each marking shown in mcg and mg. Verify all entered values and results independently.
         </Text>
       </ScrollView>
     </ToolShell>
@@ -426,10 +426,7 @@ function formatNumber(value: number): string {
 }
 
 function formatMassReference(mcg: number): string {
-  if (mcg >= 1000) {
-    return `${formatNumber(mcg / 1000)} mg (${formatNumber(mcg)} mcg)`;
-  }
-  return `${formatNumber(mcg)} mcg`;
+  return `${formatNumber(mcg)} mcg / ${formatNumber(mcg / 1000)} mg`;
 }
 
 function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
