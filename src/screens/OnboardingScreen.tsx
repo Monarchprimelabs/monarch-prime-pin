@@ -143,7 +143,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
         <Text style={s.welcomeHeadline}>Private peptide tracking,{'\n'}without the clutter.</Text>
         <Text style={s.welcomeSub}>
-          Start with free core tracking. Build a complete history, review site rotation, and keep your records on your device.
+          Try the tracker with 2 saved logs. Unlock Lifetime Pro once for unlimited tracking, reports, reminders, and tools.
         </Text>
 
         <View style={s.featureList}>
@@ -166,7 +166,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
           <Text style={s.ctaBtnText}>Get Started</Text>
         </Pressable>
         <Text style={s.complianceNote}>
-          Core tracking stays free.{'\n'}For research organization only. Not medical advice.
+          Start free with 2 saved logs.{'\n'}For research organization only. Not medical advice.
         </Text>
       </View>
     </View>

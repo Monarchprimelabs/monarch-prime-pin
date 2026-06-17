@@ -66,7 +66,7 @@ For Android, paid-app ownership requires a separate Play licensing or backend mi
    - Product ID: `com.monarchprime.pin.pro.lifetime`
    - Reference name: `Monarch Lifetime Pro`
    - Suggested launch price: `$4.99`
-3. Build the free-download version with `EXPO_PUBLIC_MONETIZATION_ENABLED=true`.
+3. Build the free-download iOS version with the `ios-production` EAS profile. That profile sets `EXPO_PUBLIC_MONETIZATION_ENABLED=true`.
 4. Confirm an existing production purchaser sees `Founding purchaser · Lifetime Pro`.
 5. Confirm a fresh install sees `Free plan`, can save two records, and is blocked on the third new record.
 6. Confirm the Lifetime Pro purchase unlocks unlimited logging and Pro tools in TestFlight.
@@ -75,7 +75,7 @@ For Android, paid-app ownership requires a separate Play licensing or backend mi
 Previous early-access sequence:
 
 1. Ship version `1.1.0` while the iOS app still costs `$4.99`.
-2. Leave `EXPO_PUBLIC_MONETIZATION_ENABLED` unset or `false` in that transition build.
+2. Leave `EXPO_PUBLIC_MONETIZATION_ENABLED` unset or `false` in that transition build. Use `android-production` for Android until the matching Google Play product is configured.
 3. Confirm an existing production purchaser sees `Founding purchaser · Lifetime Pro`.
 4. Confirm a fresh install sees `Early access · Pro preview`.
 

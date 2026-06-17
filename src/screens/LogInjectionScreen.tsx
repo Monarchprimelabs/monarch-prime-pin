@@ -169,14 +169,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
       try {
         const existing = await getInjections();
         if (existing.length >= FREE_INJECTION_LIMIT) {
-          Alert.alert(
-            'Unlock unlimited usage',
-            `You used your ${FREE_INJECTION_LIMIT} free injection logs. Unlock unlimited logging for ${LIFETIME_PRO_PRICE_LABEL}.`,
-            [
-              { text: 'Not Now', style: 'cancel' },
-              { text: 'Unlock', onPress: () => setUpgradeOpen(true) },
-            ],
-          );
+          setFreeLogCount(existing.length);
+          setUpgradeOpen(true);
           return;
         }
         freeTrialSaveNumber = existing.length + 1;

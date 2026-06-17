@@ -17,7 +17,6 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.monarchprime.pin",
-      "buildNumber": "9",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your research log entries.",
         "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library for your research records.",

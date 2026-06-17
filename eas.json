@@ -12,14 +12,28 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true,
+      "autoIncrement": true
+    },
+    "ios-production": {
+      "extends": "production",
       "env": {
         "EXPO_PUBLIC_MONETIZATION_ENABLED": "true"
+      }
+    },
+    "android-production": {
+      "extends": "production",
+      "env": {
+        "EXPO_PUBLIC_MONETIZATION_ENABLED": "false"
       }
     }
   },
   "submit": {
     "production": {
+      "ios": {
+        "ascAppId": "6770808426"
+      }
+    },
+    "ios-production": {
       "ios": {
         "ascAppId": "6770808426"
       }

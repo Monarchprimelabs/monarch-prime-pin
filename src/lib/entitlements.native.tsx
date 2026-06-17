@@ -21,7 +21,8 @@ export const LIFETIME_PRO_PRICE_LABEL = '$4.99';
 // after this point should not be grandfathered as founding purchasers.
 export const LAST_PAID_APP_VERSION = '1.0.5';
 
-// Keep false until Lifetime Pro is configured and approved in App Store Connect.
+// EAS profiles enable this for monetized iOS builds. Keep it unset/false for
+// Expo Go and Android until the matching store product is configured there.
 export const MONETIZATION_ENABLED = process.env.EXPO_PUBLIC_MONETIZATION_ENABLED === 'true';
 
 export type EntitlementSource = 'free' | 'early-access' | 'legacy-install' | 'paid-app' | 'lifetime';

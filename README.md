@@ -198,15 +198,16 @@ eas submit --platform android
 
 ## App Store Listing — Pricing
 
-The next monetization phase uses a **free core + optional Lifetime Pro** model:
+The next monetization phase uses a **2-log free trial + optional Lifetime Pro** model:
 
-- Free: tracking, complete history, calendar review, and site rotation
+- Free: app exploration, history/site rotation for saved records, and 2 saved injection logs
 - Lifetime Pro: reports, schedules/reminders, inventory, templates, and concentration worksheet
 - Existing paid-download customers are grandfathered into Lifetime Pro
 
-Keep `EXPO_PUBLIC_MONETIZATION_ENABLED` unset until the non-consumable product
-`com.monarchprime.pin.pro.lifetime` is configured and approved. See
-`docs/app-store-phase-2.md` for the required rollout order.
+Use the `ios-production` EAS profile for monetized iOS TestFlight/App Store
+builds. Keep Android builds on `android-production` until the matching Google
+Play product is configured. See `docs/app-store-phase-2.md` for the required
+rollout order.
 
 ## Troubleshooting
 
