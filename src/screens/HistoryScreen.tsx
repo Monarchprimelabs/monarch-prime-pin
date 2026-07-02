@@ -149,6 +149,9 @@ function RecordDetail({
         </View>
         <DetailRow label="Recorded site" value={record.site} />
         <DetailRow label="Side effects" value={severityLabel(record.sev)} />
+        {!!record.symptoms?.length && (
+          <DetailRow label="Symptoms" value={record.symptoms.join(', ')} />
+        )}
         {record.weight > 0 && <DetailRow label="Weight" value={`${record.weight} lbs`} />}
         {!!record.notes && <DetailRow label="Notes" value={record.notes} />}
         {!!record.photoUri && (
