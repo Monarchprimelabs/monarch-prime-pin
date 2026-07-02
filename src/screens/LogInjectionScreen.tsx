@@ -479,8 +479,61 @@ function PeptidePickerSheet({
   onClose, onSelect,
 }: { onClose: () => void; onSelect: (p: Peptide) => void }) {
   const [q, setQ] = useState('');
+  const [customMode, setCustomMode] = useState(false);
+  const [customName, setCustomName] = useState('');
   const filt = (list: Peptide[]) =>
     q ? list.filter(x => x.name.toLowerCase().includes(q.toLowerCase())) : list;
+
+  const submitCustomName = () => {
+    const trimmed = customName.trim();
+    if (!trimmed) return;
+    Keyboard.dismiss();
+    onSelect({ id: 'custom', name: trimmed, defaultUnit: 'mcg' });
+  };
+
+  if (customMode) {
+    return (
+      <KeyboardAvoidingView
+        style={s.sheetOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable style={s.sheetBackdrop} onPress={() => { Keyboard.dismiss(); onClose(); }} />
+        <SafeAreaView style={s.sheet} edges={['bottom']}>
+          <View style={s.sheetHeader}>
+            <Text style={s.sheetTitle}>Custom Peptide</Text>
+            <Pressable onPress={() => { Keyboard.dismiss(); onClose(); }}>
+              <Text style={s.sheetDone}>Done</Text>
+            </Pressable>
+          </View>
+          <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.md }}>
+            <TextInput
+              placeholder="Enter peptide name…"
+              placeholderTextColor={colors.textFaint}
+              value={customName}
+              onChangeText={setCustomName}
+              style={s.sheetSearch}
+              autoFocus
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={submitCustomName}
+            />
+            <Pressable
+              style={[s.templateBtn, !customName.trim() && { opacity: 0.4 }]}
+              onPress={submitCustomName}
+              disabled={!customName.trim()}
+            >
+              <Text style={s.templateBtnText}>Use This Name</Text>
+            </Pressable>
+            <Pressable onPress={() => { setCustomMode(false); setCustomName(''); }}>
+              <Text style={[s.templateBtnText, { color: colors.textMuted, marginTop: 4 }]}>
+                Choose from list instead
+              </Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -525,7 +578,14 @@ function PeptidePickerSheet({
             return (
               <Pressable
                 style={s.sheetRow}
-                onPress={() => { Keyboard.dismiss(); onSelect(item); }}
+                onPress={() => {
+                  if (item.id === 'custom') {
+                    setCustomMode(true);
+                    return;
+                  }
+                  Keyboard.dismiss();
+                  onSelect(item);
+                }}
               >
                 <Text style={s.sheetRowName}>{item.name}</Text>
               </Pressable>

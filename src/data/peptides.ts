@@ -26,6 +26,7 @@ export const PEPTIDES = {
     { id: 'tha1',   name: 'Thymosin Alpha-1',  defaultUnit: 'mg'  as const },
     { id: 'nad',    name: 'NAD+',              defaultUnit: 'mg'  as const },
     { id: 'dsip',   name: 'DSIP',              defaultUnit: 'mcg' as const },
+    { id: 'motsc',  name: 'MOTS-c',            defaultUnit: 'mg'  as const },
     // Neurological / Mood
     { id: 'selank', name: 'Selank',            defaultUnit: 'mcg' as const },
     { id: 'semax',  name: 'Semax',             defaultUnit: 'mcg' as const },
