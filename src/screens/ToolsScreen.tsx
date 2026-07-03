@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing } from '../theme';
 import {
@@ -24,13 +25,13 @@ import { hapticTap } from '../lib/haptics';
 
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
-const TOOLS: { id: ToolId; icon: string; title: string; sub: string; pro?: boolean }[] = [
-  { id: 'schedule', icon: '📅', title: 'Schedule & Reminders', sub: 'Create your own dated reminders', pro: true },
-  { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels', pro: true },
-  { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts', pro: true },
-  { id: 'conversion', icon: '▱', title: 'Concentration Worksheet', sub: 'Calculate concentration from entered mass and volume', pro: true },
-  { id: 'export', icon: '⇪', title: 'Export Data (CSV)', sub: 'Share all saved records as a spreadsheet file' },
-  { id: 'settings', icon: '⚙', title: 'Settings & Access', sub: 'Profile, Pro access, local data, and legal information' },
+const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; title: string; sub: string; pro?: boolean }[] = [
+  { id: 'schedule', icon: 'calendar-outline', title: 'Schedule & Reminders', sub: 'Create your own dated reminders', pro: true },
+  { id: 'inventory', icon: 'cube-outline', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels', pro: true },
+  { id: 'templates', icon: 'document-text-outline', title: 'Record Templates', sub: 'Save reusable labels and note prompts', pro: true },
+  { id: 'conversion', icon: 'calculator-outline', title: 'Concentration Worksheet', sub: 'Calculate concentration from entered mass and volume', pro: true },
+  { id: 'export', icon: 'share-outline', title: 'Export Data (CSV)', sub: 'Share all saved records as a spreadsheet file' },
+  { id: 'settings', icon: 'settings-outline', title: 'Settings & Access', sub: 'Profile, Pro access, local data, and legal information' },
 ];
 
 function isValidDate(value: string): boolean {
@@ -89,7 +90,7 @@ export function ToolsScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Open ${tool.title}`}
           >
-            <Text style={s.toolIcon}>{tool.icon}</Text>
+            <Ionicons name={tool.icon} size={22} color={colors.primary} style={s.toolIcon} />
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{tool.title}</Text>
@@ -670,7 +671,7 @@ const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
   toolRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: 14 },
-  toolIcon: { width: 42, color: colors.primary, fontSize: 22, fontWeight: '700' },
+  toolIcon: { width: 42 },
   toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   proBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },

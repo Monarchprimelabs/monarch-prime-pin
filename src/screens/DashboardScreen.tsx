@@ -10,6 +10,7 @@ import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { LogInjectionScreen } from './LogInjectionScreen';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   onNavigate: (tab: string) => void;
@@ -107,9 +108,9 @@ export function DashboardScreen({ onNavigate }: Props) {
         />
 
         <View style={s.statRow}>
-          <StatCard icon="🔥" value={stats.streak} label="Day Streak" />
-          <StatCard icon="💉" value={stats.total} label="Total Inj." />
-          <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
+          <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label="Day Streak" />
+          <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label="Total Inj." />
+          <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label="This Week" />
         </View>
 
         {(stats.longestStreak > 1 || !!recordMilestone) && (
@@ -201,7 +202,8 @@ export function DashboardScreen({ onNavigate }: Props) {
 
         <View style={s.qaRow}>
           <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
-            <Text style={s.qaPrimaryText}>💉  Log Injection</Text>
+            <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
+            <Text style={s.qaPrimaryText}>Log Injection</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -219,10 +221,12 @@ export function DashboardScreen({ onNavigate }: Props) {
   );
 }
 
-function StatCard({ icon, value, label }: { icon: string; value: number; label: string }) {
+function StatCard({ icon, color, value, label }: {
+  icon: keyof typeof Ionicons.glyphMap; color: string; value: number; label: string;
+}) {
   return (
     <View style={s.statCard}>
-      <Text style={s.statIcon}>{icon}</Text>
+      <Ionicons name={icon} size={20} color={color} style={s.statIcon} />
       <Text style={s.statVal}>{value}</Text>
       <Text style={s.statLabel}>{label}</Text>
     </View>
@@ -250,7 +254,7 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  statIcon: { fontSize: 18, marginBottom: 4 },
+  statIcon: { marginBottom: 4 },
   milestoneLine: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -6, marginBottom: 14 },
   statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
@@ -311,7 +315,8 @@ const s = StyleSheet.create({
   qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {
     backgroundColor: colors.action, borderRadius: radius.md,
-    paddingVertical: 15, alignItems: 'center',
+    paddingVertical: 15, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 8,
   },
   qaPrimaryText: { color: colors.actionText, fontSize: 15, fontWeight: '700' },
 });
