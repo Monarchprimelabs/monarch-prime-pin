@@ -10,6 +10,8 @@ import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { LogInjectionScreen } from './LogInjectionScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KEY_LAST_BACKUP_AT } from '../lib/backup';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
@@ -40,11 +42,23 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [reminderDismissed, setReminderDismissed] = useState(false);
   const [repeatOpen, setRepeatOpen] = useState(false);
 
+  const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
+
   const refresh = () => {
     getInjections().then(setInjections);
     getSchedules().then(setSchedules);
+    AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
   };
   useEffect(() => { refresh(); }, []);
+
+  // Gentle backup nudge once there is meaningful data and the last export
+  // is missing or older than 30 days. undefined = still loading, no nudge.
+  const backupDaysAgo = lastBackupAt
+    ? Math.floor((Date.now() - new Date(lastBackupAt).getTime()) / (24 * 60 * 60 * 1000))
+    : null;
+  const showBackupNudge = lastBackupAt !== undefined
+    && injections.length >= 5
+    && (lastBackupAt === null || (backupDaysAgo !== null && backupDaysAgo > 30));
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -170,6 +184,18 @@ export function DashboardScreen({ onNavigate }: Props) {
           </Pressable>
         )}
 
+        {showBackupNudge && (
+          <Pressable style={s.backupNudge} onPress={() => onNavigate('settings')}>
+            <Ionicons name="cloud-upload-outline" size={18} color={colors.teal} />
+            <Text style={s.backupNudgeText}>
+              {lastBackupAt === null
+                ? 'Your records have never been backed up. Export a backup file from Tools → Settings.'
+                : `Last backup: ${backupDaysAgo} days ago. Export a fresh backup from Tools → Settings.`}
+            </Text>
+            <Text style={s.unlockChev}>›</Text>
+          </Pressable>
+        )}
+
         <Card>
           <CardLabel icon="📍">SITE HEATMAP</CardLabel>
           <ViewPill view={view} setView={setView} />
@@ -283,6 +309,13 @@ const s = StyleSheet.create({
   },
   statIcon: { marginBottom: 4 },
   milestoneLine: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -6, marginBottom: 14 },
+  backupNudge: {
+    marginHorizontal: spacing.xl, marginBottom: 14, padding: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: 'rgba(20,184,166,0.06)', borderWidth: 1,
+    borderColor: 'rgba(20,184,166,0.25)', borderRadius: radius.lg,
+  },
+  backupNudgeText: { flex: 1, color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
