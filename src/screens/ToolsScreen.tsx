@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing } from '../theme';
 import {
@@ -134,6 +135,24 @@ function repeatWeekdayName(date: string): string {
   return Number.isNaN(parsed.getTime()) ? '' : WEEKDAY_NAMES[parsed.getDay()];
 }
 
+// Storage stays ISO (YYYY-MM-DD) — sorting and the dashboard's next-entry
+// lookup depend on it. Only the display uses MM-DD-YYYY.
+function displayDate(iso: string): string {
+  if (!isValidDate(iso)) return iso;
+  const [year, month, day] = iso.split('-');
+  return `${month}-${day}-${year}`;
+}
+
+function toIsoDate(value: Date): string {
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${value.getFullYear()}-${month}-${day}`;
+}
+
+function toTimeString(value: Date): string {
+  return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
+}
+
 function ScheduleTool({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<ScheduleEntry[]>([]);
   const [title, setTitle] = useState('');
@@ -142,8 +161,14 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
   const [notes, setNotes] = useState('');
   const [repeat, setRepeat] = useState<ScheduleRepeat>('once');
   const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const refresh = () => getSchedules().then(values => setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))));
   useEffect(() => { refresh(); }, []);
+
+  const pickerDateValue = isValidDate(date) && isValidTime(time)
+    ? new Date(`${date}T${time}:00`)
+    : new Date();
 
   const add = async () => {
     if (!title.trim() || !isValidDate(date) || !isValidTime(time)) {
@@ -194,9 +219,62 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
           <CardLabel icon="＋">NEW SCHEDULE ENTRY</CardLabel>
           <Field value={title} setValue={setTitle} placeholder="Entry title" />
           <View style={s.twoCol}>
-            <Field value={date} setValue={setDate} placeholder="YYYY-MM-DD" style={{ flex: 1 }} />
-            <Field value={time} setValue={setTime} placeholder="HH:MM" style={{ flex: 1 }} />
+            <Pressable
+              style={[s.input, s.pickerField, { flex: 1 }]}
+              onPress={() => { setShowTimePicker(false); setShowDatePicker(current => !current); }}
+              accessibilityRole="button"
+              accessibilityLabel="Choose date"
+            >
+              <Text style={s.pickerFieldText}>📅 {displayDate(date)}</Text>
+            </Pressable>
+            <Pressable
+              style={[s.input, s.pickerField, { flex: 1 }]}
+              onPress={() => { setShowDatePicker(false); setShowTimePicker(current => !current); }}
+              accessibilityRole="button"
+              accessibilityLabel="Choose time"
+            >
+              <Text style={s.pickerFieldText}>🕘 {time}</Text>
+            </Pressable>
           </View>
+          {showDatePicker && (
+            <View style={s.pickerWrap}>
+              <DateTimePicker
+                value={pickerDateValue}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                themeVariant="dark"
+                accentColor={colors.primary}
+                onChange={(_event, selected) => {
+                  if (Platform.OS !== 'ios') setShowDatePicker(false);
+                  if (selected) setDate(toIsoDate(selected));
+                }}
+              />
+              {Platform.OS === 'ios' && (
+                <Pressable style={s.pickerDone} onPress={() => setShowDatePicker(false)}>
+                  <Text style={s.pickerDoneText}>Done</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+          {showTimePicker && (
+            <View style={s.pickerWrap}>
+              <DateTimePicker
+                value={pickerDateValue}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant="dark"
+                onChange={(_event, selected) => {
+                  if (Platform.OS !== 'ios') setShowTimePicker(false);
+                  if (selected) setTime(toTimeString(selected));
+                }}
+              />
+              {Platform.OS === 'ios' && (
+                <Pressable style={s.pickerDone} onPress={() => setShowTimePicker(false)}>
+                  <Text style={s.pickerDoneText}>Done</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
           <Field value={notes} setValue={setNotes} placeholder="Optional notes" multiline />
           <View style={s.segment}>
             {(['once', 'daily', 'weekly'] as const).map(option => (
@@ -235,7 +313,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
             <ListItem
               key={item.id}
               title={item.title}
-              meta={`${item.date} · ${item.time}${item.repeat === 'daily' ? ' · Repeats daily' : item.repeat === 'weekly' ? ` · Repeats every ${repeatWeekdayName(item.date) || 'week'}` : ''}${item.completedAt ? ' · Completed' : item.reminderEnabled ? ' · Reminder on' : ''}${item.notes ? `\n${item.notes}` : ''}`}
+              meta={`${displayDate(item.date)} · ${item.time}${item.repeat === 'daily' ? ' · Repeats daily' : item.repeat === 'weekly' ? ` · Repeats every ${repeatWeekdayName(item.date) || 'week'}` : ''}${item.completedAt ? ' · Completed' : item.reminderEnabled ? ' · Reminder on' : ''}${item.notes ? `\n${item.notes}` : ''}`}
               accent={item.completedAt ? colors.teal : undefined}
               actions={(!item.repeat || item.repeat === 'once') ? (
                 <Pressable style={s.completeBtn} onPress={() => toggleComplete(item)}>
@@ -628,6 +706,14 @@ const s = StyleSheet.create({
   segmentText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   segmentTextActive: { color: colors.white },
   repeatHint: { color: colors.textMuted, fontSize: 11, marginTop: -4, marginBottom: 10 },
+  pickerField: { justifyContent: 'center' },
+  pickerFieldText: { color: colors.text, fontSize: 14 },
+  pickerWrap: {
+    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, marginBottom: 10, paddingHorizontal: 6, paddingTop: 2,
+  },
+  pickerDone: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  pickerDoneText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   unitRow: { flexDirection: 'row', gap: 7, marginBottom: 10 },
   unitBtn: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, backgroundColor: colors.bgInput },
   unitBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)', borderColor: colors.primary },

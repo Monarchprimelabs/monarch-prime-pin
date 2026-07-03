@@ -15,6 +15,12 @@ type Props = {
   onNavigate: (tab: string) => void;
 };
 
+function displayDate(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  const [year, month, day] = iso.split('-');
+  return `${month}-${day}-${year}`;
+}
+
 function getGreetingName(name?: string, email?: string) {
   const cleaned = name?.trim().replace(/\s+/g, ' ') || '';
   const emailPrefix = email?.split('@')[0]?.toLowerCase();
@@ -154,7 +160,7 @@ export function DashboardScreen({ onNavigate }: Props) {
             <View style={{ flex: 1 }}>
               <Text style={s.scheduleEyebrow}>NEXT SCHEDULED ENTRY</Text>
               <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
-              <Text style={s.scheduleMeta}>{nextSchedule.date} · {nextSchedule.time}</Text>
+              <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
             </View>
             <View style={s.scheduleDone}>
               <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
