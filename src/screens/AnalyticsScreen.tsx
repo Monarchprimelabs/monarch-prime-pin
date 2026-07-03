@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Alert, Pressable, Share, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Circle as SvgCircle, Polyline, Text as SvgText } from 'react-native-svg';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
 import { ALL_ZONES, Injection } from '../data/peptides';
@@ -156,6 +158,53 @@ export function AnalyticsScreen() {
     }
   };
 
+  const [buildingPdf, setBuildingPdf] = useState(false);
+  const sharePdfReport = async () => {
+    if (buildingPdf) return;
+    setBuildingPdf(true);
+    try {
+      const esc = (value: unknown) => String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const rows = monthRecords
+        .map(record => `<tr><td>${esc(record.date)} ${esc(record.time)}</td><td>${esc(record.peptide)}</td><td>${esc(record.dose)}${esc(record.unit)}</td><td>${esc(record.site)}</td><td>${esc(severityLabelPdf(record.sev))}</td></tr>`)
+        .join('');
+      const html = `
+        <html><head><meta charset="utf-8"><style>
+          body { font-family: -apple-system, Helvetica, sans-serif; color: #111; padding: 28px; }
+          h1 { font-size: 20px; margin: 0 0 2px; } h2 { font-size: 14px; color: #555; font-weight: 400; margin: 0 0 18px; }
+          .stats { display: flex; gap: 24px; margin-bottom: 18px; }
+          .stat b { display: block; font-size: 18px; } .stat span { font-size: 11px; color: #666; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th, td { border: 1px solid #ccc; padding: 5px 7px; text-align: left; }
+          th { background: #f0f2f5; }
+          .foot { margin-top: 20px; font-size: 9px; color: #777; }
+        </style></head><body>
+          <h1>Monarch Prime Pin — Research Record Summary</h1>
+          <h2>${esc(monthLabel)}</h2>
+          <div class="stats">
+            <div class="stat"><b>${monthRecords.length}</b><span>Saved records</span></div>
+            <div class="stat"><b>${monthDays}</b><span>Active record days</span></div>
+            <div class="stat"><b>${monthSites}</b><span>Site selections</span></div>
+            <div class="stat"><b>${esc(monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'None')}</b><span>Most recorded</span></div>
+          </div>
+          <table>
+            <tr><th>Date</th><th>Compound</th><th>Dose</th><th>Sites</th><th>Side effects</th></tr>
+            ${rows || '<tr><td colspan="5">No saved records this month</td></tr>'}
+          </table>
+          <p class="foot">All values were entered by the user. For research organization and recordkeeping only — not medical advice. Generated ${esc(new Date().toISOString().slice(0, 10))}.</p>
+        </body></html>`;
+      const { uri } = await Print.printToFileAsync({ html });
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) throw new Error('Sharing is not available on this device.');
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `${monthLabel} Record Summary`, UTI: 'com.adobe.pdf' });
+    } catch (e: any) {
+      Alert.alert('Unable to create PDF', e?.message || 'Please try again.');
+    } finally {
+      setBuildingPdf(false);
+    }
+  };
+
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
@@ -172,6 +221,15 @@ export function AnalyticsScreen() {
           <Text style={s.reportLine}>Most recorded: {monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'No records this month'}</Text>
           <Pressable style={s.shareBtn} onPress={shareReport} accessibilityRole="button" accessibilityLabel="Share monthly record summary">
             <Text style={s.shareBtnText}>Share Record Summary</Text>
+          </Pressable>
+          <Pressable
+            style={[s.pdfBtn, buildingPdf && { opacity: 0.5 }]}
+            disabled={buildingPdf}
+            onPress={sharePdfReport}
+            accessibilityRole="button"
+            accessibilityLabel="Share monthly summary as PDF"
+          >
+            <Text style={s.pdfBtnText}>{buildingPdf ? 'Preparing PDF…' : 'Share as PDF'}</Text>
           </Pressable>
         </Card>
         <Card>
@@ -330,6 +388,10 @@ export function AnalyticsScreen() {
   );
 }
 
+function severityLabelPdf(value: string): string {
+  return value === 'none' ? 'None' : value === 'mild' ? 'Mild' : value === 'mod' ? 'Moderate' : 'Severe';
+}
+
 function formatDoseNumber(value: number): string {
   const abs = Math.abs(value);
   const maximumFractionDigits = abs >= 100 ? 1 : abs >= 1 ? 2 : 3;
@@ -374,6 +436,11 @@ const s = StyleSheet.create({
   chipTextActive: { color: colors.teal },
   shareBtn: { minHeight: 46, backgroundColor: colors.action, borderWidth: 1, borderColor: colors.borderOrange, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   shareBtnText: { color: colors.actionText, fontSize: 13, fontWeight: '700' },
+  pdfBtn: {
+    minHeight: 44, marginTop: 8, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+  },
+  pdfBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 
   barChart: { flexDirection: 'row', height: 140, alignItems: 'flex-end', gap: 4, paddingVertical: 8 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 4 },
