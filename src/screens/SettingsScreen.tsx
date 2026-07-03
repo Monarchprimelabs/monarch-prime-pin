@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
@@ -8,6 +10,7 @@ import { clearLocalData } from '../lib/storage';
 import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
 import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { hapticSuccess } from '../lib/haptics';
+import { KEY_APP_LOCK } from '../components/AppLockGate';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -64,10 +67,38 @@ function RemindersTab() {
   const [savingName, setSavingName] = useState(false);
   const [funnel, setFunnel] = useState<FunnelStats | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [appLockEnabled, setAppLockEnabled] = useState(false);
 
   useEffect(() => {
     if (user?.isDeveloper) getFunnelStats().then(setFunnel).catch(() => undefined);
   }, [user?.isDeveloper]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(KEY_APP_LOCK)
+      .then(value => setAppLockEnabled(value === 'true'))
+      .catch(() => undefined);
+  }, []);
+
+  const toggleAppLock = async (next: boolean) => {
+    if (next) {
+      try {
+        const level = await LocalAuthentication.getEnrolledLevelAsync();
+        if (level === LocalAuthentication.SecurityLevel.NONE) {
+          Alert.alert(
+            'Set up a device passcode first',
+            'Add a passcode or Face ID in your device settings before turning on the app lock, so you cannot get locked out of your records.',
+          );
+          return;
+        }
+      } catch {
+        // If the check itself fails, fall through and allow the toggle;
+        // authenticateAsync will surface any real problem at unlock time.
+      }
+    }
+    setAppLockEnabled(next);
+    AsyncStorage.setItem(KEY_APP_LOCK, next ? 'true' : 'false').catch(() => undefined);
+    if (next) hapticSuccess();
+  };
 
   const runBackupExport = async () => {
     setBackupBusy(true);
@@ -217,6 +248,23 @@ function RemindersTab() {
         <Text style={s.localDataText}>
           Your research logs and organization-tool entries are stored locally on this device. Deleting your account removes the local profile, schedules, inventory, templates, and locally stored log data from this device.
         </Text>
+      </Card>
+
+      <Card>
+        <CardLabel icon="🔒">PRIVACY & APP LOCK</CardLabel>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.localDataText}>
+              Require Face ID or your device passcode to open the app. Content is also hidden in the app switcher.
+            </Text>
+          </View>
+          <Switch
+            value={appLockEnabled}
+            onValueChange={toggleAppLock}
+            trackColor={{ false: 'rgba(120,130,150,0.4)', true: colors.primary }}
+            thumbColor={colors.white}
+          />
+        </View>
       </Card>
 
       <Card>
