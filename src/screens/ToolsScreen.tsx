@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing } from '../theme';
 import {
@@ -355,10 +357,46 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
+const KEY_WORKSHEET_INPUTS = '@mpp/worksheet_inputs';
+const U100_MARKINGS = [1, 5, 10, 20, 50];
+
 function ConversionTool({ onClose }: { onClose: () => void }) {
   const [solutionMass, setSolutionMass] = useState('');
   const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
   const [liquidVolume, setLiquidVolume] = useState('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(KEY_WORKSHEET_INPUTS)
+      .then(raw => {
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (typeof saved.mass === 'string') setSolutionMass(saved.mass);
+        if (saved.unit === 'mg' || saved.unit === 'mcg') setSolutionMassUnit(saved.unit);
+        if (typeof saved.volume === 'string') setLiquidVolume(saved.volume);
+      })
+      .catch(() => undefined)
+      .finally(() => { hydrated.current = true; });
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    AsyncStorage.setItem(
+      KEY_WORKSHEET_INPUTS,
+      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume }),
+    ).catch(() => undefined);
+  }, [solutionMass, solutionMassUnit, liquidVolume]);
+
+  const copyText = async (key: string, text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(current => (current === key ? null : current)), 1400);
+    } catch {
+      // Clipboard is best-effort; never block the worksheet.
+    }
+  };
 
   const worksheetResults = useMemo(() => {
     const mass = parsePositiveNumber(solutionMass);
@@ -375,11 +413,21 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
       ],
       u100: [
         { label: 'Entered volume', value: `${formatNumber(totalU100Units)} U-100 units` },
-        { label: '1 unit equals', value: formatMassReference(mcgPerUnit) },
-        { label: '10 units equals', value: formatMassReference(mcgPerUnit * 10) },
+        ...U100_MARKINGS.map(units => ({
+          label: `${units} unit mark${units === 1 ? '' : 's'}`,
+          value: formatMass(mcgPerUnit * units),
+        })),
       ],
     };
   }, [liquidVolume, solutionMass, solutionMassUnit]);
+
+  const summaryText = worksheetResults.concentration.length === 0 ? null : [
+    'Monarch Prime Pin — Concentration Worksheet',
+    `Entered: ${solutionMass} ${solutionMassUnit} total mass in ${liquidVolume} mL`,
+    ...worksheetResults.concentration.map(result => `${result.label}: ${result.value}`),
+    ...worksheetResults.u100.map(result => `${result.label}: ${result.value}`),
+    'For research organization only. Verify all values independently.',
+  ].join('\n');
 
   return (
     <ToolShell title="Concentration Worksheet" onClose={onClose}>
@@ -405,15 +453,21 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
           <Text style={[s.fieldLabel, { marginTop: 14 }]}>LIQUID VOLUME (mL)</Text>
           <Field value={liquidVolume} setValue={setLiquidVolume} placeholder="Enter liquid volume in mL" keyboardType="decimal-pad" />
           <View style={s.resultPanel}>
-            {worksheetResults.concentration.length > 0 ? worksheetResults.concentration.map((result, index) => (
-              <View key={`${result.value}-${index}`} style={s.resultRow}>
-                <Text style={s.resultLabel}>{result.label}</Text>
-                <Text style={s.resultValue}>{result.value}</Text>
-              </View>
-            )) : (
+            {worksheetResults.concentration.length > 0 ? worksheetResults.concentration.map((result, index) => {
+              const rowKey = `conc-${index}`;
+              return (
+                <Pressable key={rowKey} style={s.resultRow} onPress={() => copyText(rowKey, result.value)}>
+                  <Text style={s.resultLabel}>{copiedKey === rowKey ? 'Copied ✓' : result.label}</Text>
+                  <Text style={s.resultValue}>{result.value}</Text>
+                </Pressable>
+              );
+            }) : (
               <Text style={s.resultEmpty}>Enter mass and liquid volume to view concentration</Text>
             )}
           </View>
+          {worksheetResults.concentration.length > 0 && (
+            <Text style={s.copyHint}>Tap any result to copy it</Text>
+          )}
         </Card>
 
         <Card>
@@ -422,19 +476,32 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
             Standard U-100 markings use 100 units per 1 mL. This reference only converts the liquid volume you entered into unit markings and shows how much mass each marking represents.
           </Text>
           <View style={s.resultPanel}>
-            {worksheetResults.u100.length > 0 ? worksheetResults.u100.map((result, index) => (
-              <View key={`${result.value}-${index}`} style={s.resultRow}>
-                <Text style={s.resultLabel}>{result.label}</Text>
-                <Text style={s.resultValue}>{result.value}</Text>
-              </View>
-            )) : (
+            {worksheetResults.u100.length > 0 ? worksheetResults.u100.map((result, index) => {
+              const rowKey = `u100-${index}`;
+              return (
+                <Pressable key={rowKey} style={s.resultRow} onPress={() => copyText(rowKey, result.value)}>
+                  <Text style={s.resultLabel}>{copiedKey === rowKey ? 'Copied ✓' : result.label}</Text>
+                  <Text style={s.resultValue}>{result.value}</Text>
+                </Pressable>
+              );
+            }) : (
               <Text style={s.resultEmpty}>Enter mass and liquid volume to view U-100 reference</Text>
             )}
           </View>
+          {!!summaryText && (
+            <Pressable
+              style={[s.primaryBtn, { marginTop: 12 }]}
+              onPress={() => copyText('summary', summaryText)}
+            >
+              <Text style={s.primaryBtnText}>
+                {copiedKey === 'summary' ? 'Copied ✓' : 'Copy Worksheet Summary'}
+              </Text>
+            </Pressable>
+          )}
         </Card>
 
         <Text style={s.calculatorFootnote}>
-          Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100, with each marking shown in mcg and mg. Verify all entered values and results independently.
+          Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100, with each marking shown in the clearest unit. Verify all entered values and results independently.
         </Text>
       </ScrollView>
     </ToolShell>
@@ -448,12 +515,18 @@ function parsePositiveNumber(value: string): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
+// Adaptive precision: enough decimals to be useful, never the 6-digit
+// repeating tails that overflowed the result panel (e.g. 3,333.333333).
 function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(value);
+  if (!Number.isFinite(value)) return '0';
+  const abs = Math.abs(value);
+  const maximumFractionDigits = abs >= 100 ? 1 : abs >= 1 ? 2 : abs >= 0.01 ? 3 : 4;
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(value);
 }
 
-function formatMassReference(mcg: number): string {
-  return `${formatNumber(mcg)} mcg / ${formatNumber(mcg / 1000)} mg`;
+// One clear unit per value instead of "X mcg / Y mg" on every line.
+function formatMass(mcg: number): string {
+  return mcg >= 1000 ? `${formatNumber(mcg / 1000)} mg` : `${formatNumber(mcg)} mcg`;
 }
 
 function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
@@ -540,8 +613,10 @@ const s = StyleSheet.create({
   compactTextActive: { color: colors.white },
   resultPanel: { minHeight: 78, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center' },
   resultRow: { minHeight: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  resultLabel: { color: colors.textMuted, fontSize: 13 },
-  resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right' },
+  resultLabel: { color: colors.textMuted, fontSize: 13, flexShrink: 0 },
+  // flex: 1 lets long values wrap inside the panel instead of overflowing it.
+  resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right', flex: 1 },
+  copyHint: { color: colors.textFaint, fontSize: 10, textAlign: 'center', marginTop: 8 },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
   referenceText: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
