@@ -414,7 +414,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
       u100: [
         { label: 'Entered volume', value: `${formatNumber(totalU100Units)} U-100 units` },
         ...U100_MARKINGS.map(units => ({
-          label: `${units} unit mark${units === 1 ? '' : 's'}`,
+          label: `${units} unit${units === 1 ? '' : 's'} =`,
           value: formatMass(mcgPerUnit * units),
         })),
       ],
@@ -473,7 +473,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
         <Card>
           <CardLabel icon="▱">U-100 MARKING REFERENCE</CardLabel>
           <Text style={s.referenceText}>
-            Standard U-100 markings use 100 units per 1 mL. This reference only converts the liquid volume you entered into unit markings and shows how much mass each marking represents.
+            Standard U-100 insulin syringe markings use 100 units per 1 mL. This reference only converts the liquid volume you entered into syringe unit markings and shows how much mass each marking represents, in both mg and mcg.
           </Text>
           <View style={s.resultPanel}>
             {worksheetResults.u100.length > 0 ? worksheetResults.u100.map((result, index) => {
@@ -524,9 +524,11 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(value);
 }
 
-// One clear unit per value instead of "X mcg / Y mg" on every line.
+// Both units on every line, most readable one first — e.g. "0.5 mg (500 mcg)"
+// or "50 mcg (0.05 mg)". Adaptive precision keeps them short enough to fit.
 function formatMass(mcg: number): string {
-  return mcg >= 1000 ? `${formatNumber(mcg / 1000)} mg` : `${formatNumber(mcg)} mcg`;
+  if (mcg >= 1000) return `${formatNumber(mcg / 1000)} mg (${formatNumber(mcg)} mcg)`;
+  return `${formatNumber(mcg)} mcg (${formatNumber(mcg / 1000)} mg)`;
 }
 
 function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
