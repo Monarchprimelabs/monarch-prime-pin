@@ -9,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
-import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity } from '../data/peptides';
+import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS } from '../data/peptides';
 import { getInjections, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
 import { getInjectionSiteIds } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
@@ -41,6 +41,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
   const [view, setView] = useState<'front' | 'back'>('front');
   const [selected, setSelected] = useState<string[]>(initialSites);
   const [sev, setSev] = useState<Severity>(initialInjection?.sev ?? 'none');
+  const [symptoms, setSymptoms] = useState<string[]>(initialInjection?.symptoms ?? []);
   const [weight, setWeight] = useState(initialInjection?.weight ? String(initialInjection.weight) : '');
   const [notes, setNotes] = useState(initialInjection?.notes ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(initialInjection?.photoUri ?? null);
@@ -70,6 +71,9 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
 
   const toggle = (id: string) =>
     setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+
+  const toggleSymptom = (tag: string) =>
+    setSymptoms(p => (p.includes(tag) ? p.filter(x => x !== tag) : [...p, tag]));
 
   const handleUnitChange = (u: 'mcg' | 'mg') => {
     setUnit(u);
@@ -200,6 +204,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
         time: initialInjection?.time ?? now.toTimeString().slice(0, 5),
         site: selected.map(id => { const z = ALL_ZONES.find(x => x.id === id); return z ? z.label : id; }).join(", "),
         sev,
+        symptoms: symptoms.length ? symptoms : undefined,
         weight: weight ? Number(weight) : 0,
         notes: notes || undefined,
         photoUri: uploadedPhotoUri,
@@ -371,6 +376,22 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
               </Pressable>
             ))}
           </View>
+          {sev !== 'none' && (
+            <View style={s.symptomWrap}>
+              {SIDE_EFFECT_TAGS.map(tag => {
+                const active = symptoms.includes(tag);
+                return (
+                  <Pressable
+                    key={tag}
+                    onPress={() => toggleSymptom(tag)}
+                    style={[s.symptomChip, active && s.symptomChipActive]}
+                  >
+                    <Text style={[s.symptomChipText, active && s.symptomChipTextActive]}>{tag}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </Card>
 
         {/* Photo */}
@@ -479,8 +500,61 @@ function PeptidePickerSheet({
   onClose, onSelect,
 }: { onClose: () => void; onSelect: (p: Peptide) => void }) {
   const [q, setQ] = useState('');
+  const [customMode, setCustomMode] = useState(false);
+  const [customName, setCustomName] = useState('');
   const filt = (list: Peptide[]) =>
     q ? list.filter(x => x.name.toLowerCase().includes(q.toLowerCase())) : list;
+
+  const submitCustomName = () => {
+    const trimmed = customName.trim();
+    if (!trimmed) return;
+    Keyboard.dismiss();
+    onSelect({ id: 'custom', name: trimmed, defaultUnit: 'mcg' });
+  };
+
+  if (customMode) {
+    return (
+      <KeyboardAvoidingView
+        style={s.sheetOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable style={s.sheetBackdrop} onPress={() => { Keyboard.dismiss(); onClose(); }} />
+        <SafeAreaView style={s.sheet} edges={['bottom']}>
+          <View style={s.sheetHeader}>
+            <Text style={s.sheetTitle}>Custom Peptide</Text>
+            <Pressable onPress={() => { Keyboard.dismiss(); onClose(); }}>
+              <Text style={s.sheetDone}>Done</Text>
+            </Pressable>
+          </View>
+          <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.md }}>
+            <TextInput
+              placeholder="Enter peptide name…"
+              placeholderTextColor={colors.textFaint}
+              value={customName}
+              onChangeText={setCustomName}
+              style={s.sheetSearch}
+              autoFocus
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={submitCustomName}
+            />
+            <Pressable
+              style={[s.templateBtn, !customName.trim() && { opacity: 0.4 }]}
+              onPress={submitCustomName}
+              disabled={!customName.trim()}
+            >
+              <Text style={s.templateBtnText}>Use This Name</Text>
+            </Pressable>
+            <Pressable onPress={() => { setCustomMode(false); setCustomName(''); }}>
+              <Text style={[s.templateBtnText, { color: colors.textMuted, marginTop: 4 }]}>
+                Choose from list instead
+              </Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -525,7 +599,14 @@ function PeptidePickerSheet({
             return (
               <Pressable
                 style={s.sheetRow}
-                onPress={() => { Keyboard.dismiss(); onSelect(item); }}
+                onPress={() => {
+                  if (item.id === 'custom') {
+                    setCustomMode(true);
+                    return;
+                  }
+                  Keyboard.dismiss();
+                  onSelect(item);
+                }}
               >
                 <Text style={s.sheetRowName}>{item.name}</Text>
               </Pressable>
@@ -595,6 +676,19 @@ const s = StyleSheet.create({
     borderRadius: 10, paddingVertical: 12, alignItems: 'center',
   },
   sevBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+
+  symptomWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  symptomChip: {
+    backgroundColor: colors.bgInput,
+    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  symptomChipActive: {
+    backgroundColor: 'rgba(255, 140, 0, 0.15)',
+    borderColor: 'rgba(255, 140, 0, 0.4)',
+  },
+  symptomChipText: { color: colors.textMuted, fontSize: 12, fontWeight: '500' },
+  symptomChipTextActive: { color: colors.accent },
 
   photoArea: {
     alignItems: 'center', justifyContent: 'center', minHeight: 120,

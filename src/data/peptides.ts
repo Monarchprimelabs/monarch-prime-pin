@@ -26,6 +26,7 @@ export const PEPTIDES = {
     { id: 'tha1',   name: 'Thymosin Alpha-1',  defaultUnit: 'mg'  as const },
     { id: 'nad',    name: 'NAD+',              defaultUnit: 'mg'  as const },
     { id: 'dsip',   name: 'DSIP',              defaultUnit: 'mcg' as const },
+    { id: 'motsc',  name: 'MOTS-c',            defaultUnit: 'mg'  as const },
     // Neurological / Mood
     { id: 'selank', name: 'Selank',            defaultUnit: 'mcg' as const },
     { id: 'semax',  name: 'Semax',             defaultUnit: 'mcg' as const },
@@ -57,6 +58,24 @@ export const PEPTIDES = {
 
 export type Peptide = { id: string; name: string; defaultUnit: 'mg' | 'mcg' };
 export type Severity = 'none' | 'mild' | 'mod' | 'sev';
+
+export const SIDE_EFFECT_TAGS = [
+  'Nausea',
+  'Headache',
+  'Fatigue',
+  'Injection site redness',
+  'Injection site swelling',
+  'Injection site itching',
+  'Flushing',
+  'GI upset',
+  'Dizziness',
+  'Water retention',
+  'Appetite change',
+  'Insomnia',
+  'Joint pain',
+] as const;
+
+export type SideEffectTag = typeof SIDE_EFFECT_TAGS[number];
 export type DensityLevel = 'unused' | 'light' | 'moderate' | 'heavy';
 
 export type Zone = {
@@ -106,6 +125,7 @@ export type Injection = {
   time: string;
   site: string;
   sev: Severity;
+  symptoms?: string[];
   weight: number;
   notes?: string;
   photoUri?: string;
