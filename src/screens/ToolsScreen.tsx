@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Alert, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, UIManager, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +22,14 @@ import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 import { exportInjectionsCsv } from '../lib/exportData';
 import { hapticTap } from '../lib/haptics';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+function animateListChange(): void {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
 
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
@@ -165,7 +173,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const refresh = () => getSchedules().then(values => setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))));
+  const refresh = () => getSchedules().then(values => { animateListChange(); setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))); });
   useEffect(() => { refresh(); }, []);
 
   const pickerDateValue = isValidDate(date) && isValidTime(time)
@@ -340,7 +348,7 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
   const [expiration, setExpiration] = useState('');
   const [lowAt, setLowAt] = useState('');
   const [notes, setNotes] = useState('');
-  const refresh = () => getInventory().then(setItems);
+  const refresh = () => getInventory().then(values => { animateListChange(); setItems(values); });
   useEffect(() => { refresh(); }, []);
 
   const add = async () => {
@@ -429,7 +437,7 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [compound, setCompound] = useState('');
   const [prompt, setPrompt] = useState('');
-  const refresh = () => getRecordTemplates().then(setItems);
+  const refresh = () => getRecordTemplates().then(values => { animateListChange(); setItems(values); });
   useEffect(() => { refresh(); }, []);
   const add = async () => {
     if (!title.trim()) { Alert.alert('Missing title', 'Enter a template title.'); return; }

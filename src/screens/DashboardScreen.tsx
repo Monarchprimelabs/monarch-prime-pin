@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
@@ -221,13 +221,40 @@ export function DashboardScreen({ onNavigate }: Props) {
   );
 }
 
+// Counts from the previous value (0 on first mount) to the target with an
+// ease-out curve. Pure JS/rAF — no native driver needed for text.
+function useCountUp(target: number, duration = 600): number {
+  const [display, setDisplay] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === target) { setDisplay(target); return; }
+    const start = Date.now();
+    let raf: number;
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + (target - from) * eased));
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = target;
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return display;
+}
+
 function StatCard({ icon, color, value, label }: {
   icon: keyof typeof Ionicons.glyphMap; color: string; value: number; label: string;
 }) {
+  const displayValue = useCountUp(value);
   return (
     <View style={s.statCard}>
       <Ionicons name={icon} size={20} color={color} style={s.statIcon} />
-      <Text style={s.statVal}>{value}</Text>
+      <Text style={s.statVal}>{displayValue}</Text>
       <Text style={s.statLabel}>{label}</Text>
     </View>
   );
