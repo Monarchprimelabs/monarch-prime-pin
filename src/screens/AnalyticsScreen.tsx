@@ -39,6 +39,42 @@ export function AnalyticsScreen() {
   }, [injections]);
   const maxPept = Math.max(...peptideRanks.map(p => p.count), 1);
 
+  // Dose history for one compound at a time — factual record of what was
+  // logged, normalized to mcg internally for a consistent axis.
+  const [doseCompound, setDoseCompound] = useState<string | null>(null);
+  const compoundOptions = peptideRanks.map(rank => rank.name);
+  const activeCompound = doseCompound && compoundOptions.includes(doseCompound)
+    ? doseCompound
+    : compoundOptions[0] ?? null;
+
+  const doseChart = useMemo(() => {
+    if (!activeCompound) return null;
+    const series = injections
+      .filter(record => record.peptide === activeCompound)
+      .map(record => ({
+        stamp: `${record.date}T${record.time}`,
+        mcg: (Number(String(record.dose).replace(',', '.')) || 0) * (record.unit === 'mg' ? 1000 : 1),
+      }))
+      .filter(point => point.mcg > 0)
+      .sort((a, b) => a.stamp.localeCompare(b.stamp))
+      .slice(-30);
+    if (series.length < 2) return { count: series.length, latest: series[0]?.mcg ?? 0, points: null as null | { cx: number; cy: number }[], polyline: '', min: 0, max: 0 };
+    const values = series.map(point => point.mcg);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    const x = (index: number) => 12 + (index / (values.length - 1)) * 176;
+    const y = (mcg: number) => 48 - ((mcg - min) / span) * 36;
+    return {
+      count: values.length,
+      latest: values[values.length - 1],
+      min,
+      max,
+      points: values.map((mcg, index) => ({ cx: x(index), cy: y(mcg) })),
+      polyline: values.map((mcg, index) => `${x(index)},${y(mcg)}`).join(' '),
+    };
+  }, [activeCompound, injections]);
+
   // Site usage
   const siteUsage = useMemo(() => {
     const counts = getSiteUsage(injections);
@@ -195,6 +231,57 @@ export function AnalyticsScreen() {
           ))}
         </Card>
 
+        {compoundOptions.length > 0 && (
+          <Card>
+            <CardLabel icon="📈">DOSE HISTORY</CardLabel>
+            <View style={s.chipRow}>
+              {compoundOptions.map(name => (
+                <Pressable
+                  key={name}
+                  onPress={() => setDoseCompound(name)}
+                  style={[s.chip, activeCompound === name && s.chipActive]}
+                >
+                  <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
+                </Pressable>
+              ))}
+            </View>
+            {!doseChart || doseChart.count === 0 ? (
+              <Text style={s.empty}>No dose amounts recorded for this compound yet</Text>
+            ) : !doseChart.points ? (
+              <Text style={s.empty}>
+                Latest recorded dose: {formatDose(doseChart.latest)}. Log more entries to see the history line.
+              </Text>
+            ) : (
+              <>
+                <View style={s.weightSummaryRow}>
+                  <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
+                  <Text style={s.weightDelta}>latest recorded dose</Text>
+                </View>
+                <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                  <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                  <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                  <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
+                  <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
+                  <Polyline
+                    points={doseChart.polyline}
+                    fill="none"
+                    stroke={colors.teal}
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                  {doseChart.points.map((point, index) => (
+                    <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
+                  ))}
+                </Svg>
+                <Text style={s.weightRangeNote}>
+                  Last {doseChart.count} recorded doses of {activeCompound}. History of your own entries only.
+                </Text>
+              </>
+            )}
+          </Card>
+        )}
+
         <Card>
           <CardLabel icon="📍">INJECTION SITE USAGE</CardLabel>
           <View style={s.siteGrid}>
@@ -212,6 +299,16 @@ export function AnalyticsScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function formatDoseNumber(value: number): string {
+  const abs = Math.abs(value);
+  const maximumFractionDigits = abs >= 100 ? 1 : abs >= 1 ? 2 : 3;
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(value);
+}
+
+function formatDose(mcg: number): string {
+  return mcg >= 1000 ? `${formatDoseNumber(mcg / 1000)} mg` : `${formatDoseNumber(mcg)} mcg`;
 }
 
 function SummaryStat({ label, value }: { label: string; value: number }) {
@@ -237,6 +334,15 @@ const s = StyleSheet.create({
   weightLatest: { color: colors.white, fontSize: 22, fontWeight: '700' },
   weightDelta: { color: colors.textMuted, fontSize: 12 },
   weightRangeNote: { color: colors.textFaint, fontSize: 10, textAlign: 'center', marginTop: 6 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  chip: {
+    maxWidth: '48%', backgroundColor: colors.bgInput, borderWidth: 1,
+    borderColor: colors.borderSubtle, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 7,
+  },
+  chipActive: { borderColor: colors.teal, backgroundColor: 'rgba(20,184,166,0.12)' },
+  chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  chipTextActive: { color: colors.teal },
   shareBtn: { minHeight: 46, backgroundColor: colors.action, borderWidth: 1, borderColor: colors.borderOrange, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   shareBtnText: { color: colors.actionText, fontSize: 13, fontWeight: '700' },
 
