@@ -20,6 +20,7 @@ import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 import { exportInjectionsCsv } from '../lib/exportData';
+import { hapticTap } from '../lib/haptics';
 
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
@@ -495,6 +496,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const copyText = async (key: string, text: string) => {
     try {
       await Clipboard.setStringAsync(text);
+      hapticTap();
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(current => (current === key ? null : current)), 1400);
     } catch {

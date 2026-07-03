@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
 import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
 import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
+import { hapticSuccess } from '../lib/haptics';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -97,6 +98,7 @@ function RemindersTab() {
             onPress: async () => {
               try {
                 await restoreBackup(payload);
+                hapticSuccess();
                 Alert.alert('Backup restored', 'Your data has been restored. Screens refresh the next time you open them.');
               } catch (error: any) {
                 Alert.alert('Restore failed', error?.message || 'Please try again.');
