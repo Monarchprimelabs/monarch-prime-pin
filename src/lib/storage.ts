@@ -257,3 +257,19 @@ export async function clearLocalData(): Promise<void> {
     KEY_TEMPLATES,
   ]);
 }
+
+// Used by backup restore. Overwrites the four data collections in one shot;
+// account, onboarding, and entitlement state are intentionally untouched.
+export async function replaceAllData(data: {
+  injections: Injection[];
+  schedules: ScheduleEntry[];
+  inventory: InventoryItem[];
+  templates: RecordTemplate[];
+}): Promise<void> {
+  await AsyncStorage.multiSet([
+    [KEY_INJECTIONS, JSON.stringify(data.injections)],
+    [KEY_SCHEDULES, JSON.stringify(data.schedules)],
+    [KEY_INVENTORY, JSON.stringify(data.inventory)],
+    [KEY_TEMPLATES, JSON.stringify(data.templates)],
+  ]);
+}
