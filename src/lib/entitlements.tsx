@@ -3,7 +3,7 @@ import React, { createContext, ReactNode, useContext } from 'react';
 export const LIFETIME_PRO_PRODUCT_ID = 'com.monarchprime.pin.pro.lifetime';
 export const FREE_INJECTION_LIMIT = 5;
 export const LIFETIME_PRO_PRICE_LABEL = '$9.99';
-export const LAST_PAID_APP_VERSION = '1.0.5';
+export const LAST_PAID_APP_BUILD = 9;
 export const MONETIZATION_ENABLED = false;
 
 export type EntitlementSource = 'free' | 'early-access' | 'legacy-install' | 'paid-app' | 'lifetime';
