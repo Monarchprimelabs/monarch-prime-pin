@@ -10,7 +10,7 @@ import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI'
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS } from '../data/peptides';
-import { getInjections, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, uploadPhoto } from '../lib/storage';
+import { getInjections, getInventory, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
 import { getInjectionSiteIds } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
@@ -233,16 +233,56 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
         notifySuccessfulSave();
       }
 
+      const finishSave = () => {
+        setPeptide(null);
+        setDose('');
+        setSelected([]);
+        setSev('none');
+        setWeight('');
+        setNotes('');
+        setPhotoUri(null);
+        onDone();
+      };
+
+      // Offer to deduct 1 from a matching inventory item (new records only,
+      // single unambiguous name match, never blocks the save).
+      const offerInventoryDeduction = async () => {
+        try {
+          const items = await getInventory();
+          const wanted = peptide.name.trim().toLowerCase();
+          const matches = items.filter(item => item.name.trim().toLowerCase() === wanted);
+          const match = matches.length === 1 ? matches[0] : undefined;
+          if (!match || match.quantity <= 0) {
+            finishSave();
+            return;
+          }
+          Alert.alert(
+            'Update inventory?',
+            `${match.name}: ${match.quantity} ${match.unit} on hand. Deduct 1 for this record?`,
+            [
+              { text: 'Not Now', style: 'cancel', onPress: finishSave },
+              { text: 'Deduct 1', onPress: async () => {
+                try {
+                  await updateInventoryItem({ ...match, quantity: Math.max(0, match.quantity - 1) });
+                } catch {
+                  // Inventory update is best-effort; the record is already saved.
+                }
+                finishSave();
+              }},
+            ],
+          );
+        } catch {
+          finishSave();
+        }
+      };
+
       Alert.alert(isEditing ? 'Record updated' : 'Saved!', savedMessage, [
         { text: 'OK', onPress: () => {
-          setPeptide(null);
-          setDose('');
-          setSelected([]);
-          setSev('none');
-          setWeight('');
-          setNotes('');
-          setPhotoUri(null);
-          onDone();
+          if (isEditing) {
+            finishSave();
+          } else {
+            offerInventoryDeduction();
+          }
         }},
       ]);
     } catch (e: any) {
