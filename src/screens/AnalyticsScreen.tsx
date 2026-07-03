@@ -75,6 +75,19 @@ export function AnalyticsScreen() {
     };
   }, [activeCompound, injections]);
 
+  // Frequency of self-reported symptom tags across all records.
+  const symptomRanks = useMemo(() => {
+    const counts: Record<string, number> = {};
+    injections.forEach(record => {
+      (record.symptoms || []).forEach(tag => { counts[tag] = (counts[tag] || 0) + 1; });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, count]) => ({ name, count }));
+  }, [injections]);
+  const maxSymptom = Math.max(...symptomRanks.map(rank => rank.count), 1);
+
   // Site usage
   const siteUsage = useMemo(() => {
     const counts = getSiteUsage(injections);
@@ -279,6 +292,22 @@ export function AnalyticsScreen() {
                 </Text>
               </>
             )}
+          </Card>
+        )}
+
+        {symptomRanks.length > 0 && (
+          <Card>
+            <CardLabel icon="📋">REPORTED SYMPTOMS</CardLabel>
+            <Text style={s.sub}>How often each self-reported symptom tag appears in your records</Text>
+            {symptomRanks.map(rank => (
+              <View key={rank.name} style={s.rankRow}>
+                <Text style={s.rankName} numberOfLines={1}>{rank.name}</Text>
+                <View style={s.rankBarWrap}>
+                  <View style={[s.rankBar, { width: `${(rank.count / maxSymptom) * 100}%`, backgroundColor: colors.accent }]} />
+                </View>
+                <Text style={s.rankCount}>{rank.count}</Text>
+              </View>
+            ))}
           </Card>
         )}
 
