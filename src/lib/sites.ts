@@ -10,9 +10,12 @@ ALL_ZONES.forEach(zone => {
   });
 });
 
-// Older builds used the same shoulder labels for both views, so those records
-// resolve to the front shoulder. New back-view labels are unique.
+// Saved records store site names as text, so every label/short ever shipped
+// must keep resolving here. Do not remove entries — only add new ones when
+// zone names change. ("Th L"/"Th R" were shared by front and posterior thigh
+// in old builds; they resolve to the front thigh, matching old behavior.)
 const legacyAliases: Record<string, string> = {
+  // Pre-rebrand builds
   'shoulder l': 'sh_l',
   'shoulder r': 'sh_r',
   'arm l': 'arm_l',
@@ -21,6 +24,33 @@ const legacyAliases: Record<string, string> = {
   'flank r': 'flk_r',
   'thigh l': 'th_l',
   'thigh r': 'th_r',
+  // Names used until the July 2026 readability rename
+  'sh l': 'sh_l',
+  'sh r': 'sh_r',
+  'l outer arm': 'arm_l',
+  'r outer arm': 'arm_r',
+  'upper l abd': 'abd_ul',
+  'upper r abd': 'abd_ur',
+  'lower l abd': 'abd_ll',
+  'lower r abd': 'abd_lr',
+  'abd ul': 'abd_ul',
+  'abd ur': 'abd_ur',
+  'abd ll': 'abd_ll',
+  'abd lr': 'abd_lr',
+  'flk l': 'flk_l',
+  'flk r': 'flk_r',
+  'th l': 'th_l',
+  'th r': 'th_r',
+  'l back shoulder': 'b_sh_l',
+  'r back shoulder': 'b_sh_r',
+  'back sh l': 'b_sh_l',
+  'back sh r': 'b_sh_r',
+  'tri l': 'b_arm_l',
+  'tri r': 'b_arm_r',
+  'gl l': 'glute_l',
+  'gl r': 'glute_r',
+  'l post thigh': 'b_th_l',
+  'r post thigh': 'b_th_r',
 };
 
 export function getInjectionSiteIds(injection: Pick<Injection, 'site'>): string[] {
