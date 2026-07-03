@@ -15,8 +15,8 @@ const LEGACY_STORAGE_KEYS = [
 ];
 
 export const LIFETIME_PRO_PRODUCT_ID = 'com.monarchprime.pin.pro.lifetime';
-export const FREE_INJECTION_LIMIT = 2;
-export const LIFETIME_PRO_PRICE_LABEL = '$4.99';
+export const FREE_INJECTION_LIMIT = 5;
+export const LIFETIME_PRO_PRICE_LABEL = '$9.99';
 // 1.0.5 build 9 is the approved paid App Store release. Free-download builds
 // after this point should not be grandfathered as founding purchasers.
 export const LAST_PAID_APP_VERSION = '1.0.5';

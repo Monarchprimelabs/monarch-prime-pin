@@ -6,6 +6,11 @@ import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { Injection } from '../data/peptides';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
+import { UpgradeScreen } from './UpgradeScreen';
+import { useEntitlements } from '../lib/entitlements';
+import { useAuth } from '../lib/auth';
+
+const PRO_TABS = new Set(['calendar', 'photos']);
 
 export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
@@ -13,6 +18,10 @@ export function HistoryScreen() {
   const [backdateFor, setBackdateFor] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<Injection | null>(null);
   const [editingRecord, setEditingRecord] = useState<Injection | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const { hasPro } = useEntitlements();
+  const { user } = useAuth();
+  const canUsePro = hasPro || !!user?.isDeveloper;
 
   const refresh = async () => {
     try {
@@ -46,26 +55,31 @@ export function HistoryScreen() {
         {(['log', 'calendar', 'photos'] as const).map(t => (
           <Pressable
             key={t}
-            onPress={() => setTab(t)}
+            onPress={() => (PRO_TABS.has(t) && !canUsePro ? setShowUpgrade(true) : setTab(t))}
             style={[s.subTab, tab === t && s.subTabActive]}
           >
             <Text style={[s.subTabText, tab === t && s.subTabTextActive]}>
               {t === 'log' ? 'Log' : t === 'calendar' ? 'Calendar' : 'Photos'}
+              {PRO_TABS.has(t) && !canUsePro ? ' 🔒' : ''}
             </Text>
           </Pressable>
         ))}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
-        {tab === 'calendar' && (
+        {tab === 'calendar' && canUsePro && (
           <CalendarView
             injections={injections}
             onLogForDate={(date) => setBackdateFor(date)}
             onOpen={setSelectedRecord}
           />
         )}
-        {tab === 'photos' && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
+        {tab === 'photos' && canUsePro && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
       </ScrollView>
+
+      <Modal visible={showUpgrade} animationType="slide" onRequestClose={() => setShowUpgrade(false)}>
+        <UpgradeScreen onClose={() => setShowUpgrade(false)} />
+      </Modal>
 
       <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}>
         {backdateFor && (

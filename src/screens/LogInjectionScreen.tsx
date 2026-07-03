@@ -15,6 +15,7 @@ import { getInjectionSiteIds } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { UpgradeScreen } from './UpgradeScreen';
+import { notifySuccessfulSave } from '../lib/reviewPrompt';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -216,13 +217,18 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
         await saveInjection(record);
       }
 
+      const freeLogsLeftAfterSave = freeTrialSaveNumber ? FREE_INJECTION_LIMIT - freeTrialSaveNumber : 0;
       const savedMessage = isEditing
         ? 'Your changes have been saved.'
         : freeTrialSaveNumber
           ? freeTrialSaveNumber >= FREE_INJECTION_LIMIT
-            ? `Your second free log has been saved. Unlock unlimited usage for ${LIFETIME_PRO_PRICE_LABEL} whenever you are ready.`
-            : `Your first free log has been saved. You have ${FREE_INJECTION_LIMIT - freeTrialSaveNumber} free log remaining.`
+            ? `Your free log has been saved. Unlock unlimited usage for ${LIFETIME_PRO_PRICE_LABEL} whenever you are ready.`
+            : `Your free log has been saved. You have ${freeLogsLeftAfterSave} free log${freeLogsLeftAfterSave === 1 ? '' : 's'} remaining.`
           : 'Your injection has been logged.';
+
+      if (!isEditing) {
+        notifySuccessfulSave();
+      }
 
       Alert.alert(isEditing ? 'Record updated' : 'Saved!', savedMessage, [
         { text: 'OK', onPress: () => {
@@ -280,7 +286,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCa
               {freeLogsRemaining} of {FREE_INJECTION_LIMIT} free logs remaining
             </Text>
             <Text style={s.trialBody}>
-              Try the tracker with two saved injection records. Unlock unlimited usage for {LIFETIME_PRO_PRICE_LABEL}.
+              Try the tracker with {FREE_INJECTION_LIMIT} saved injection records. Unlock unlimited usage for {LIFETIME_PRO_PRICE_LABEL}.
             </Text>
           </Card>
         )}
