@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
@@ -9,6 +9,7 @@ import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
+import { LogInjectionScreen } from './LogInjectionScreen';
 
 type Props = {
   onNavigate: (tab: string) => void;
@@ -30,11 +31,13 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [reminderDismissed, setReminderDismissed] = useState(false);
+  const [repeatOpen, setRepeatOpen] = useState(false);
 
-  useEffect(() => {
+  const refresh = () => {
     getInjections().then(setInjections);
     getSchedules().then(setSchedules);
-  }, []);
+  };
+  useEffect(() => { refresh(); }, []);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -184,6 +187,9 @@ export function DashboardScreen({ onNavigate }: Props) {
               </Text>
             </Text>
             <Text style={s.lastInjMeta}>Sites: {lastInj.site}</Text>
+            <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
+              <Text style={s.repeatBtnText}>Log This Again</Text>
+            </Pressable>
           </Card>
         )}
 
@@ -193,6 +199,16 @@ export function DashboardScreen({ onNavigate }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}>
+        {lastInj && (
+          <LogInjectionScreen
+            prefillFrom={lastInj}
+            onDone={() => { setRepeatOpen(false); refresh(); }}
+            onCancel={() => setRepeatOpen(false)}
+          />
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -280,6 +296,11 @@ const s = StyleSheet.create({
 
   lastInjPeptide: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 6 },
   lastInjMeta: { color: colors.text, fontSize: 13, lineHeight: 20 },
+  repeatBtn: {
+    minHeight: 44, marginTop: 12, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+  },
+  repeatBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 
   qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {

@@ -21,29 +21,32 @@ type LogInjectionScreenProps = {
   onDone: () => void;
   initialDate?: string;
   initialInjection?: Injection;
+  /** Seed compound/dose/sites/weight from an existing record while still creating a NEW record. */
+  prefillFrom?: Injection;
   onCancel?: () => void;
 };
 
-export function LogInjectionScreen({ onDone, initialDate, initialInjection, onCancel }: LogInjectionScreenProps) {
+export function LogInjectionScreen({ onDone, initialDate, initialInjection, prefillFrom, onCancel }: LogInjectionScreenProps) {
   const { hasPro, monetizationEnabled } = useEntitlements();
   const { user } = useAuth();
-  const initialPeptide = initialInjection
-    ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === initialInjection.peptide)
-      ?? { id: 'existing-custom', name: initialInjection.peptide, defaultUnit: initialInjection.unit }
+  const seedRecord = initialInjection ?? prefillFrom ?? null;
+  const initialPeptide = seedRecord
+    ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === seedRecord.peptide)
+      ?? { id: 'existing-custom', name: seedRecord.peptide, defaultUnit: seedRecord.unit }
     : null;
-  const initialSites = initialInjection ? getInjectionSiteIds(initialInjection) : [];
+  const initialSites = seedRecord ? getInjectionSiteIds(seedRecord) : [];
 
   const [peptide, setPeptide] = useState<Peptide | null>(initialPeptide);
   const [picker, setPicker] = useState(false);
   const [templatePicker, setTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<RecordTemplate[]>([]);
-  const [dose, setDose] = useState(initialInjection?.dose ?? '');
-  const [unit, setUnit] = useState<'mcg' | 'mg'>(initialInjection?.unit ?? 'mcg');
+  const [dose, setDose] = useState(seedRecord?.dose ?? '');
+  const [unit, setUnit] = useState<'mcg' | 'mg'>(seedRecord?.unit ?? 'mcg');
   const [view, setView] = useState<'front' | 'back'>('front');
   const [selected, setSelected] = useState<string[]>(initialSites);
   const [sev, setSev] = useState<Severity>(initialInjection?.sev ?? 'none');
   const [symptoms, setSymptoms] = useState<string[]>(initialInjection?.symptoms ?? []);
-  const [weight, setWeight] = useState(initialInjection?.weight ? String(initialInjection.weight) : '');
+  const [weight, setWeight] = useState(seedRecord?.weight ? String(seedRecord.weight) : '');
   const [notes, setNotes] = useState(initialInjection?.notes ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(initialInjection?.photoUri ?? null);
   const [saving, setSaving] = useState(false);
