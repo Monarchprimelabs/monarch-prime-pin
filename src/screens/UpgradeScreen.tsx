@@ -61,6 +61,15 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
           </Text>
         </Card>
 
+        {!hasPro && monetizationEnabled && (
+          <Card style={s.valueCard}>
+            <Text style={s.valueEyebrow}>ONE PAYMENT. NO SUBSCRIPTIONS. EVER.</Text>
+            <Text style={s.valueBody}>
+              Most tracking apps bill you every month, forever. Monarch Prime Pin is a single {price} payment — pay once, keep every feature for as long as you use the app. No recurring charges, no trial gimmicks, nothing to cancel.
+            </Text>
+          </Card>
+        )}
+
         <Card>
           <CardLabel icon="✓">ALWAYS FREE</CardLabel>
           {[
@@ -84,6 +93,11 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
                 {working ? 'PLEASE WAIT...' : `UNLOCK UNLIMITED USAGE · ${price}`}
               </Text>
             </Pressable>
+          )}
+          {!hasPro && monetizationEnabled && (
+            <Text style={s.purchaseFootnote}>
+              One-time payment, billed once through the App Store. No subscription, no recurring charges. Your data stays on your device either way.
+            </Text>
           )}
           {!monetizationEnabled && (
             <View style={s.previewNote}>
@@ -126,6 +140,10 @@ const s = StyleSheet.create({
   statusEyebrow: { color: colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.8, marginBottom: 8 },
   statusTitle: { color: colors.white, fontSize: 19, fontWeight: '700', marginBottom: 8 },
   statusBody: { color: colors.text, fontSize: 13, lineHeight: 20 },
+  valueCard: { borderColor: colors.teal, backgroundColor: 'rgba(20,184,166,0.08)' },
+  valueEyebrow: { color: colors.teal, fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8 },
+  valueBody: { color: colors.text, fontSize: 13, lineHeight: 20 },
+  purchaseFootnote: { color: colors.textMuted, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 10 },
   feature: { flexDirection: 'row', gap: 10, paddingVertical: 8, alignItems: 'center' },
   check: { color: colors.teal, fontSize: 14, fontWeight: '700' },
   featureText: { color: colors.text, fontSize: 13, flex: 1 },
