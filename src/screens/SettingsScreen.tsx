@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
+import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -59,6 +60,11 @@ function RemindersTab() {
   const { user, signOut, updateProfileName } = useAuth();
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
+  const [funnel, setFunnel] = useState<FunnelStats | null>(null);
+
+  useEffect(() => {
+    if (user?.isDeveloper) getFunnelStats().then(setFunnel).catch(() => undefined);
+  }, [user?.isDeveloper]);
 
   const saveProfileName = async () => {
     const trimmed = profileName.trim().replace(/\s+/g, ' ');
@@ -136,6 +142,27 @@ function RemindersTab() {
           Create and manage local notifications from Tools → Schedule & Reminders. Monarch only reminds you about dates and times that you enter yourself.
         </Text>
       </Card>
+
+      {!!user?.isDeveloper && !!funnel && (
+        <Card>
+          <CardLabel icon="📊">FUNNEL (DEV ONLY)</CardLabel>
+          <Text style={s.localDataText}>
+            Paywall views: {funnel.paywallViews}{'\n'}
+            Upgrade taps: {funnel.upgradeTaps}{'\n'}
+            Purchases: {funnel.purchases}{'\n'}
+            First seen: {funnel.firstSeenAt ? funnel.firstSeenAt.slice(0, 10) : '—'}
+          </Text>
+          <Pressable
+            style={s.saveNameBtn}
+            onPress={async () => {
+              await resetFunnelStats();
+              setFunnel(await getFunnelStats());
+            }}
+          >
+            <Text style={s.saveNameText}>Reset Counters</Text>
+          </Pressable>
+        </Card>
+      )}
 
       <Card>
         <CardLabel icon="💾">LOCAL DATA</CardLabel>

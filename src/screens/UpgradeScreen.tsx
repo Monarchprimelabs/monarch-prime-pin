@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { getInjections } from '../lib/storage';
+import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
 import { colors, radius, spacing } from '../theme';
 
 const PRO_FEATURES = [
@@ -28,6 +29,12 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
     Alert.alert('Lifetime Pro unlocked', 'Your one-time purchase is active. Unlimited logging is ready.');
     onClose?.();
   }, [onClose, source]);
+
+  useEffect(() => {
+    if (!hasPro && monetizationEnabled) trackPaywallView();
+    // Count once per screen mount, only for users who can actually purchase.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -60,6 +67,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
   };
 
   const buyLifetime = async () => {
+    trackUpgradeTap();
     pendingPurchaseFeedback.current = true;
     setWorking(true);
     try {

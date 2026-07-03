@@ -16,14 +16,16 @@ import { UpgradeScreen } from './UpgradeScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
+import { exportInjectionsCsv } from '../lib/exportData';
 
-type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'settings';
+type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const TOOLS: { id: ToolId; icon: string; title: string; sub: string; pro?: boolean }[] = [
   { id: 'schedule', icon: '📅', title: 'Schedule & Reminders', sub: 'Create your own dated reminders', pro: true },
   { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels', pro: true },
   { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts', pro: true },
   { id: 'conversion', icon: '▱', title: 'Concentration Worksheet', sub: 'Calculate concentration from entered mass and volume', pro: true },
+  { id: 'export', icon: '⇪', title: 'Export Data (CSV)', sub: 'Share all saved records as a spreadsheet file' },
   { id: 'settings', icon: '⚙', title: 'Settings & Access', sub: 'Profile, Pro access, local data, and legal information' },
 ];
 
@@ -42,9 +44,34 @@ function isValidTime(value: string): boolean {
 
 export function ToolsScreen() {
   const [active, setActive] = useState<ToolId | 'upgrade' | null>(null);
+  const [exporting, setExporting] = useState(false);
   const { hasPro } = useEntitlements();
   const { user } = useAuth();
   const canUsePro = hasPro || !!user?.isDeveloper;
+
+  const runExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { count } = await exportInjectionsCsv();
+      if (count === 0) {
+        Alert.alert('Nothing to export', 'Save an injection record first, then export it here.');
+      }
+    } catch (error: any) {
+      Alert.alert('Export failed', error?.message || 'Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const openTool = (tool: (typeof TOOLS)[number]) => {
+    if (tool.id === 'export') {
+      runExport();
+      return;
+    }
+    setActive(tool.pro && !canUsePro ? 'upgrade' : tool.id);
+  };
+
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
@@ -54,7 +81,7 @@ export function ToolsScreen() {
           <Pressable
             key={tool.id}
             style={s.toolRow}
-            onPress={() => setActive(tool.pro && !canUsePro ? 'upgrade' : tool.id)}
+            onPress={() => openTool(tool)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${tool.title}`}
           >

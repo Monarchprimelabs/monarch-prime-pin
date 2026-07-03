@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import type { Product } from 'react-native-iap';
+import { trackPurchase } from './funnel';
 
 const KEY_ENTITLEMENT = '@mpp/pro_entitlement';
 const KEY_FREEMIUM_SEEN = '@mpp/freemium_seen';
@@ -136,6 +137,7 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
           purchaseSubscription = iap.purchaseUpdatedListener(async purchase => {
             if (purchase.productId !== LIFETIME_PRO_PRODUCT_ID) return;
             await grant('lifetime');
+            trackPurchase();
             await iap.finishTransaction({ purchase, isConsumable: false });
           });
 
