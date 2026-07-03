@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
@@ -9,10 +9,17 @@ import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
+import { LogInjectionScreen } from './LogInjectionScreen';
 
 type Props = {
   onNavigate: (tab: string) => void;
 };
+
+function displayDate(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  const [year, month, day] = iso.split('-');
+  return `${month}-${day}-${year}`;
+}
 
 function getGreetingName(name?: string, email?: string) {
   const cleaned = name?.trim().replace(/\s+/g, ' ') || '';
@@ -30,11 +37,13 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [reminderDismissed, setReminderDismissed] = useState(false);
+  const [repeatOpen, setRepeatOpen] = useState(false);
 
-  useEffect(() => {
+  const refresh = () => {
     getInjections().then(setInjections);
     getSchedules().then(setSchedules);
-  }, []);
+  };
+  useEffect(() => { refresh(); }, []);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -49,12 +58,33 @@ export function DashboardScreen({ onNavigate }: Props) {
       cursor.setDate(cursor.getDate() - 1);
     }
 
+    // Longest run of consecutive logged days across all history.
+    const sortedDays = [...logDays].sort();
+    let longestStreak = 0;
+    let run = 0;
+    let previousDay: string | null = null;
+    sortedDays.forEach(day => {
+      if (previousDay) {
+        const next = new Date(`${previousDay}T12:00:00`);
+        next.setDate(next.getDate() + 1);
+        run = next.toISOString().slice(0, 10) === day ? run + 1 : 1;
+      } else {
+        run = 1;
+      }
+      longestStreak = Math.max(longestStreak, run);
+      previousDay = day;
+    });
+
     return {
       streak,
+      longestStreak,
       total: injections.length,
       thisWeek,
     };
   }, [injections]);
+
+  const RECORD_MILESTONES = [500, 250, 100, 50, 25, 10];
+  const recordMilestone = RECORD_MILESTONES.find(m => stats.total >= m);
 
   const lastInj = injections[0];
   const greetingName = getGreetingName(user?.name, user?.email);
@@ -81,6 +111,14 @@ export function DashboardScreen({ onNavigate }: Props) {
           <StatCard icon="💉" value={stats.total} label="Total Inj." />
           <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
         </View>
+
+        {(stats.longestStreak > 1 || !!recordMilestone) && (
+          <Text style={s.milestoneLine}>
+            {stats.longestStreak > 1 ? `🏆 Longest streak: ${stats.longestStreak} days` : ''}
+            {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
+            {recordMilestone ? `${recordMilestone}+ records logged` : ''}
+          </Text>
+        )}
 
         {freeTrialActive && (
           <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
@@ -122,7 +160,7 @@ export function DashboardScreen({ onNavigate }: Props) {
             <View style={{ flex: 1 }}>
               <Text style={s.scheduleEyebrow}>NEXT SCHEDULED ENTRY</Text>
               <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
-              <Text style={s.scheduleMeta}>{nextSchedule.date} · {nextSchedule.time}</Text>
+              <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
             </View>
             <View style={s.scheduleDone}>
               <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
@@ -155,6 +193,9 @@ export function DashboardScreen({ onNavigate }: Props) {
               </Text>
             </Text>
             <Text style={s.lastInjMeta}>Sites: {lastInj.site}</Text>
+            <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
+              <Text style={s.repeatBtnText}>Log This Again</Text>
+            </Pressable>
           </Card>
         )}
 
@@ -164,6 +205,16 @@ export function DashboardScreen({ onNavigate }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}>
+        {lastInj && (
+          <LogInjectionScreen
+            prefillFrom={lastInj}
+            onDone={() => { setRepeatOpen(false); refresh(); }}
+            onCancel={() => setRepeatOpen(false)}
+          />
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -200,6 +251,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   statIcon: { fontSize: 18, marginBottom: 4 },
+  milestoneLine: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -6, marginBottom: 14 },
   statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
@@ -250,6 +302,11 @@ const s = StyleSheet.create({
 
   lastInjPeptide: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 6 },
   lastInjMeta: { color: colors.text, fontSize: 13, lineHeight: 20 },
+  repeatBtn: {
+    minHeight: 44, marginTop: 12, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+  },
+  repeatBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 
   qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {

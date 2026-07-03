@@ -6,6 +6,7 @@ import { colors, spacing, radius } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
 import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
+import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -61,10 +62,55 @@ function RemindersTab() {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
   const [funnel, setFunnel] = useState<FunnelStats | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
 
   useEffect(() => {
     if (user?.isDeveloper) getFunnelStats().then(setFunnel).catch(() => undefined);
   }, [user?.isDeveloper]);
+
+  const runBackupExport = async () => {
+    setBackupBusy(true);
+    try {
+      await exportBackup();
+    } catch (error: any) {
+      Alert.alert('Backup failed', error?.message || 'Please try again.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const runBackupImport = async () => {
+    setBackupBusy(true);
+    try {
+      const picked = await pickBackupFile();
+      if (!picked) return;
+      const { payload, counts } = picked;
+      const fromDate = payload.exportedAt ? payload.exportedAt.slice(0, 10) : 'an unknown date';
+      Alert.alert(
+        'Restore this backup?',
+        `Backup from ${fromDate}:\n${counts.injections} injection records\n${counts.schedules} schedule entries\n${counts.inventory} inventory items\n${counts.templates} templates\n\nThis replaces ALL current records, schedules, inventory, and templates on this device. Photos and reminders are not included.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Replace Data',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await restoreBackup(payload);
+                Alert.alert('Backup restored', 'Your data has been restored. Screens refresh the next time you open them.');
+              } catch (error: any) {
+                Alert.alert('Restore failed', error?.message || 'Please try again.');
+              }
+            },
+          },
+        ],
+      );
+    } catch (error: any) {
+      Alert.alert('Import failed', error?.message || 'Please try again.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
 
   const saveProfileName = async () => {
     const trimmed = profileName.trim().replace(/\s+/g, ' ');
@@ -169,6 +215,27 @@ function RemindersTab() {
         <Text style={s.localDataText}>
           Your research logs and organization-tool entries are stored locally on this device. Deleting your account removes the local profile, schedules, inventory, templates, and locally stored log data from this device.
         </Text>
+      </Card>
+
+      <Card>
+        <CardLabel icon="🗄">DATA BACKUP</CardLabel>
+        <Text style={s.localDataText}>
+          Export all records, schedules, inventory, and templates as a single backup file you control — for safekeeping or moving to a new phone. Photos, reminders, and Pro unlock status are not included; restore Pro with Restore Prior Purchase and re-create reminders after importing.
+        </Text>
+        <Pressable
+          style={[s.saveNameBtn, backupBusy && { opacity: 0.5 }]}
+          disabled={backupBusy}
+          onPress={runBackupExport}
+        >
+          <Text style={s.saveNameText}>Export Backup File</Text>
+        </Pressable>
+        <Pressable
+          style={[s.saveNameBtn, backupBusy && { opacity: 0.5 }]}
+          disabled={backupBusy}
+          onPress={runBackupImport}
+        >
+          <Text style={s.saveNameText}>Import Backup File</Text>
+        </Pressable>
       </Card>
 
       <View style={{ paddingHorizontal: spacing.xl }}>

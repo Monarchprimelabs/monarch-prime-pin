@@ -51,7 +51,8 @@
           "photosPermission": "Monarch Prime Pin accesses your photos to attach progress images to your research log entries.",
           "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

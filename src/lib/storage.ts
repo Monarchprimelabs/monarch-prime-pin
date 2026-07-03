@@ -9,12 +9,15 @@ const KEY_SCHEDULES = '@mpp/schedules';
 const KEY_INVENTORY = '@mpp/inventory';
 const KEY_TEMPLATES = '@mpp/templates';
 
+export type ScheduleRepeat = 'once' | 'daily' | 'weekly';
+
 export type ScheduleEntry = {
   id: string;
   title: string;
   date: string;
   time: string;
   notes?: string;
+  repeat?: ScheduleRepeat; // absent on entries saved by older builds = 'once'
   reminderEnabled?: boolean;
   notificationId?: string;
   completedAt?: string;
@@ -252,5 +255,21 @@ export async function clearLocalData(): Promise<void> {
     KEY_SCHEDULES,
     KEY_INVENTORY,
     KEY_TEMPLATES,
+  ]);
+}
+
+// Used by backup restore. Overwrites the four data collections in one shot;
+// account, onboarding, and entitlement state are intentionally untouched.
+export async function replaceAllData(data: {
+  injections: Injection[];
+  schedules: ScheduleEntry[];
+  inventory: InventoryItem[];
+  templates: RecordTemplate[];
+}): Promise<void> {
+  await AsyncStorage.multiSet([
+    [KEY_INJECTIONS, JSON.stringify(data.injections)],
+    [KEY_SCHEDULES, JSON.stringify(data.schedules)],
+    [KEY_INVENTORY, JSON.stringify(data.inventory)],
+    [KEY_TEMPLATES, JSON.stringify(data.templates)],
   ]);
 }
