@@ -49,12 +49,33 @@ export function DashboardScreen({ onNavigate }: Props) {
       cursor.setDate(cursor.getDate() - 1);
     }
 
+    // Longest run of consecutive logged days across all history.
+    const sortedDays = [...logDays].sort();
+    let longestStreak = 0;
+    let run = 0;
+    let previousDay: string | null = null;
+    sortedDays.forEach(day => {
+      if (previousDay) {
+        const next = new Date(`${previousDay}T12:00:00`);
+        next.setDate(next.getDate() + 1);
+        run = next.toISOString().slice(0, 10) === day ? run + 1 : 1;
+      } else {
+        run = 1;
+      }
+      longestStreak = Math.max(longestStreak, run);
+      previousDay = day;
+    });
+
     return {
       streak,
+      longestStreak,
       total: injections.length,
       thisWeek,
     };
   }, [injections]);
+
+  const RECORD_MILESTONES = [500, 250, 100, 50, 25, 10];
+  const recordMilestone = RECORD_MILESTONES.find(m => stats.total >= m);
 
   const lastInj = injections[0];
   const greetingName = getGreetingName(user?.name, user?.email);
@@ -81,6 +102,14 @@ export function DashboardScreen({ onNavigate }: Props) {
           <StatCard icon="💉" value={stats.total} label="Total Inj." />
           <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
         </View>
+
+        {(stats.longestStreak > 1 || !!recordMilestone) && (
+          <Text style={s.milestoneLine}>
+            {stats.longestStreak > 1 ? `🏆 Longest streak: ${stats.longestStreak} days` : ''}
+            {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
+            {recordMilestone ? `${recordMilestone}+ records logged` : ''}
+          </Text>
+        )}
 
         {freeTrialActive && (
           <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
@@ -200,6 +229,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   statIcon: { fontSize: 18, marginBottom: 4 },
+  milestoneLine: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -6, marginBottom: 14 },
   statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
