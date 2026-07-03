@@ -19,7 +19,12 @@ export const FREE_INJECTION_LIMIT = 5;
 export const LIFETIME_PRO_PRICE_LABEL = '$9.99';
 // 1.0.5 build 9 is the approved paid App Store release. Free-download builds
 // after this point should not be grandfathered as founding purchasers.
-export const LAST_PAID_APP_VERSION = '1.0.5';
+// IMPORTANT: on iOS, AppTransaction.originalAppVersion reports the original
+// CFBundleVersion (the EAS auto-incremented BUILD NUMBER), not the marketing
+// version — so grandfathering must compare build numbers. TestFlight/sandbox
+// always reports "1.0", so this path cannot be verified in TestFlight; it
+// grants Pro there, which is acceptable for testers.
+export const LAST_PAID_APP_BUILD = 9;
 
 // EAS profiles enable this for monetized iOS builds. Keep it unset/false for
 // Expo Go and Android until the matching store product is configured there.
@@ -53,17 +58,6 @@ async function getIapModule(): Promise<IapModule | null> {
     iapModulePromise = import('react-native-iap').catch(() => null);
   }
   return iapModulePromise;
-}
-
-function compareVersions(a: string, b: string): number {
-  const left = a.split('.').map(Number);
-  const right = b.split('.').map(Number);
-  const length = Math.max(left.length, right.length);
-  for (let i = 0; i < length; i += 1) {
-    const difference = (left[i] || 0) - (right[i] || 0);
-    if (difference !== 0) return difference;
-  }
-  return 0;
 }
 
 async function readStoredEntitlement(): Promise<StoredEntitlement | null> {
@@ -104,11 +98,11 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
 
     if (Platform.OS === 'ios') {
       const transaction = await iap.getAppTransactionIOS();
-      if (
-        transaction?.originalAppVersion
-        && compareVersions(transaction.originalAppVersion, LAST_PAID_APP_VERSION) <= 0
-      ) {
-        await grant('paid-app', transaction.originalAppVersion);
+      const originalBuild = transaction?.originalAppVersion
+        ? parseInt(transaction.originalAppVersion, 10)
+        : NaN;
+      if (Number.isFinite(originalBuild) && originalBuild <= LAST_PAID_APP_BUILD) {
+        await grant('paid-app', transaction?.originalAppVersion);
         return true;
       }
     }

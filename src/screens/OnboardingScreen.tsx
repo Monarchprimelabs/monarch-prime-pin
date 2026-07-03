@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
 import { colors, radius, spacing } from '../theme';
 import { setOnboardingDone } from '../lib/storage';
+import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
 
 type MultiItem = { id: string; label: string; icon: string };
 type SingleItem = { id: string; label: string; icon: string; sub?: string };
@@ -143,7 +144,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
         <Text style={s.welcomeHeadline}>Private peptide tracking,{'\n'}without the clutter.</Text>
         <Text style={s.welcomeSub}>
-          Try the tracker with 2 saved logs. Unlock Lifetime Pro once for unlimited tracking, reports, reminders, and tools.
+          Try the tracker with {FREE_INJECTION_LIMIT} saved logs. Unlock Lifetime Pro once for unlimited tracking, reports, reminders, and tools.
         </Text>
 
         <View style={s.featureList}>
@@ -166,7 +167,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
           <Text style={s.ctaBtnText}>Get Started</Text>
         </Pressable>
         <Text style={s.complianceNote}>
-          Start free with 2 saved logs.{'\n'}For research organization only. Not medical advice.
+          Start free with {FREE_INJECTION_LIMIT} saved logs.{'\n'}For research organization only. Not medical advice.
         </Text>
       </View>
     </View>
