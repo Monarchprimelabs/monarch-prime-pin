@@ -9,12 +9,15 @@ const KEY_SCHEDULES = '@mpp/schedules';
 const KEY_INVENTORY = '@mpp/inventory';
 const KEY_TEMPLATES = '@mpp/templates';
 
+export type ScheduleRepeat = 'once' | 'daily' | 'weekly';
+
 export type ScheduleEntry = {
   id: string;
   title: string;
   date: string;
   time: string;
   notes?: string;
+  repeat?: ScheduleRepeat; // absent on entries saved by older builds = 'once'
   reminderEnabled?: boolean;
   notificationId?: string;
   completedAt?: string;

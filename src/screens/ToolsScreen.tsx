@@ -11,7 +11,7 @@ import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
   getInventory, getRecordTemplates, getSchedules,
   InventoryItem, RecordTemplate, saveInventoryItem, saveRecordTemplate,
-  saveSchedule, ScheduleEntry, updateInventoryItem, updateSchedule,
+  saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -127,12 +127,20 @@ function ToolShell({ title, onClose, children }: { title: string; onClose: () =>
   );
 }
 
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function repeatWeekdayName(date: string): string {
+  const parsed = new Date(`${date}T12:00:00`);
+  return Number.isNaN(parsed.getTime()) ? '' : WEEKDAY_NAMES[parsed.getDay()];
+}
+
 function ScheduleTool({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<ScheduleEntry[]>([]);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState('09:00');
   const [notes, setNotes] = useState('');
+  const [repeat, setRepeat] = useState<ScheduleRepeat>('once');
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const refresh = () => getSchedules().then(values => setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))));
   useEffect(() => { refresh(); }, []);
@@ -147,17 +155,18 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
       date,
       time,
       notes: notes.trim() || undefined,
+      repeat,
       reminderEnabled: false,
     });
     if (reminderEnabled) {
       try {
-        const notificationId = await scheduleLocalReminder(saved.id, saved.title, saved.date, saved.time);
+        const notificationId = await scheduleLocalReminder(saved.id, saved.title, saved.date, saved.time, repeat);
         await updateSchedule({ ...saved, reminderEnabled: true, notificationId });
       } catch (error: any) {
         Alert.alert('Entry saved without reminder', error?.message || 'The reminder could not be scheduled.');
       }
     }
-    setTitle(''); setNotes(''); refresh();
+    setTitle(''); setNotes(''); setRepeat('once'); refresh();
   };
 
   const toggleComplete = async (item: ScheduleEntry) => {
@@ -189,6 +198,23 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
             <Field value={time} setValue={setTime} placeholder="HH:MM" style={{ flex: 1 }} />
           </View>
           <Field value={notes} setValue={setNotes} placeholder="Optional notes" multiline />
+          <View style={s.segment}>
+            {(['once', 'daily', 'weekly'] as const).map(option => (
+              <SegmentButton
+                key={option}
+                label={option === 'once' ? 'Once' : option === 'daily' ? 'Daily' : 'Weekly'}
+                active={repeat === option}
+                onPress={() => setRepeat(option)}
+              />
+            ))}
+          </View>
+          {repeat !== 'once' && (
+            <Text style={s.repeatHint}>
+              {repeat === 'daily'
+                ? `Repeats every day at ${time}.`
+                : `Repeats every ${repeatWeekdayName(date) || 'week'} at ${time}.`}
+            </Text>
+          )}
           <View style={s.reminderToggle}>
             <View style={{ flex: 1 }}>
               <Text style={s.reminderToggleTitle}>Local reminder</Text>
@@ -209,13 +235,13 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
             <ListItem
               key={item.id}
               title={item.title}
-              meta={`${item.date} · ${item.time}${item.completedAt ? ' · Completed' : item.reminderEnabled ? ' · Reminder on' : ''}${item.notes ? `\n${item.notes}` : ''}`}
+              meta={`${item.date} · ${item.time}${item.repeat === 'daily' ? ' · Repeats daily' : item.repeat === 'weekly' ? ` · Repeats every ${repeatWeekdayName(item.date) || 'week'}` : ''}${item.completedAt ? ' · Completed' : item.reminderEnabled ? ' · Reminder on' : ''}${item.notes ? `\n${item.notes}` : ''}`}
               accent={item.completedAt ? colors.teal : undefined}
-              actions={(
+              actions={(!item.repeat || item.repeat === 'once') ? (
                 <Pressable style={s.completeBtn} onPress={() => toggleComplete(item)}>
                   <Text style={s.completeBtnText}>{item.completedAt ? 'Undo' : 'Done'}</Text>
                 </Pressable>
-              )}
+              ) : undefined}
               onDelete={() => confirmDelete('schedule entry', () => remove(item))}
             />
           ))}
@@ -601,6 +627,7 @@ const s = StyleSheet.create({
   segmentBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)' },
   segmentText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   segmentTextActive: { color: colors.white },
+  repeatHint: { color: colors.textMuted, fontSize: 11, marginTop: -4, marginBottom: 10 },
   unitRow: { flexDirection: 'row', gap: 7, marginBottom: 10 },
   unitBtn: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, backgroundColor: colors.bgInput },
   unitBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)', borderColor: colors.primary },
