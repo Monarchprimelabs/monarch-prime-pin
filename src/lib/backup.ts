@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import { readAsStringAsync } from 'expo-file-system/legacy';
@@ -14,6 +15,7 @@ import {
 // their references would survive a device move, so they are stripped).
 
 const BACKUP_APP_ID = 'monarch-prime-pin';
+export const KEY_LAST_BACKUP_AT = '@mpp/last_backup_at';
 const BACKUP_VERSION = 1;
 
 export type BackupPayload = {
@@ -64,6 +66,8 @@ export async function exportBackup(): Promise<BackupCounts> {
     dialogTitle: 'Export Monarch Prime Pin backup',
     UTI: 'public.json',
   });
+
+  await AsyncStorage.setItem(KEY_LAST_BACKUP_AT, payload.exportedAt).catch(() => undefined);
 
   return {
     injections: injections.length,

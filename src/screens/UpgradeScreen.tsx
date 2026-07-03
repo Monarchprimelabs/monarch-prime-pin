@@ -5,6 +5,7 @@ import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { getInjections } from '../lib/storage';
 import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
+import { hapticSuccess } from '../lib/haptics';
 import { colors, radius, spacing } from '../theme';
 
 const PRO_FEATURES = [
@@ -26,6 +27,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     if (source !== 'lifetime' || !pendingPurchaseFeedback.current) return;
     pendingPurchaseFeedback.current = false;
+    hapticSuccess();
     Alert.alert('Lifetime Pro unlocked', 'Your one-time purchase is active. Unlimited logging is ready.');
     onClose?.();
   }, [onClose, source]);

@@ -16,6 +16,7 @@ import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from 
 import { useAuth } from '../lib/auth';
 import { UpgradeScreen } from './UpgradeScreen';
 import { notifySuccessfulSave } from '../lib/reviewPrompt';
+import { hapticSuccess, hapticTap } from '../lib/haptics';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -73,8 +74,10 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
     return () => { active = false; };
   }, [freeTrialActive]);
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    hapticTap();
     setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+  };
 
   const toggleSymptom = (tag: string) =>
     setSymptoms(p => (p.includes(tag) ? p.filter(x => x !== tag) : [...p, tag]));
@@ -229,6 +232,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             : `Your free log has been saved. You have ${freeLogsLeftAfterSave} free log${freeLogsLeftAfterSave === 1 ? '' : 's'} remaining.`
           : 'Your injection has been logged.';
 
+      hapticSuccess();
       if (!isEditing) {
         notifySuccessfulSave();
       }

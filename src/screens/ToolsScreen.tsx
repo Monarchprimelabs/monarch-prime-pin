@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Alert, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, UIManager, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing } from '../theme';
 import {
@@ -20,16 +21,25 @@ import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 import { exportInjectionsCsv } from '../lib/exportData';
+import { hapticTap } from '../lib/haptics';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+function animateListChange(): void {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
 
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
-const TOOLS: { id: ToolId; icon: string; title: string; sub: string; pro?: boolean }[] = [
-  { id: 'schedule', icon: '📅', title: 'Schedule & Reminders', sub: 'Create your own dated reminders', pro: true },
-  { id: 'inventory', icon: '📦', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels', pro: true },
-  { id: 'templates', icon: '📝', title: 'Record Templates', sub: 'Save reusable labels and note prompts', pro: true },
-  { id: 'conversion', icon: '▱', title: 'Concentration Worksheet', sub: 'Calculate concentration from entered mass and volume', pro: true },
-  { id: 'export', icon: '⇪', title: 'Export Data (CSV)', sub: 'Share all saved records as a spreadsheet file' },
-  { id: 'settings', icon: '⚙', title: 'Settings & Access', sub: 'Profile, Pro access, local data, and legal information' },
+const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; title: string; sub: string; pro?: boolean }[] = [
+  { id: 'schedule', icon: 'calendar-outline', title: 'Schedule & Reminders', sub: 'Create your own dated reminders', pro: true },
+  { id: 'inventory', icon: 'cube-outline', title: 'Inventory', sub: 'Track quantities, dates, and low-stock levels', pro: true },
+  { id: 'templates', icon: 'document-text-outline', title: 'Record Templates', sub: 'Save reusable labels and note prompts', pro: true },
+  { id: 'conversion', icon: 'calculator-outline', title: 'Concentration Worksheet', sub: 'Calculate concentration from entered mass and volume', pro: true },
+  { id: 'export', icon: 'share-outline', title: 'Export Data (CSV)', sub: 'Share all saved records as a spreadsheet file' },
+  { id: 'settings', icon: 'settings-outline', title: 'Settings & Access', sub: 'Profile, Pro access, local data, and legal information' },
 ];
 
 function isValidDate(value: string): boolean {
@@ -88,7 +98,7 @@ export function ToolsScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Open ${tool.title}`}
           >
-            <Text style={s.toolIcon}>{tool.icon}</Text>
+            <Ionicons name={tool.icon} size={22} color={colors.primary} style={s.toolIcon} />
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{tool.title}</Text>
@@ -163,7 +173,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const refresh = () => getSchedules().then(values => setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))));
+  const refresh = () => getSchedules().then(values => { animateListChange(); setItems(values.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))); });
   useEffect(() => { refresh(); }, []);
 
   const pickerDateValue = isValidDate(date) && isValidTime(time)
@@ -338,7 +348,7 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
   const [expiration, setExpiration] = useState('');
   const [lowAt, setLowAt] = useState('');
   const [notes, setNotes] = useState('');
-  const refresh = () => getInventory().then(setItems);
+  const refresh = () => getInventory().then(values => { animateListChange(); setItems(values); });
   useEffect(() => { refresh(); }, []);
 
   const add = async () => {
@@ -427,7 +437,7 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [compound, setCompound] = useState('');
   const [prompt, setPrompt] = useState('');
-  const refresh = () => getRecordTemplates().then(setItems);
+  const refresh = () => getRecordTemplates().then(values => { animateListChange(); setItems(values); });
   useEffect(() => { refresh(); }, []);
   const add = async () => {
     if (!title.trim()) { Alert.alert('Missing title', 'Enter a template title.'); return; }
@@ -495,6 +505,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const copyText = async (key: string, text: string) => {
     try {
       await Clipboard.setStringAsync(text);
+      hapticTap();
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(current => (current === key ? null : current)), 1400);
     } catch {
@@ -668,7 +679,7 @@ const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
   toolRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: 14 },
-  toolIcon: { width: 42, color: colors.primary, fontSize: 22, fontWeight: '700' },
+  toolIcon: { width: 42 },
   toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   proBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
