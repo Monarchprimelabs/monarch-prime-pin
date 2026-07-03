@@ -435,9 +435,9 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
         <Notice text="This worksheet only calculates concentration and U-100 marking references from values you enter. It does not recommend a target amount, schedule, or protocol." />
         <Card>
           <CardLabel icon="▱">SOLUTION CONCENTRATION</CardLabel>
-          <Text style={s.fieldLabel}>TOTAL MASS</Text>
+          <Text style={s.fieldLabel}>TOTAL MASS (VIAL)</Text>
           <View style={s.inlineInputRow}>
-            <Field value={solutionMass} setValue={setSolutionMass} placeholder="Enter amount" keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
+            <Field value={solutionMass} setValue={setSolutionMass} placeholder="Total amount in vial" keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
             <View style={s.compactToggle}>
               {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
                 <Pressable
