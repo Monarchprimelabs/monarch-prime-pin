@@ -193,6 +193,7 @@ export function AnalyticsScreen() {
             ${rows || '<tr><td colspan="5">No saved records this month</td></tr>'}
           </table>
           <p class="foot">All values were entered by the user. For research organization and recordkeeping only — not medical advice. Generated ${esc(new Date().toISOString().slice(0, 10))}.</p>
+          <p class="foot">Tracked with Monarch Prime Pin — private, on-device peptide recordkeeping. apps.apple.com/app/id6770808426</p>
         </body></html>`;
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync();

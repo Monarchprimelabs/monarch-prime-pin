@@ -542,6 +542,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     ...worksheetResults.concentration.map(result => `${result.label}: ${result.value}`),
     ...worksheetResults.u100.map(result => `${result.label}: ${result.value}`),
     'For research organization only. Verify all values independently.',
+    'Tracked with Monarch Prime Pin — apps.apple.com/app/id6770808426',
   ].join('\n');
 
   return (

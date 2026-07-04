@@ -18,8 +18,11 @@ const LEGACY_STORAGE_KEYS = [
 export const LIFETIME_PRO_PRODUCT_ID = 'com.monarchprime.pin.pro.lifetime';
 export const FREE_INJECTION_LIMIT = 5;
 export const LIFETIME_PRO_PRICE_LABEL = '$9.99';
-// 1.0.5 build 9 is the approved paid App Store release. Free-download builds
-// after this point should not be grandfathered as founding purchasers.
+// 1.0.5 build 9 is the last build sold as a paid up-front download. Builds
+// 10+ are free downloads with the Lifetime Pro IAP, so they must NOT be
+// grandfathered as founding purchasers. Users who bought the Lifetime Pro
+// IAP (at any price) are restored separately by product ID via
+// getAvailablePurchases — a store price change never affects them.
 // IMPORTANT: on iOS, AppTransaction.originalAppVersion reports the original
 // CFBundleVersion (the EAS auto-incremented BUILD NUMBER), not the marketing
 // version — so grandfathering must compare build numbers. TestFlight/sandbox
