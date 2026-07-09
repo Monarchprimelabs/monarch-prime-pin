@@ -371,7 +371,7 @@ function LegalTab() {
         If you are experiencing a medical emergency, contact emergency services immediately.
       </Text>
 
-      <Text style={s.legalFooter}>Monarch Prime Pin Tracker v1.1 — Research Use Only</Text>
+      <Text style={s.legalFooter}>Monarch Prime Pin Tracker v1.2 — Research Use Only</Text>
     </Card>
   );
 }
