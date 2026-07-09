@@ -6,6 +6,7 @@ import { Image, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/lib/auth';
 import { EntitlementProvider } from './src/lib/entitlements';
+import { AppLockGate } from './src/components/AppLockGate';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -24,7 +25,9 @@ export default function App() {
       <EntitlementProvider>
         <AuthProvider>
           <StatusBar style="light" />
-          <RootNavigator />
+          <AppLockGate>
+            <RootNavigator />
+          </AppLockGate>
         </AuthProvider>
       </EntitlementProvider>
     </SafeAreaProvider>

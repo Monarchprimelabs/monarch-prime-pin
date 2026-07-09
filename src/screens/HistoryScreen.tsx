@@ -6,6 +6,11 @@ import { colors, spacing, radius, severity as sevColors } from '../theme';
 import { Injection } from '../data/peptides';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
+import { UpgradeScreen } from './UpgradeScreen';
+import { useEntitlements } from '../lib/entitlements';
+import { useAuth } from '../lib/auth';
+
+const PRO_TABS = new Set(['calendar', 'photos']);
 
 export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
@@ -13,6 +18,10 @@ export function HistoryScreen() {
   const [backdateFor, setBackdateFor] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<Injection | null>(null);
   const [editingRecord, setEditingRecord] = useState<Injection | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const { hasPro } = useEntitlements();
+  const { user } = useAuth();
+  const canUsePro = hasPro || !!user?.isDeveloper;
 
   const refresh = async () => {
     try {
@@ -46,26 +55,31 @@ export function HistoryScreen() {
         {(['log', 'calendar', 'photos'] as const).map(t => (
           <Pressable
             key={t}
-            onPress={() => setTab(t)}
+            onPress={() => (PRO_TABS.has(t) && !canUsePro ? setShowUpgrade(true) : setTab(t))}
             style={[s.subTab, tab === t && s.subTabActive]}
           >
             <Text style={[s.subTabText, tab === t && s.subTabTextActive]}>
               {t === 'log' ? 'Log' : t === 'calendar' ? 'Calendar' : 'Photos'}
+              {PRO_TABS.has(t) && !canUsePro ? ' 🔒' : ''}
             </Text>
           </Pressable>
         ))}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
-        {tab === 'calendar' && (
+        {tab === 'calendar' && canUsePro && (
           <CalendarView
             injections={injections}
             onLogForDate={(date) => setBackdateFor(date)}
             onOpen={setSelectedRecord}
           />
         )}
-        {tab === 'photos' && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
+        {tab === 'photos' && canUsePro && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
       </ScrollView>
+
+      <Modal visible={showUpgrade} animationType="slide" onRequestClose={() => setShowUpgrade(false)}>
+        <UpgradeScreen onClose={() => setShowUpgrade(false)} />
+      </Modal>
 
       <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}>
         {backdateFor && (
@@ -149,6 +163,9 @@ function RecordDetail({
         </View>
         <DetailRow label="Recorded site" value={record.site} />
         <DetailRow label="Side effects" value={severityLabel(record.sev)} />
+        {!!record.symptoms?.length && (
+          <DetailRow label="Symptoms" value={record.symptoms.join(', ')} />
+        )}
         {record.weight > 0 && <DetailRow label="Weight" value={`${record.weight} lbs`} />}
         {!!record.notes && <DetailRow label="Notes" value={record.notes} />}
         {!!record.photoUri && (
@@ -357,23 +374,88 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
 
 function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
   const photos = injections.filter(i => i.photoUri);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const comparePair = compareIds
+    .map(id => photos.find(p => p.id === id))
+    .filter((p): p is Injection => !!p);
+
+  const toggleCompareSelection = (record: Injection) => {
+    setCompareIds(current => {
+      if (current.includes(record.id)) return current.filter(id => id !== record.id);
+      // Oldest selection drops off so the third tap swaps rather than blocks.
+      return [...current.slice(-1), record.id];
+    });
+  };
+
   if (photos.length === 0) {
     return <Text style={[s.empty, { paddingTop: 40 }]}>No progress photos yet</Text>;
   }
   return (
-    <View style={s.photoGrid}>
-      {photos.map(p => (
+    <View>
+      {photos.length >= 2 && (
         <Pressable
-          key={p.id}
-          style={s.photoThumb}
-          onPress={() => onOpen(p)}
-          accessibilityRole="button"
-          accessibilityLabel={`Open photo record from ${formatDate(p.date)}`}
+          style={s.compareToggle}
+          onPress={() => { setCompareMode(current => !current); setCompareIds([]); }}
         >
-          <Image source={{ uri: p.photoUri }} style={s.photoThumbImg} />
-          <Text style={s.photoThumbDate}>{p.date}</Text>
+          <Text style={s.compareToggleText}>
+            {compareMode ? 'Cancel Compare' : 'Compare Two Photos'}
+          </Text>
         </Pressable>
-      ))}
+      )}
+      {compareMode && (
+        <Text style={s.compareHint}>
+          {comparePair.length < 2 ? `Select ${2 - comparePair.length} photo${comparePair.length === 1 ? '' : 's'} to compare` : 'Comparing'}
+        </Text>
+      )}
+      <View style={s.photoGrid}>
+        {photos.map(p => {
+          const selectedIndex = compareIds.indexOf(p.id);
+          return (
+            <Pressable
+              key={p.id}
+              style={[s.photoThumb, compareMode && selectedIndex >= 0 && s.photoThumbSelected]}
+              onPress={() => (compareMode ? toggleCompareSelection(p) : onOpen(p))}
+              accessibilityRole="button"
+              accessibilityLabel={compareMode ? `Select photo from ${formatDate(p.date)} for comparison` : `Open photo record from ${formatDate(p.date)}`}
+            >
+              <Image source={{ uri: p.photoUri }} style={s.photoThumbImg} />
+              <Text style={s.photoThumbDate}>{p.date}</Text>
+              {compareMode && selectedIndex >= 0 && (
+                <View style={s.compareBadge}><Text style={s.compareBadgeText}>{selectedIndex + 1}</Text></View>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Modal
+        visible={compareMode && comparePair.length === 2}
+        animationType="slide"
+        onRequestClose={() => setCompareIds([])}
+      >
+        {comparePair.length === 2 && (
+          <SafeAreaView style={s.app}>
+            <View style={s.compareHeader}>
+              <Text style={s.compareTitle}>Photo Comparison</Text>
+              <Pressable onPress={() => setCompareIds([])} style={s.headerAction}>
+                <Text style={[s.headerActionText, { textAlign: 'right' }]}>Close</Text>
+              </Pressable>
+            </View>
+            <View style={s.compareRow}>
+              {[...comparePair]
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map(record => (
+                  <View key={record.id} style={s.comparePane}>
+                    <Image source={{ uri: record.photoUri }} style={s.compareImg} resizeMode="cover" />
+                    <Text style={s.compareDate}>{formatDate(record.date)}</Text>
+                    <Text style={s.compareMeta}>{record.peptide}</Text>
+                  </View>
+                ))}
+            </View>
+          </SafeAreaView>
+        )}
+      </Modal>
     </View>
   );
 }
@@ -454,6 +536,29 @@ const s = StyleSheet.create({
   photoThumb: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative' },
   photoThumbImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   photoThumbDate: { position: 'absolute', bottom: 6, left: 8, color: colors.white, fontSize: 11, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 4 },
+  photoThumbSelected: { borderWidth: 2, borderColor: colors.teal, borderRadius: 8 },
+  compareToggle: {
+    marginHorizontal: spacing.xl, marginBottom: 10, minHeight: 44,
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  compareToggleText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  compareHint: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginBottom: 10 },
+  compareBadge: {
+    position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11,
+    backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center',
+  },
+  compareBadgeText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  compareHeader: {
+    minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle,
+  },
+  compareTitle: { color: colors.white, fontSize: 17, fontWeight: '700' },
+  compareRow: { flex: 1, flexDirection: 'row', gap: 10, padding: spacing.xl },
+  comparePane: { flex: 1 },
+  compareImg: { width: '100%', flex: 1, borderRadius: radius.md, backgroundColor: colors.bgInput },
+  compareDate: { color: colors.white, fontSize: 13, fontWeight: '700', marginTop: 10 },
+  compareMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
 
   detailHeader: {
     minHeight: 58, paddingHorizontal: spacing.xl, flexDirection: 'row',

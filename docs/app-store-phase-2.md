@@ -18,7 +18,7 @@ peptide tracker,injection log,site rotation,protocol log,research tracker,shot t
 
 Monarch Prime Pin is a private peptide tracking and site-rotation app built for clear, consistent recordkeeping.
 
-Start free, explore the app, and save two injection records before unlocking. Lifetime Pro unlocks unlimited usage for `$4.99`, including unlimited logging, full history, advanced reports, user-created reminders, inventory, reusable templates, and the concentration worksheet with U-100 marking references.
+Start free, explore the app, and save five injection records before unlocking. Lifetime Pro unlocks unlimited usage for `$9.99`, including unlimited logging, full history (calendar and photos views, backdated entries), advanced reports, user-created reminders, inventory, reusable templates, and the concentration worksheet with U-100 marking references.
 
 Optional Lifetime Pro adds advanced reports, user-created schedules and reminders, inventory, reusable templates, and a concentration worksheet.
 
@@ -29,8 +29,8 @@ All amounts, dates, times, schedules, and notes are entered by the user. Monarch
 ### Always Free
 
 - App exploration and onboarding
-- Two saved injection records
-- View, edit, and delete saved free records
+- Five saved injection records
+- View, edit, and delete saved free records (basic list view only)
 - Site selection and site-rotation heatmap for saved records
 - Access details, legal information, and purchase restore
 
@@ -65,10 +65,10 @@ For Android, paid-app ownership requires a separate Play licensing or backend mi
 2. Create a non-consumable App Store Connect product:
    - Product ID: `com.monarchprime.pin.pro.lifetime`
    - Reference name: `Monarch Lifetime Pro`
-   - Suggested launch price: `$4.99`
+   - Suggested launch price: `$9.99`
 3. Build the free-download iOS version with the `ios-production` EAS profile. That profile sets `EXPO_PUBLIC_MONETIZATION_ENABLED=true`.
 4. Confirm an existing production purchaser sees `Founding purchaser · Lifetime Pro`.
-5. Confirm a fresh install sees `Free plan`, can save two records, and is blocked on the third new record.
+5. Confirm a fresh install sees `Free plan`, can save five records, and is blocked on the sixth new record.
 6. Confirm the Lifetime Pro purchase unlocks unlimited logging and Pro tools in TestFlight.
 7. Change the iOS app price to Free only after the grandfathering and purchase flows are verified.
 
@@ -105,6 +105,6 @@ Monarch Prime Pin is a manual research recordkeeping tool.
 - Schedule notifications only repeat text, dates, and times entered by the user.
 - The concentration worksheet divides a user-entered total mass by a user-entered liquid volume and converts the entered liquid volume into U-100 marking references. It does not calculate target amounts, schedules, protocols, or recommendations.
 - Existing customers who originally purchased the paid app receive Lifetime Pro automatically.
-- Free users can save two injection records, keep access to those saved records, and unlock Lifetime Pro for `$4.99` unlimited usage.
+- Free users can save five injection records, keep access to those saved records, and unlock Lifetime Pro for `$9.99` unlimited usage.
 
 Provide App Review with a fresh free-tier test account and a separate grandfathered test path if requested.

@@ -21,9 +21,10 @@ export async function scheduleLocalReminder(
   title: string,
   date: string,
   time: string,
+  repeat: 'once' | 'daily' | 'weekly' = 'once',
 ): Promise<string> {
   const triggerDate = scheduleDate(date, time);
-  if (triggerDate.getTime() <= Date.now()) {
+  if (repeat === 'once' && triggerDate.getTime() <= Date.now()) {
     throw new Error('Reminder time must be in the future.');
   }
 
@@ -32,6 +33,7 @@ export async function scheduleLocalReminder(
     throw new Error('Notification permission was not granted.');
   }
 
+  const channelId = Platform.OS === 'android' ? 'schedule-reminders' : undefined;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('schedule-reminders', {
       name: 'Schedule reminders',
@@ -39,17 +41,22 @@ export async function scheduleLocalReminder(
     });
   }
 
+  const [hour, minute] = time.split(':').map(Number);
+  const trigger: Notifications.SchedulableNotificationTriggerInput =
+    repeat === 'daily'
+      ? { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute, channelId }
+      : repeat === 'weekly'
+        // Weekly fires on the weekday of the entered date; expo weekday is 1 (Sun) – 7 (Sat).
+        ? { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: triggerDate.getDay() + 1, hour, minute, channelId }
+        : { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate, channelId };
+
   return Notifications.scheduleNotificationAsync({
     content: {
       title: 'Research schedule reminder',
       body: title,
       data: { scheduleId },
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: triggerDate,
-      channelId: Platform.OS === 'android' ? 'schedule-reminders' : undefined,
-    },
+    trigger,
   });
 }
 

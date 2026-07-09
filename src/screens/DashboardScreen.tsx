@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
@@ -9,10 +9,20 @@ import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
 import { getSiteDensity } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
+import { LogInjectionScreen } from './LogInjectionScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KEY_LAST_BACKUP_AT } from '../lib/backup';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   onNavigate: (tab: string) => void;
 };
+
+function displayDate(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  const [year, month, day] = iso.split('-');
+  return `${month}-${day}-${year}`;
+}
 
 function getGreetingName(name?: string, email?: string) {
   const cleaned = name?.trim().replace(/\s+/g, ' ') || '';
@@ -30,11 +40,25 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [reminderDismissed, setReminderDismissed] = useState(false);
+  const [repeatOpen, setRepeatOpen] = useState(false);
 
-  useEffect(() => {
+  const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
+
+  const refresh = () => {
     getInjections().then(setInjections);
     getSchedules().then(setSchedules);
-  }, []);
+    AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
+  };
+  useEffect(() => { refresh(); }, []);
+
+  // Gentle backup nudge once there is meaningful data and the last export
+  // is missing or older than 30 days. undefined = still loading, no nudge.
+  const backupDaysAgo = lastBackupAt
+    ? Math.floor((Date.now() - new Date(lastBackupAt).getTime()) / (24 * 60 * 60 * 1000))
+    : null;
+  const showBackupNudge = lastBackupAt !== undefined
+    && injections.length >= 5
+    && (lastBackupAt === null || (backupDaysAgo !== null && backupDaysAgo > 30));
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -49,12 +73,33 @@ export function DashboardScreen({ onNavigate }: Props) {
       cursor.setDate(cursor.getDate() - 1);
     }
 
+    // Longest run of consecutive logged days across all history.
+    const sortedDays = [...logDays].sort();
+    let longestStreak = 0;
+    let run = 0;
+    let previousDay: string | null = null;
+    sortedDays.forEach(day => {
+      if (previousDay) {
+        const next = new Date(`${previousDay}T12:00:00`);
+        next.setDate(next.getDate() + 1);
+        run = next.toISOString().slice(0, 10) === day ? run + 1 : 1;
+      } else {
+        run = 1;
+      }
+      longestStreak = Math.max(longestStreak, run);
+      previousDay = day;
+    });
+
     return {
       streak,
+      longestStreak,
       total: injections.length,
       thisWeek,
     };
   }, [injections]);
+
+  const RECORD_MILESTONES = [500, 250, 100, 50, 25, 10];
+  const recordMilestone = RECORD_MILESTONES.find(m => stats.total >= m);
 
   const lastInj = injections[0];
   const greetingName = getGreetingName(user?.name, user?.email);
@@ -77,10 +122,18 @@ export function DashboardScreen({ onNavigate }: Props) {
         />
 
         <View style={s.statRow}>
-          <StatCard icon="🔥" value={stats.streak} label="Day Streak" />
-          <StatCard icon="💉" value={stats.total} label="Total Inj." />
-          <StatCard icon="📅" value={stats.thisWeek} label="This Week" />
+          <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label="Day Streak" />
+          <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label="Total Inj." />
+          <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label="This Week" />
         </View>
+
+        {(stats.longestStreak > 1 || !!recordMilestone) && (
+          <Text style={s.milestoneLine}>
+            {stats.longestStreak > 1 ? `🏆 Longest streak: ${stats.longestStreak} days` : ''}
+            {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
+            {recordMilestone ? `${recordMilestone}+ records logged` : ''}
+          </Text>
+        )}
 
         {freeTrialActive && (
           <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
@@ -122,12 +175,24 @@ export function DashboardScreen({ onNavigate }: Props) {
             <View style={{ flex: 1 }}>
               <Text style={s.scheduleEyebrow}>NEXT SCHEDULED ENTRY</Text>
               <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
-              <Text style={s.scheduleMeta}>{nextSchedule.date} · {nextSchedule.time}</Text>
+              <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
             </View>
             <View style={s.scheduleDone}>
               <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
               <Text style={s.scheduleDoneLabel}>done</Text>
             </View>
+          </Pressable>
+        )}
+
+        {showBackupNudge && (
+          <Pressable style={s.backupNudge} onPress={() => onNavigate('settings')}>
+            <Ionicons name="cloud-upload-outline" size={18} color={colors.teal} />
+            <Text style={s.backupNudgeText}>
+              {lastBackupAt === null
+                ? 'Your records have never been backed up. Export a backup file from Tools → Settings.'
+                : `Last backup: ${backupDaysAgo} days ago. Export a fresh backup from Tools → Settings.`}
+            </Text>
+            <Text style={s.unlockChev}>›</Text>
           </Pressable>
         )}
 
@@ -155,24 +220,67 @@ export function DashboardScreen({ onNavigate }: Props) {
               </Text>
             </Text>
             <Text style={s.lastInjMeta}>Sites: {lastInj.site}</Text>
+            <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
+              <Text style={s.repeatBtnText}>Log This Again</Text>
+            </Pressable>
           </Card>
         )}
 
         <View style={s.qaRow}>
           <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
-            <Text style={s.qaPrimaryText}>💉  Log Injection</Text>
+            <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
+            <Text style={s.qaPrimaryText}>Log Injection</Text>
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}>
+        {lastInj && (
+          <LogInjectionScreen
+            prefillFrom={lastInj}
+            onDone={() => { setRepeatOpen(false); refresh(); }}
+            onCancel={() => setRepeatOpen(false)}
+          />
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
 
-function StatCard({ icon, value, label }: { icon: string; value: number; label: string }) {
+// Counts from the previous value (0 on first mount) to the target with an
+// ease-out curve. Pure JS/rAF — no native driver needed for text.
+function useCountUp(target: number, duration = 600): number {
+  const [display, setDisplay] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === target) { setDisplay(target); return; }
+    const start = Date.now();
+    let raf: number;
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + (target - from) * eased));
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = target;
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return display;
+}
+
+function StatCard({ icon, color, value, label }: {
+  icon: keyof typeof Ionicons.glyphMap; color: string; value: number; label: string;
+}) {
+  const displayValue = useCountUp(value);
   return (
     <View style={s.statCard}>
-      <Text style={s.statIcon}>{icon}</Text>
-      <Text style={s.statVal}>{value}</Text>
+      <Ionicons name={icon} size={20} color={color} style={s.statIcon} />
+      <Text style={s.statVal}>{displayValue}</Text>
       <Text style={s.statLabel}>{label}</Text>
     </View>
   );
@@ -199,7 +307,15 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  statIcon: { fontSize: 18, marginBottom: 4 },
+  statIcon: { marginBottom: 4 },
+  milestoneLine: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -6, marginBottom: 14 },
+  backupNudge: {
+    marginHorizontal: spacing.xl, marginBottom: 14, padding: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: 'rgba(20,184,166,0.06)', borderWidth: 1,
+    borderColor: 'rgba(20,184,166,0.25)', borderRadius: radius.lg,
+  },
+  backupNudgeText: { flex: 1, color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
@@ -250,11 +366,17 @@ const s = StyleSheet.create({
 
   lastInjPeptide: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 6 },
   lastInjMeta: { color: colors.text, fontSize: 13, lineHeight: 20 },
+  repeatBtn: {
+    minHeight: 44, marginTop: 12, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
+  },
+  repeatBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 
   qaRow: { paddingHorizontal: spacing.xl, marginTop: 2, marginBottom: 14 },
   qaPrimary: {
     backgroundColor: colors.action, borderRadius: radius.md,
-    paddingVertical: 15, alignItems: 'center',
+    paddingVertical: 15, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 8,
   },
   qaPrimaryText: { color: colors.actionText, fontSize: 15, fontWeight: '700' },
 });

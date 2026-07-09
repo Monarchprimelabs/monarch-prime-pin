@@ -23,7 +23,7 @@
     "android-production": {
       "extends": "production",
       "env": {
-        "EXPO_PUBLIC_MONETIZATION_ENABLED": "false"
+        "EXPO_PUBLIC_MONETIZATION_ENABLED": "true"
       }
     }
   },

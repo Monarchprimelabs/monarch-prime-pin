@@ -26,6 +26,7 @@ export const PEPTIDES = {
     { id: 'tha1',   name: 'Thymosin Alpha-1',  defaultUnit: 'mg'  as const },
     { id: 'nad',    name: 'NAD+',              defaultUnit: 'mg'  as const },
     { id: 'dsip',   name: 'DSIP',              defaultUnit: 'mcg' as const },
+    { id: 'motsc',  name: 'MOTS-c',            defaultUnit: 'mg'  as const },
     // Neurological / Mood
     { id: 'selank', name: 'Selank',            defaultUnit: 'mcg' as const },
     { id: 'semax',  name: 'Semax',             defaultUnit: 'mcg' as const },
@@ -57,6 +58,24 @@ export const PEPTIDES = {
 
 export type Peptide = { id: string; name: string; defaultUnit: 'mg' | 'mcg' };
 export type Severity = 'none' | 'mild' | 'mod' | 'sev';
+
+export const SIDE_EFFECT_TAGS = [
+  'Nausea',
+  'Headache',
+  'Fatigue',
+  'Injection site redness',
+  'Injection site swelling',
+  'Injection site itching',
+  'Flushing',
+  'GI upset',
+  'Dizziness',
+  'Water retention',
+  'Appetite change',
+  'Insomnia',
+  'Joint pain',
+] as const;
+
+export type SideEffectTag = typeof SIDE_EFFECT_TAGS[number];
 export type DensityLevel = 'unused' | 'light' | 'moderate' | 'heavy';
 
 export type Zone = {
@@ -70,28 +89,28 @@ export type Zone = {
 
 export const ZONES: { front: Zone[]; back: Zone[] } = {
   front: [
-    { id: 'sh_l',   label: 'L Shoulder',  short: 'Sh L',   cx: 32, cy: 28, r: 2.8 },
-    { id: 'sh_r',   label: 'R Shoulder',  short: 'Sh R',   cx: 68, cy: 28, r: 2.8 },
-    { id: 'arm_l',  label: 'L Outer Arm', short: 'Arm L',  cx: 24, cy: 38, r: 2.4 },
-    { id: 'arm_r',  label: 'R Outer Arm', short: 'Arm R',  cx: 76, cy: 38, r: 2.4 },
-    { id: 'abd_ul', label: 'Upper L Abd', short: 'Abd UL', cx: 43, cy: 39, r: 2.4 },
-    { id: 'abd_ur', label: 'Upper R Abd', short: 'Abd UR', cx: 57, cy: 39, r: 2.4 },
-    { id: 'abd_ll', label: 'Lower L Abd', short: 'Abd LL', cx: 43, cy: 47, r: 2.4 },
-    { id: 'abd_lr', label: 'Lower R Abd', short: 'Abd LR', cx: 57, cy: 47, r: 2.4 },
-    { id: 'flk_l',  label: 'L Flank',     short: 'Flk L',  cx: 35, cy: 43, r: 2.2 },
-    { id: 'flk_r',  label: 'R Flank',     short: 'Flk R',  cx: 65, cy: 43, r: 2.2 },
-    { id: 'th_l',   label: 'L Thigh',     short: 'Th L',   cx: 42, cy: 70, r: 2.6 },
-    { id: 'th_r',   label: 'R Thigh',     short: 'Th R',   cx: 58, cy: 70, r: 2.6 },
+    { id: 'sh_l',   label: 'Left Shoulder',        short: 'L Shoulder',    cx: 32, cy: 28, r: 2.8 },
+    { id: 'sh_r',   label: 'Right Shoulder',       short: 'R Shoulder',    cx: 68, cy: 28, r: 2.8 },
+    { id: 'arm_l',  label: 'Left Outer Arm',       short: 'L Arm',         cx: 24, cy: 38, r: 2.4 },
+    { id: 'arm_r',  label: 'Right Outer Arm',      short: 'R Arm',         cx: 76, cy: 38, r: 2.4 },
+    { id: 'abd_ul', label: 'Upper Left Abdomen',   short: 'Upper L Abs',   cx: 43, cy: 39, r: 2.4 },
+    { id: 'abd_ur', label: 'Upper Right Abdomen',  short: 'Upper R Abs',   cx: 57, cy: 39, r: 2.4 },
+    { id: 'abd_ll', label: 'Lower Left Abdomen',   short: 'Lower L Abs',   cx: 43, cy: 47, r: 2.4 },
+    { id: 'abd_lr', label: 'Lower Right Abdomen',  short: 'Lower R Abs',   cx: 57, cy: 47, r: 2.4 },
+    { id: 'flk_l',  label: 'Left Flank',           short: 'L Flank',       cx: 35, cy: 43, r: 2.2 },
+    { id: 'flk_r',  label: 'Right Flank',          short: 'R Flank',       cx: 65, cy: 43, r: 2.2 },
+    { id: 'th_l',   label: 'Left Thigh',           short: 'L Thigh',       cx: 42, cy: 70, r: 2.6 },
+    { id: 'th_r',   label: 'Right Thigh',          short: 'R Thigh',       cx: 58, cy: 70, r: 2.6 },
   ],
   back: [
-    { id: 'b_sh_l',  label: 'L Back Shoulder', short: 'Back Sh L', cx: 32, cy: 28, r: 2.8 },
-    { id: 'b_sh_r',  label: 'R Back Shoulder', short: 'Back Sh R', cx: 68, cy: 28, r: 2.8 },
-    { id: 'b_arm_l', label: 'L Tricep',     short: 'Tri L', cx: 24, cy: 38, r: 2.4 },
-    { id: 'b_arm_r', label: 'R Tricep',     short: 'Tri R', cx: 76, cy: 38, r: 2.4 },
-    { id: 'glute_l', label: 'L Glute',      short: 'Gl L',  cx: 43, cy: 53, r: 3 },
-    { id: 'glute_r', label: 'R Glute',      short: 'Gl R',  cx: 57, cy: 53, r: 3 },
-    { id: 'b_th_l',  label: 'L Post Thigh', short: 'Th L',  cx: 42, cy: 70, r: 2.6 },
-    { id: 'b_th_r',  label: 'R Post Thigh', short: 'Th R',  cx: 58, cy: 70, r: 2.6 },
+    { id: 'b_sh_l',  label: 'Left Rear Shoulder',  short: 'L Rear Shoulder',  cx: 32, cy: 28, r: 2.8 },
+    { id: 'b_sh_r',  label: 'Right Rear Shoulder', short: 'R Rear Shoulder',  cx: 68, cy: 28, r: 2.8 },
+    { id: 'b_arm_l', label: 'Left Tricep',         short: 'L Tricep',      cx: 24, cy: 38, r: 2.4 },
+    { id: 'b_arm_r', label: 'Right Tricep',        short: 'R Tricep',      cx: 76, cy: 38, r: 2.4 },
+    { id: 'glute_l', label: 'Left Glute',          short: 'L Glute',       cx: 43, cy: 53, r: 3 },
+    { id: 'glute_r', label: 'Right Glute',         short: 'R Glute',       cx: 57, cy: 53, r: 3 },
+    { id: 'b_th_l',  label: 'Left Hamstring',      short: 'L Hamstring',   cx: 42, cy: 70, r: 2.6 },
+    { id: 'b_th_r',  label: 'Right Hamstring',     short: 'R Hamstring',   cx: 58, cy: 70, r: 2.6 },
   ],
 };
 
@@ -106,6 +125,7 @@ export type Injection = {
   time: string;
   site: string;
   sev: Severity;
+  symptoms?: string[];
   weight: number;
   notes?: string;
   photoUri?: string;
