@@ -116,6 +116,37 @@ export const ZONES: { front: Zone[]; back: Zone[] } = {
 
 export const ALL_ZONES = [...ZONES.front, ...ZONES.back];
 
+export type TimePeriod = 'morning' | 'midday' | 'afternoon' | 'evening' | 'night';
+
+// Representative clock times keep sorting and analytics working for
+// period-based entries; timePeriod marks the record as approximate so
+// displays show the label instead of implying exact precision.
+export const TIME_PERIODS: { id: TimePeriod; label: string; time: string }[] = [
+  { id: 'morning',   label: 'Morning',   time: '07:00' },
+  { id: 'midday',    label: 'Midday',    time: '12:00' },
+  { id: 'afternoon', label: 'Afternoon', time: '15:00' },
+  { id: 'evening',   label: 'Evening',   time: '19:00' },
+  { id: 'night',     label: 'Night',     time: '22:00' },
+];
+
+export function formatClockTime(time: string): string {
+  const [hourRaw, minuteRaw] = time.split(':');
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return time;
+  const meridiem = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${String(minute).padStart(2, '0')} ${meridiem}`;
+}
+
+export function formatRecordTime(record: Pick<Injection, 'time' | 'timePeriod'>): string {
+  if (record.timePeriod) {
+    const period = TIME_PERIODS.find(p => p.id === record.timePeriod);
+    if (period) return period.label;
+  }
+  return formatClockTime(record.time);
+}
+
 export type Injection = {
   id: string;
   peptide: string;
@@ -123,6 +154,8 @@ export type Injection = {
   unit: 'mcg' | 'mg';
   date: string;
   time: string;
+  /** Present when the user picked a named period instead of an exact time. */
+  timePeriod?: TimePeriod;
   site: string;
   sev: Severity;
   symptoms?: string[];

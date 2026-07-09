@@ -280,7 +280,7 @@ function RemindersTab() {
           <Text style={s.saveNameText}>Export Backup File</Text>
         </Pressable>
         <Pressable
-          style={[s.saveNameBtn, backupBusy && { opacity: 0.5 }]}
+          style={[s.saveNameBtn, { marginTop: spacing.md }, backupBusy && { opacity: 0.5 }]}
           disabled={backupBusy}
           onPress={runBackupImport}
         >

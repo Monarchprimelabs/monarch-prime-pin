@@ -44,15 +44,32 @@ npx tsc --noEmit
 
 Then smoke test sign-in flow, offline logging, history, analytics, settings, notifications, and monetization gates on device.
 
+## iOS Release (EAS)
+
+This app ships to the App Store via EAS. Run these where you are logged in to Expo (`eas login`):
+
+```bash
+# Monetized App Store / TestFlight build (paywall ON)
+eas build --platform ios --profile ios-production
+
+# Upload the finished build to App Store Connect / TestFlight
+eas submit --platform ios --profile ios-production
+```
+
+- Use the **`ios-production`** profile for App Store builds. It sets `EXPO_PUBLIC_MONETIZATION_ENABLED=true` (free tier of two records, then `$4.99` Lifetime Pro). The plain `production` profile leaves monetization off and is not the iOS release profile.
+- Build numbers are remote and auto-incremented; do not bump them in `app.json`.
+- `submit` targets ASC App ID `6770808426` (`com.monarchprime.pin`).
+- Before flipping the live App Store price to Free, confirm the non-consumable IAP `com.monarchprime.pin.pro.lifetime` is approved in App Store Connect, then verify grandfathering and purchase in TestFlight. See `docs/app-store-phase-2.md`.
+
 ## Current Known Status
 
 - This is a production-sensitive app. Treat release behavior, entitlements, legal copy, and pricing logic as frozen unless explicitly approved.
 - Verified on June 25, 2026: the live App Store listing shows `version 1.1.1`, and the App Store Connect build activity screenshot shows build `15`.
 - The matching local App Store-preserved source exists at Git commit `3b9e772` and in the archive `Desktop/Monarch Prime Pin/MonarchPrimePin-v1.1.1-AppStore-preserved-HEAD-3b9e772.zip`.
 - This project uses Expo/EAS remote app versioning (`eas.json` has `appVersionSource: remote` with `autoIncrement: true`), so the iOS build number is not stored in `app.json`. That is why the verified source shows `1.1.1` locally while App Store Connect shows `1.1.1 (15)`.
-- The current working branch in this folder is ahead of that release and currently declares `version 1.1.0` in `app.json`, so it should not be treated as the production baseline.
+- The working branch declares `version 1.1.1` in `app.json`, matching the live App Store baseline at commit `3b9e772`. The next `ios-production` EAS build auto-increments the remote build number (App Store Connect shows `1.1.1 (15)`, so the next build is `(16)`).
 - The app currently supports offline-first local usage. Cloud/auth code exists in the repo, but it should not be expanded or reworked without approval.
-- There is already local git history in this folder, but no GitHub remote is configured.
+- This project has a GitHub remote configured (`monarchprimelabs/monarch-prime-pin`); push feature work to a branch and open a PR rather than committing to `main`.
 
 ## Docs
 
