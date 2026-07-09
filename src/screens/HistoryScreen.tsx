@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
-import { Injection } from '../data/peptides';
+import { Injection, formatRecordTime } from '../data/peptides';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -158,7 +158,7 @@ function RecordDetail({
       <ScrollView contentContainerStyle={s.detailContent}>
         <View style={[s.detailHero, { borderLeftColor: sevColors[record.sev] }]}>
           <Text style={s.detailName}>{record.peptide}</Text>
-          <Text style={s.detailDate}>{formatDate(record.date)} at {record.time}</Text>
+          <Text style={s.detailDate}>{formatDate(record.date)} · {formatRecordTime(record)}</Text>
           <Text style={s.detailDose}>{record.dose}{record.unit}</Text>
         </View>
         <DetailRow label="Recorded site" value={record.site} />
@@ -238,7 +238,7 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={s.histName}>{i.peptide}</Text>
-              <Text style={s.histMeta}>{i.date} · {i.time}</Text>
+              <Text style={s.histMeta}>{i.date} · {formatRecordTime(i)}</Text>
               <Text style={s.histMeta}>📍 {i.site}</Text>
               {i.weight > 0 && <Text style={s.histMeta}>⚖ {i.weight} lbs</Text>}
             </View>
@@ -352,7 +352,7 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
                 <Text style={s.histName}>{i.peptide}</Text>
-                <Text style={s.histMeta}>{i.time}</Text>
+                <Text style={s.histMeta}>{formatRecordTime(i)}</Text>
                 <Text style={s.histMeta}>📍 {i.site}</Text>
               </View>
               <Text style={s.histDose}>{i.dose}{i.unit}</Text>
