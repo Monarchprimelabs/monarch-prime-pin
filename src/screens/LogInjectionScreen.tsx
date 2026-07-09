@@ -9,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
-import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS } from '../data/peptides';
+import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS, TIME_PERIODS, TimePeriod, formatClockTime } from '../data/peptides';
 import { getInjections, getInventory, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
 import { getInjectionSiteIds } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
@@ -26,6 +26,11 @@ type LogInjectionScreenProps = {
   prefillFrom?: Injection;
   onCancel?: () => void;
 };
+
+type TimeChoice =
+  | { kind: 'now' }
+  | { kind: 'period'; period: TimePeriod }
+  | { kind: 'custom' };
 
 export function LogInjectionScreen({ onDone, initialDate, initialInjection, prefillFrom, onCancel }: LogInjectionScreenProps) {
   const { hasPro, monetizationEnabled } = useEntitlements();
@@ -50,6 +55,20 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   const [weight, setWeight] = useState(seedRecord?.weight ? String(seedRecord.weight) : '');
   const [notes, setNotes] = useState(initialInjection?.notes ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(initialInjection?.photoUri ?? null);
+  // Editing keeps the record's stored time (period chip or exact clock time);
+  // new records default to "Now" so quick logging stays one-tap.
+  const [timeChoice, setTimeChoice] = useState<TimeChoice>(
+    initialInjection
+      ? initialInjection.timePeriod
+        ? { kind: 'period', period: initialInjection.timePeriod }
+        : { kind: 'custom' }
+      : { kind: 'now' },
+  );
+  const seedTime = initialInjection?.time ?? new Date().toTimeString().slice(0, 5);
+  const seedHour = Number(seedTime.slice(0, 2));
+  const [customHour, setCustomHour] = useState(String(seedHour % 12 === 0 ? 12 : seedHour % 12));
+  const [customMinute, setCustomMinute] = useState(seedTime.slice(3, 5));
+  const [customMeridiem, setCustomMeridiem] = useState<'AM' | 'PM'>(seedHour >= 12 ? 'PM' : 'AM');
   const [saving, setSaving] = useState(false);
   const [freeLogCount, setFreeLogCount] = useState<number | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -158,6 +177,23 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
     }
   };
 
+  const resolveRecordTime = (): { time: string; timePeriod?: TimePeriod } | null => {
+    if (timeChoice.kind === 'period') {
+      const period = TIME_PERIODS.find(p => p.id === timeChoice.period);
+      if (!period) return null;
+      return { time: period.time, timePeriod: period.id };
+    }
+    if (timeChoice.kind === 'custom') {
+      const hour = Number(customHour);
+      const minute = Number(customMinute);
+      if (!Number.isInteger(hour) || hour < 1 || hour > 12) return null;
+      if (!Number.isInteger(minute) || minute < 0 || minute > 59) return null;
+      const hour24 = customMeridiem === 'PM' ? (hour % 12) + 12 : hour % 12;
+      return { time: `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}` };
+    }
+    return { time: new Date().toTimeString().slice(0, 5) };
+  };
+
   // ============================================================
   // SAVE — actually persists the injection now
   // ============================================================
@@ -172,6 +208,11 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
     }
     if (selected.length === 0) {
       Alert.alert('Missing site', 'Please select at least one injection site.');
+      return;
+    }
+    const resolvedTime = resolveRecordTime();
+    if (!resolvedTime) {
+      Alert.alert('Check the time', 'Enter an hour from 1 to 12 and minutes from 00 to 59.');
       return;
     }
 
@@ -202,13 +243,13 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
         uploadedPhotoUri = undefined;
       }
 
-      const now = new Date();
       const record = {
         peptide: peptide.name,
         dose,
         unit,
         date: logDate,
-        time: initialInjection?.time ?? now.toTimeString().slice(0, 5),
+        time: resolvedTime.time,
+        timePeriod: resolvedTime.timePeriod,
         site: selected.map(id => { const z = ALL_ZONES.find(x => x.id === id); return z ? z.label : id; }).join(", "),
         sev,
         symptoms: symptoms.length ? symptoms : undefined,
@@ -385,6 +426,82 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
               ))}
             </View>
           </View>
+        </Card>
+
+        {/* Time */}
+        <Card>
+          <Text style={s.cardLabel}>TIME</Text>
+          <View style={s.timeChips}>
+            <Pressable
+              onPress={() => { hapticTap(); setTimeChoice({ kind: 'now' }); }}
+              style={[s.timeChip, timeChoice.kind === 'now' && s.timeChipActive]}
+              accessibilityRole="button"
+              accessibilityLabel="Record the current time"
+            >
+              <Text style={[s.timeChipText, timeChoice.kind === 'now' && s.timeChipTextActive]}>Now</Text>
+            </Pressable>
+            {TIME_PERIODS.map(period => {
+              const active = timeChoice.kind === 'period' && timeChoice.period === period.id;
+              return (
+                <Pressable
+                  key={period.id}
+                  onPress={() => { hapticTap(); setTimeChoice({ kind: 'period', period: period.id }); }}
+                  style={[s.timeChip, active && s.timeChipActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Record time as ${period.label}`}
+                >
+                  <Text style={[s.timeChipText, active && s.timeChipTextActive]}>{period.label}</Text>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => { hapticTap(); setTimeChoice({ kind: 'custom' }); }}
+              style={[s.timeChip, timeChoice.kind === 'custom' && s.timeChipActive]}
+              accessibilityRole="button"
+              accessibilityLabel="Enter an exact time"
+            >
+              <Text style={[s.timeChipText, timeChoice.kind === 'custom' && s.timeChipTextActive]}>Exact…</Text>
+            </Pressable>
+          </View>
+          {timeChoice.kind === 'custom' && (
+            <View style={s.customTimeRow}>
+              <TextInput
+                value={customHour}
+                onChangeText={value => setCustomHour(value.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                maxLength={2}
+                style={s.customTimeInput}
+                accessibilityLabel="Hour"
+              />
+              <Text style={s.customTimeColon}>:</Text>
+              <TextInput
+                value={customMinute}
+                onChangeText={value => setCustomMinute(value.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                maxLength={2}
+                style={s.customTimeInput}
+                accessibilityLabel="Minutes"
+              />
+              <View style={s.unitToggle}>
+                {(['AM', 'PM'] as const).map(m => (
+                  <Pressable
+                    key={m}
+                    onPress={() => setCustomMeridiem(m)}
+                    style={[s.unitBtn, customMeridiem === m && s.unitBtnActive]}
+                  >
+                    <Text style={[s.unitBtnText, customMeridiem === m && s.unitBtnTextActive]}>{m}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+          <Text style={s.timeHint}>
+            {timeChoice.kind === 'now'
+              ? `Records the time when you save (now ${formatClockTime(new Date().toTimeString().slice(0, 5))}).`
+              : timeChoice.kind === 'period'
+                ? `Shown as “${TIME_PERIODS.find(p => p.id === timeChoice.period)?.label}” in your history.`
+                : 'Recorded exactly as entered.'}
+          </Text>
         </Card>
 
         {/* Site */}
@@ -712,6 +829,24 @@ const s = StyleSheet.create({
   unitBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   unitBtnTextActive: { color: colors.white },
 
+  timeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  timeChip: {
+    backgroundColor: colors.bgInput,
+    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+  },
+  timeChipActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  timeChipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  timeChipTextActive: { color: colors.white },
+  customTimeRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8, marginTop: 12 },
+  customTimeInput: {
+    width: 62, backgroundColor: colors.bgInput,
+    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 12,
+    color: colors.text, fontSize: 18, fontWeight: '600', textAlign: 'center',
+  },
+  customTimeColon: { color: colors.textMuted, fontSize: 20, fontWeight: '700', alignSelf: 'center' },
+  timeHint: { color: colors.textFaint, fontSize: 11, marginTop: 10 },
 
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' },
