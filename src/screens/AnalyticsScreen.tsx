@@ -9,8 +9,10 @@ import { colors, spacing, radius } from '../theme';
 import { ALL_ZONES, Injection } from '../data/peptides';
 import { getInjections } from '../lib/storage';
 import { getSiteUsage } from '../lib/sites';
+import { useI18n } from '../lib/i18n';
 
 export function AnalyticsScreen() {
+  const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
 
@@ -132,29 +134,29 @@ export function AnalyticsScreen() {
       return counts;
     }, {})
   ).sort((a, b) => b[1] - a[1])[0];
-  const monthLabel = new Date(`${currentMonth}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthLabel = capitalize(new Date(`${currentMonth}-01T12:00:00`).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' }));
   const reportText = [
-    `Monarch Prime Pin Research Record Summary`,
+    t('reports.summaryTitle'),
     monthLabel,
     '',
-    `Saved records: ${monthRecords.length}`,
-    `Active record days: ${monthDays}`,
-    `Recorded site selections: ${monthSites}`,
-    `Most recorded compound: ${monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'None'}`,
+    t('reports.txtSaved', { n: monthRecords.length }),
+    t('reports.txtDays', { n: monthDays }),
+    t('reports.txtSites', { n: monthSites }),
+    t('reports.txtTop', { value: monthTop ? `${monthTop[0]} (${monthTop[1]})` : t('reports.none') }),
     '',
-    'Record lines:',
+    t('reports.recordLines'),
     ...(monthRecords.length > 0
       ? monthRecords.map(record => `${record.date} ${record.time} | ${record.peptide} | ${record.site}${record.notes ? ` | ${record.notes}` : ''}`)
-      : ['No saved records this month']),
+      : [t('reports.noSavedMonth')]),
     '',
-    'For research organization and recordkeeping only.',
+    t('reports.footer'),
   ].join('\n');
 
   const shareReport = async () => {
     try {
-      await Share.share({ message: reportText, title: `${monthLabel} Research Record Summary` });
+      await Share.share({ message: reportText, title: t('reports.dialogTitle', { month: monthLabel }) });
     } catch (e: any) {
-      Alert.alert('Unable to share report', e?.message || 'Please try again.');
+      Alert.alert(t('reports.shareFailed'), e?.message || t('common.tryAgain'));
     }
   };
 
@@ -167,7 +169,7 @@ export function AnalyticsScreen() {
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
       const rows = monthRecords
-        .map(record => `<tr><td>${esc(record.date)} ${esc(record.time)}</td><td>${esc(record.peptide)}</td><td>${esc(record.dose)}${esc(record.unit)}</td><td>${esc(record.site)}</td><td>${esc(severityLabelPdf(record.sev))}</td></tr>`)
+        .map(record => `<tr><td>${esc(record.date)} ${esc(record.time)}</td><td>${esc(record.peptide)}</td><td>${esc(record.dose)}${esc(record.unit)}</td><td>${esc(record.site)}</td><td>${esc(t('sev.' + record.sev))}</td></tr>`)
         .join('');
       const html = `
         <html><head><meta charset="utf-8"><style>
@@ -180,27 +182,27 @@ export function AnalyticsScreen() {
           th { background: #f0f2f5; }
           .foot { margin-top: 20px; font-size: 9px; color: #777; }
         </style></head><body>
-          <h1>Monarch Prime Pin — Research Record Summary</h1>
+          <h1>${esc(t('reports.pdfTitle'))}</h1>
           <h2>${esc(monthLabel)}</h2>
           <div class="stats">
-            <div class="stat"><b>${monthRecords.length}</b><span>Saved records</span></div>
-            <div class="stat"><b>${monthDays}</b><span>Active record days</span></div>
-            <div class="stat"><b>${monthSites}</b><span>Site selections</span></div>
-            <div class="stat"><b>${esc(monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'None')}</b><span>Most recorded</span></div>
+            <div class="stat"><b>${monthRecords.length}</b><span>${esc(t('reports.pdfSavedRecords'))}</span></div>
+            <div class="stat"><b>${monthDays}</b><span>${esc(t('reports.pdfDays'))}</span></div>
+            <div class="stat"><b>${monthSites}</b><span>${esc(t('reports.pdfSiteSel'))}</span></div>
+            <div class="stat"><b>${esc(monthTop ? `${monthTop[0]} (${monthTop[1]})` : t('reports.none'))}</b><span>${esc(t('reports.pdfMost'))}</span></div>
           </div>
           <table>
-            <tr><th>Date</th><th>Compound</th><th>Dose</th><th>Sites</th><th>Side effects</th></tr>
-            ${rows || '<tr><td colspan="5">No saved records this month</td></tr>'}
+            <tr><th>${esc(t('reports.pdfDate'))}</th><th>${esc(t('reports.pdfCompound'))}</th><th>${esc(t('reports.pdfDose'))}</th><th>${esc(t('reports.pdfSites'))}</th><th>${esc(t('reports.pdfSev'))}</th></tr>
+            ${rows || `<tr><td colspan="5">${esc(t('reports.noSavedMonth'))}</td></tr>`}
           </table>
-          <p class="foot">All values were entered by the user. For research organization and recordkeeping only — not medical advice. Generated ${esc(new Date().toISOString().slice(0, 10))}.</p>
-          <p class="foot">Tracked with Monarch Prime Pin — private, on-device peptide recordkeeping. apps.apple.com/app/id6770808426</p>
+          <p class="foot">${esc(t('reports.pdfFoot1', { date: new Date().toISOString().slice(0, 10) }))}</p>
+          <p class="foot">${esc(t('reports.pdfFoot2'))}</p>
         </body></html>`;
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync();
       if (!canShare) throw new Error('Sharing is not available on this device.');
-      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `${monthLabel} Record Summary`, UTI: 'com.adobe.pdf' });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: t('reports.dialogTitle', { month: monthLabel }), UTI: 'com.adobe.pdf' });
     } catch (e: any) {
-      Alert.alert('Unable to create PDF', e?.message || 'Please try again.');
+      Alert.alert(t('reports.pdfFailed'), e?.message || t('common.tryAgain'));
     } finally {
       setBuildingPdf(false);
     }
@@ -209,19 +211,19 @@ export function AnalyticsScreen() {
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <Header title="Reports" subtitle="Record summaries and trends" />
+      <Header title={t('reports.title')} subtitle={t('reports.subtitle')} />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <Card>
-          <CardLabel icon="📄">MONTHLY RECORD SUMMARY</CardLabel>
+          <CardLabel icon="📄">{t('reports.monthlyLabel')}</CardLabel>
           <Text style={s.reportMonth}>{monthLabel}</Text>
           <View style={s.reportGrid}>
-            <SummaryStat label="Saved Records" value={monthRecords.length} />
-            <SummaryStat label="Record Days" value={monthDays} />
-            <SummaryStat label="Site Selections" value={monthSites} />
+            <SummaryStat label={t('reports.savedRecords')} value={monthRecords.length} />
+            <SummaryStat label={t('reports.recordDays')} value={monthDays} />
+            <SummaryStat label={t('reports.siteSelections')} value={monthSites} />
           </View>
-          <Text style={s.reportLine}>Most recorded: {monthTop ? `${monthTop[0]} (${monthTop[1]})` : 'No records this month'}</Text>
+          <Text style={s.reportLine}>{t('reports.mostRecorded', { value: monthTop ? `${monthTop[0]} (${monthTop[1]})` : t('reports.noneThisMonth') })}</Text>
           <Pressable style={s.shareBtn} onPress={shareReport} accessibilityRole="button" accessibilityLabel="Share monthly record summary">
-            <Text style={s.shareBtnText}>Share Record Summary</Text>
+            <Text style={s.shareBtnText}>{t('reports.share')}</Text>
           </Pressable>
           <Pressable
             style={[s.pdfBtn, buildingPdf && { opacity: 0.5 }]}
@@ -230,29 +232,29 @@ export function AnalyticsScreen() {
             accessibilityRole="button"
             accessibilityLabel="Share monthly summary as PDF"
           >
-            <Text style={s.pdfBtnText}>{buildingPdf ? 'Preparing PDF…' : 'Share as PDF'}</Text>
+            <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : t('reports.sharePdf')}</Text>
           </Pressable>
         </Card>
         <Card>
-          <CardLabel icon="📊">WEEKLY INJECTION FREQUENCY</CardLabel>
-          <Text style={s.sub}>Last 8 weeks</Text>
+          <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
+          <Text style={s.sub}>{t('reports.last8')}</Text>
           <View style={s.barChart}>
             {weeks.map((v, i) => (
               <View key={i} style={s.barCol}>
                 <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
-                <Text style={s.barLabel}>W{8 - i}</Text>
+                <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
               </View>
             ))}
           </View>
         </Card>
 
         <Card>
-          <CardLabel icon="⚖">WEIGHT TREND</CardLabel>
+          <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
           {weightSeries.length === 0 ? (
-            <Text style={s.empty}>No weight data logged yet</Text>
+            <Text style={s.empty}>{t('reports.noWeight')}</Text>
           ) : !weightChart ? (
             <Text style={s.empty}>
-              Latest entry: {weightSeries[0].weight} lbs. Log weight on more records to see a trend.
+              {t('reports.weightLatestOnly', { w: weightSeries[0].weight })}
             </Text>
           ) : (
             <>
@@ -260,8 +262,8 @@ export function AnalyticsScreen() {
                 <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
                 <Text style={s.weightDelta}>
                   {weightChart.last === weightChart.first
-                    ? 'No change since first entry'
-                    : `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10} lbs since first entry`}
+                    ? t('reports.weightNoChange')
+                    : t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })}
                 </Text>
               </View>
               <Svg viewBox="0 0 200 60" width="100%" height={90}>
@@ -282,16 +284,16 @@ export function AnalyticsScreen() {
                 ))}
               </Svg>
               <Text style={s.weightRangeNote}>
-                Last {weightSeries.length} weight entries · range {weightChart.min}–{weightChart.max} lbs
+                {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
               </Text>
             </>
           )}
         </Card>
 
         <Card>
-          <CardLabel icon="💊">TOP PEPTIDES USED</CardLabel>
+          <CardLabel icon="💊">{t('reports.topPeptides')}</CardLabel>
           {peptideRanks.length === 0 ? (
-            <Text style={s.empty}>No peptides logged yet</Text>
+            <Text style={s.empty}>{t('reports.noPeptides')}</Text>
           ) : peptideRanks.map(p => (
             <View key={p.name} style={s.rankRow}>
               <Text style={s.rankName} numberOfLines={1}>{p.name}</Text>
@@ -305,7 +307,7 @@ export function AnalyticsScreen() {
 
         {compoundOptions.length > 0 && (
           <Card>
-            <CardLabel icon="📈">DOSE HISTORY</CardLabel>
+            <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
             <View style={s.chipRow}>
               {compoundOptions.map(name => (
                 <Pressable
@@ -318,16 +320,16 @@ export function AnalyticsScreen() {
               ))}
             </View>
             {!doseChart || doseChart.count === 0 ? (
-              <Text style={s.empty}>No dose amounts recorded for this compound yet</Text>
+              <Text style={s.empty}>{t('reports.noDoses')}</Text>
             ) : !doseChart.points ? (
               <Text style={s.empty}>
-                Latest recorded dose: {formatDose(doseChart.latest)}. Log more entries to see the history line.
+                {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
               </Text>
             ) : (
               <>
                 <View style={s.weightSummaryRow}>
                   <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
-                  <Text style={s.weightDelta}>latest recorded dose</Text>
+                  <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
                 </View>
                 <Svg viewBox="0 0 200 60" width="100%" height={90}>
                   <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
@@ -347,7 +349,7 @@ export function AnalyticsScreen() {
                   ))}
                 </Svg>
                 <Text style={s.weightRangeNote}>
-                  Last {doseChart.count} recorded doses of {activeCompound}. History of your own entries only.
+                  {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
                 </Text>
               </>
             )}
@@ -356,11 +358,11 @@ export function AnalyticsScreen() {
 
         {symptomRanks.length > 0 && (
           <Card>
-            <CardLabel icon="📋">REPORTED SYMPTOMS</CardLabel>
-            <Text style={s.sub}>How often each self-reported symptom tag appears in your records</Text>
+            <CardLabel icon="📋">{t('reports.symptomsLabel')}</CardLabel>
+            <Text style={s.sub}>{t('reports.symptomsSub')}</Text>
             {symptomRanks.map(rank => (
               <View key={rank.name} style={s.rankRow}>
-                <Text style={s.rankName} numberOfLines={1}>{rank.name}</Text>
+                <Text style={s.rankName} numberOfLines={1}>{t('symptom.' + rank.name)}</Text>
                 <View style={s.rankBarWrap}>
                   <View style={[s.rankBar, { width: `${(rank.count / maxSymptom) * 100}%`, backgroundColor: colors.accent }]} />
                 </View>
@@ -371,14 +373,14 @@ export function AnalyticsScreen() {
         )}
 
         <Card>
-          <CardLabel icon="📍">INJECTION SITE USAGE</CardLabel>
+          <CardLabel icon="📍">{t('reports.siteUsage')}</CardLabel>
           <View style={s.siteGrid}>
             {siteUsage.map(({ id, name, count }) => (
               <View
                 key={id}
                 style={[s.siteCell, count >= 3 && s.siteCellActive]}
               >
-                <Text style={s.siteCellName}>{name}</Text>
+                <Text style={s.siteCellName}>{t('zoneShort.' + id)}</Text>
                 <Text style={[s.siteCellCount, count > 0 && { color: colors.white }]}>{count}</Text>
               </View>
             ))}
@@ -389,8 +391,8 @@ export function AnalyticsScreen() {
   );
 }
 
-function severityLabelPdf(value: string): string {
-  return value === 'none' ? 'None' : value === 'mild' ? 'Mild' : value === 'mod' ? 'Moderate' : 'Severe';
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function formatDoseNumber(value: number): string {
