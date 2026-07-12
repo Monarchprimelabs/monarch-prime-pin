@@ -7,7 +7,8 @@ import { colors, spacing, radius, severity } from '../theme';
 import { useAuth } from '../lib/auth';
 import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
-import { getSiteDensity } from '../lib/sites';
+import { getInjectionSiteIds, getSiteDensity } from '../lib/sites';
+import { useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,11 +25,11 @@ function displayDate(iso: string): string {
   return `${month}-${day}-${year}`;
 }
 
-function getGreetingName(name?: string, email?: string) {
+function getGreetingName(fallback: string, name?: string, email?: string) {
   const cleaned = name?.trim().replace(/\s+/g, ' ') || '';
   const emailPrefix = email?.split('@')[0]?.toLowerCase();
   if (!cleaned || cleaned.includes('@') || cleaned.toLowerCase() === emailPrefix) {
-    return 'Researcher';
+    return fallback;
   }
   return cleaned.split(' ')[0];
 }
@@ -36,6 +37,7 @@ function getGreetingName(name?: string, email?: string) {
 export function DashboardScreen({ onNavigate }: Props) {
   const { user } = useAuth();
   const { hasPro, monetizationEnabled } = useEntitlements();
+  const { t } = useI18n();
   const [view, setView] = useState<'front' | 'back'>('front');
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
@@ -102,7 +104,9 @@ export function DashboardScreen({ onNavigate }: Props) {
   const recordMilestone = RECORD_MILESTONES.find(m => stats.total >= m);
 
   const lastInj = injections[0];
-  const greetingName = getGreetingName(user?.name, user?.email);
+  const greetingName = getGreetingName(t('dash.researcher'), user?.name, user?.email);
+  const lastInjSiteIds = lastInj ? getInjectionSiteIds(lastInj) : [];
+  const lastInjSites = lastInjSiteIds.length ? lastInjSiteIds.map(id => t('zone.' + id)).join(', ') : lastInj?.site ?? '';
   const siteDensity = useMemo(() => getSiteDensity(injections), [injections]);
   const nextSchedule = useMemo(() => schedules
     .filter(item => !item.completedAt && new Date(`${item.date}T${item.time}:00`).getTime() >= Date.now())
@@ -117,35 +121,35 @@ export function DashboardScreen({ onNavigate }: Props) {
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         <Header
-          title={`Hello, ${greetingName}`}
-          subtitle={user?.isDeveloper ? 'Developer Mode' : 'Welcome back'}
+          title={t('dash.hello', { name: greetingName })}
+          subtitle={user?.isDeveloper ? t('dash.devMode') : t('dash.welcome')}
         />
 
         <View style={s.statRow}>
-          <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label="Day Streak" />
-          <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label="Total Inj." />
-          <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label="This Week" />
+          <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label={t('dash.dayStreak')} />
+          <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
+          <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
         </View>
 
         {(stats.longestStreak > 1 || !!recordMilestone) && (
           <Text style={s.milestoneLine}>
-            {stats.longestStreak > 1 ? `🏆 Longest streak: ${stats.longestStreak} days` : ''}
+            {stats.longestStreak > 1 ? t('dash.longestStreak', { n: stats.longestStreak }) : ''}
             {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
-            {recordMilestone ? `${recordMilestone}+ records logged` : ''}
+            {recordMilestone ? t('dash.milestone', { n: recordMilestone }) : ''}
           </Text>
         )}
 
         {freeTrialActive && (
           <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
             <View style={{ flex: 1 }}>
-              <Text style={s.unlockEyebrow}>FREE TRIAL</Text>
+              <Text style={s.unlockEyebrow}>{t('log.freeTrialLabel')}</Text>
               <Text style={s.unlockTitle}>
                 {freeLogsRemaining > 0
-                  ? `${freeLogsRemaining} free ${freeLogsRemaining === 1 ? 'log' : 'logs'} remaining`
-                  : 'Lifetime Pro unlock needed'}
+                  ? (freeLogsRemaining === 1 ? t('dash.freeLogsLeftOne') : t('dash.freeLogsLeftMany', { n: freeLogsRemaining }))
+                  : t('dash.unlockNeeded')}
               </Text>
               <Text style={s.unlockBody}>
-                Save {FREE_INJECTION_LIMIT} records free. Unlock unlimited usage for {LIFETIME_PRO_PRICE_LABEL}.
+                {t('dash.unlockBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
               </Text>
             </View>
             <Text style={s.unlockChev}>›</Text>
@@ -159,13 +163,13 @@ export function DashboardScreen({ onNavigate }: Props) {
             </Pressable>
             <View style={s.reminderHeader}>
               <Text style={{ fontSize: 14 }}>⏰</Text>
-              <Text style={s.reminderTitle}>Log Review</Text>
+              <Text style={s.reminderTitle}>{t('dash.logReview')}</Text>
             </View>
             <Text style={s.reminderCompound}>{lastInj.peptide}</Text>
-            <Text style={s.reminderMeta}>Last logged: {lastInj.date}</Text>
-            <Text style={s.reminderMeta}>Last site: {lastInj.site}</Text>
+            <Text style={s.reminderMeta}>{t('dash.lastLogged', { date: lastInj.date })}</Text>
+            <Text style={s.reminderMeta}>{t('dash.lastSite', { site: lastInjSites })}</Text>
             <View style={s.reminderNext}>
-              <Text style={s.reminderNextText}>Review your previous log entry</Text>
+              <Text style={s.reminderNextText}>{t('dash.reviewPrev')}</Text>
             </View>
           </View>
         )}
@@ -173,13 +177,13 @@ export function DashboardScreen({ onNavigate }: Props) {
         {canUsePro && nextSchedule && (
           <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
             <View style={{ flex: 1 }}>
-              <Text style={s.scheduleEyebrow}>NEXT SCHEDULED ENTRY</Text>
+              <Text style={s.scheduleEyebrow}>{t('dash.nextScheduled')}</Text>
               <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
               <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
             </View>
             <View style={s.scheduleDone}>
               <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
-              <Text style={s.scheduleDoneLabel}>done</Text>
+              <Text style={s.scheduleDoneLabel}>{t('dash.done')}</Text>
             </View>
           </Pressable>
         )}
@@ -189,39 +193,39 @@ export function DashboardScreen({ onNavigate }: Props) {
             <Ionicons name="cloud-upload-outline" size={18} color={colors.teal} />
             <Text style={s.backupNudgeText}>
               {lastBackupAt === null
-                ? 'Your records have never been backed up. Export a backup file from Tools → Settings.'
-                : `Last backup: ${backupDaysAgo} days ago. Export a fresh backup from Tools → Settings.`}
+                ? t('dash.backupNever')
+                : t('dash.backupOld', { n: backupDaysAgo ?? 0 })}
             </Text>
             <Text style={s.unlockChev}>›</Text>
           </Pressable>
         )}
 
         <Card>
-          <CardLabel icon="📍">SITE HEATMAP</CardLabel>
+          <CardLabel icon="📍">{t('dash.siteHeatmap')}</CardLabel>
           <ViewPill view={view} setView={setView} />
           <BodyDiagram view={view} mode="heatmap" densityByZone={siteDensity} />
-          <Text style={s.anteriorLabel}>{view === 'front' ? 'ANTERIOR' : 'POSTERIOR'}</Text>
+          <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
           <View style={s.legend}>
-            <LegendDot color={colors.primary} label="Unused" />
-            <LegendDot color={colors.teal} label="Light" />
-            <LegendDot color={colors.accent} label="Moderate" />
-            <LegendDot color={colors.red} label="Heavy" />
+            <LegendDot color={colors.primary} label={t('dash.legendUnused')} />
+            <LegendDot color={colors.teal} label={t('dash.legendLight')} />
+            <LegendDot color={colors.accent} label={t('dash.legendModerate')} />
+            <LegendDot color={colors.red} label={t('dash.legendHeavy')} />
           </View>
         </Card>
 
         {lastInj && (
           <Card>
-            <CardLabel icon="💉">LAST INJECTION</CardLabel>
+            <CardLabel icon="💉">{t('dash.lastInjection')}</CardLabel>
             <Text style={s.lastInjPeptide}>{lastInj.peptide}</Text>
             <Text style={s.lastInjMeta}>
               {lastInj.dose}{lastInj.unit}  ·  {lastInj.date}  ·{' '}
               <Text style={{ color: severity[lastInj.sev] }}>
-                {lastInj.sev === 'none' ? 'None' : lastInj.sev === 'mild' ? 'Mild' : lastInj.sev === 'mod' ? 'Moderate' : 'Severe'}
+                {t('sev.' + lastInj.sev)}
               </Text>
             </Text>
-            <Text style={s.lastInjMeta}>Sites: {lastInj.site}</Text>
+            <Text style={s.lastInjMeta}>{t('dash.sites', { site: lastInjSites })}</Text>
             <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
-              <Text style={s.repeatBtnText}>Log This Again</Text>
+              <Text style={s.repeatBtnText}>{t('dash.logAgain')}</Text>
             </Pressable>
           </Card>
         )}
@@ -229,7 +233,7 @@ export function DashboardScreen({ onNavigate }: Props) {
         <View style={s.qaRow}>
           <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
             <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
-            <Text style={s.qaPrimaryText}>Log Injection</Text>
+            <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
           </Pressable>
         </View>
       </ScrollView>
