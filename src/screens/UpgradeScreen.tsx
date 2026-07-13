@@ -7,16 +7,18 @@ import { getInjections } from '../lib/storage';
 import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
 import { hapticSuccess } from '../lib/haptics';
 import { colors, radius, spacing } from '../theme';
+import { useI18n } from '../lib/i18n';
 
-const PRO_FEATURES = [
-  'Unlimited injection logging',
-  'Full reports and shareable summaries',
-  'User-created schedules and local reminders',
-  'Inventory and record templates',
-  'Concentration worksheet',
+const PRO_FEATURE_KEYS = [
+  'upgrade.pro1',
+  'upgrade.pro2',
+  'upgrade.pro3',
+  'upgrade.pro4',
+  'upgrade.pro5',
 ];
 
 export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
+  const { t } = useI18n();
   const {
     hasPro, source, product, monetizationEnabled, purchaseLifetime, restorePurchases,
   } = useEntitlements();
@@ -28,9 +30,9 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
     if (source !== 'lifetime' || !pendingPurchaseFeedback.current) return;
     pendingPurchaseFeedback.current = false;
     hapticSuccess();
-    Alert.alert('Lifetime Pro unlocked', 'Your one-time purchase is active. Unlimited logging is ready.');
+    Alert.alert(t('upgrade.purchasedTitle'), t('upgrade.purchasedBody'));
     onClose?.();
-  }, [onClose, source]);
+  }, [onClose, source, t]);
 
   useEffect(() => {
     if (!hasPro && monetizationEnabled) trackPaywallView();
@@ -60,9 +62,9 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
     setWorking(true);
     try {
       await action();
-      if (success) Alert.alert('Access restored', success);
+      if (success) Alert.alert(t('upgrade.restoredTitle'), success);
     } catch (error: any) {
-      Alert.alert('Unable to update access', error?.message || 'Please try again.');
+      Alert.alert(t('upgrade.updateFailed'), error?.message || t('common.tryAgain'));
     } finally {
       setWorking(false);
     }
@@ -77,66 +79,68 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
     } catch (error: any) {
       pendingPurchaseFeedback.current = false;
       if (isPurchaseCancellation(error)) return;
-      Alert.alert('Unable to update access', error?.message || 'Please try again.');
+      Alert.alert(t('upgrade.updateFailed'), error?.message || t('common.tryAgain'));
     } finally {
       setWorking(false);
     }
   };
 
   const status = source === 'paid-app' || source === 'legacy-install'
-    ? 'Founding purchaser: Lifetime Pro included'
+    ? t('upgrade.statusFounding')
     : source === 'lifetime'
-      ? 'Lifetime Pro unlocked'
+      ? t('upgrade.statusLifetime')
       : source === 'early-access'
-        ? 'Early access: Pro tools are currently open'
-        : 'Free plan';
+        ? t('upgrade.statusEarly')
+        : t('access.freePlan');
   const price = product?.displayPrice || LIFETIME_PRO_PRICE_LABEL;
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-        <Header title="Monarch Pro" subtitle={`Unlock unlimited usage for ${price}`} />
+        <Header title="Monarch Pro" subtitle={t('upgrade.subtitle', { price })} />
         {!!onClose && (
           <View style={s.closeRow}>
             <Pressable onPress={onClose} style={s.closeBtn}>
-              <Text style={s.closeText}>‹ Back</Text>
+              <Text style={s.closeText}>{t('upgrade.back')}</Text>
             </Pressable>
           </View>
         )}
 
         <Card style={s.statusCard}>
-          <Text style={s.statusEyebrow}>YOUR ACCESS</Text>
+          <Text style={s.statusEyebrow}>{t('access.label')}</Text>
           <Text style={s.statusTitle}>{status}</Text>
           <Text style={s.statusBody}>
             {!hasPro && recordStats && recordStats.count > 0
-              ? `You've logged ${recordStats.count} injection${recordStats.count === 1 ? '' : 's'}${recordStats.sites > 1 ? ` across ${recordStats.sites} sites` : ''}. Your records stay on this device — unlock Lifetime Pro for ${price} to keep logging without limits.`
-              : `Free users can explore the app and save ${FREE_INJECTION_LIMIT} injection records. Unlock Lifetime Pro for ${price} to keep logging without limits.`}
+              ? (recordStats.count === 1 ? t('upgrade.loggedOne') : t('upgrade.loggedMany', { n: recordStats.count }))
+                + (recordStats.sites > 1 ? t('upgrade.acrossSites', { sites: recordStats.sites }) : '')
+                + t('upgrade.keepLogging', { price })
+              : t('upgrade.bodyGeneric', { max: FREE_INJECTION_LIMIT, price })}
           </Text>
         </Card>
 
         {!hasPro && monetizationEnabled && (
           <Card style={s.valueCard}>
-            <Text style={s.valueEyebrow}>ONE PAYMENT. NO SUBSCRIPTIONS. EVER.</Text>
+            <Text style={s.valueEyebrow}>{t('upgrade.valueEyebrow')}</Text>
             <Text style={s.valueBody}>
-              Most tracking apps bill you every month, forever. Monarch Prime Pin is a single {price} payment — pay once, keep every feature for as long as you use the app. No recurring charges, no trial gimmicks, nothing to cancel.
+              {t('upgrade.valueBody', { price })}
             </Text>
           </Card>
         )}
 
         <Card>
-          <CardLabel icon="✓">ALWAYS FREE</CardLabel>
+          <CardLabel icon="✓">{t('upgrade.alwaysFree')}</CardLabel>
           {[
-            'Explore the dashboard, history, and tools',
-            `${FREE_INJECTION_LIMIT} saved injection records included`,
-            'View, edit, and delete your saved free records',
-            'Site rotation heatmap for saved records',
+            t('upgrade.free1'),
+            t('upgrade.free2', { max: FREE_INJECTION_LIMIT }),
+            t('upgrade.free3'),
+            t('upgrade.free4'),
           ].map(item => <Feature key={item} text={item} />)}
         </Card>
 
         <Card>
-          <CardLabel icon="◆">LIFETIME PRO</CardLabel>
-          {PRO_FEATURES.map(item => <Feature key={item} text={item} />)}
+          <CardLabel icon="◆">{t('upgrade.lifetimePro')}</CardLabel>
+          {PRO_FEATURE_KEYS.map(key => <Feature key={key} text={t(key)} />)}
           {!hasPro && monetizationEnabled && (
             <Pressable
               style={[s.primary, working && s.disabled]}
@@ -144,19 +148,19 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
               onPress={buyLifetime}
             >
               <Text style={s.primaryText}>
-                {working ? 'PLEASE WAIT...' : `UNLOCK UNLIMITED USAGE · ${price}`}
+                {working ? t('upgrade.wait') : t('upgrade.unlockBtn', { price })}
               </Text>
             </Pressable>
           )}
           {!hasPro && monetizationEnabled && (
             <Text style={s.purchaseFootnote}>
-              One-time payment, billed once through the App Store. No subscription, no recurring charges. Your data stays on your device either way.
+              {t('upgrade.footnote')}
             </Text>
           )}
           {!monetizationEnabled && (
             <View style={s.previewNote}>
               <Text style={s.previewText}>
-                Pro tools are open during early access. A one-time Lifetime Pro option will be introduced later, with no forced monthly subscription.
+                {t('upgrade.previewNote')}
               </Text>
             </View>
           )}
@@ -165,10 +169,10 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
             disabled={working}
             onPress={() => run(async () => {
               const restored = await restorePurchases();
-              if (!restored) throw new Error('No prior purchase was found for this App Store account.');
-            }, 'Your prior purchase has been restored.')}
+              if (!restored) throw new Error(t('upgrade.noPurchase'));
+            }, t('upgrade.restoredBody'))}
           >
-            <Text style={s.restoreText}>Restore Prior Purchase</Text>
+            <Text style={s.restoreText}>{t('upgrade.restore')}</Text>
           </Pressable>
         </Card>
       </ScrollView>

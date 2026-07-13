@@ -3,6 +3,7 @@ import { AppState, Image, Pressable, StyleSheet, Text, View } from 'react-native
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { colors, radius } from '../theme';
+import { useI18n } from '../lib/i18n';
 
 export const KEY_APP_LOCK = '@mpp/app_lock_enabled';
 
@@ -10,6 +11,7 @@ export const KEY_APP_LOCK = '@mpp/app_lock_enabled';
 // record content in the iOS app switcher. Free for all users — privacy is
 // core to this app, not a paywalled extra.
 export function AppLockGate({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const [enabled, setEnabled] = useState<boolean | null>(null); // null = still reading the setting
   const [locked, setLocked] = useState(false);
   const [obscured, setObscured] = useState(false);
@@ -20,7 +22,7 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     authInFlight.current = true;
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock Monarch Prime Pin',
+        promptMessage: t('applock.prompt'),
       });
       if (result.success) setLocked(false);
     } catch {
@@ -28,7 +30,7 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     } finally {
       authInFlight.current = false;
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     AsyncStorage.getItem(KEY_APP_LOCK)
@@ -66,8 +68,8 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
         <View style={s.cover}>
           <Image source={require('../../assets/logo-symbol.png')} style={s.logo} resizeMode="contain" />
           {enabled === true && locked && !obscured && (
-            <Pressable style={s.unlockBtn} onPress={unlock} accessibilityRole="button" accessibilityLabel="Unlock the app">
-              <Text style={s.unlockText}>Unlock</Text>
+            <Pressable style={s.unlockBtn} onPress={unlock} accessibilityRole="button" accessibilityLabel={t('applock.unlock')}>
+              <Text style={s.unlockText}>{t('applock.unlock')}</Text>
             </Pressable>
           )}
         </View>
