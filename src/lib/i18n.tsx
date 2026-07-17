@@ -475,6 +475,17 @@ const en: Record<string, string> = {
   'tools.summaryFoot1': 'For research organization only. Verify all values independently.',
   'tools.summaryFoot2': 'Tracked with Monarch Prime Pin — apps.apple.com/app/id6770808426',
   'tools.calcFootnote': 'Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100, with each marking shown in the clearest unit. Verify all entered values and results independently.',
+  // Tools — worksheet: U-100 scale visual
+  'tools.gauge.label': 'U-100 SCALE VISUAL',
+  'tools.gauge.amountLabel': 'AMOUNT TO LOCATE ON THE SCALE',
+  'tools.gauge.amountPh': 'e.g. 1',
+  'tools.gauge.unitsBig': '{n} units',
+  'tools.gauge.mlLine': '{v} mL of solution',
+  'tools.gauge.scaleCaption': 'Shown on a 0–{scale} unit scale',
+  'tools.gauge.over': 'Reads past 100 units — more than one full U-100 scale at this concentration.',
+  'tools.gauge.empty': 'Enter the vial totals above plus an amount here to see where it reads on the scale.',
+  'tools.gauge.note': 'Visual reading reference only — it locates the amount you entered on the marking scale above. It does not recommend an amount. Verify independently.',
+  'tools.gauge.summaryLine': '{amount} {unit} reads at {units} units ({ml} mL) on the U-100 scale',
 
   // Shared UI (banner, view toggle)
   'ui.researchOnly': 'FOR RESEARCH USE ONLY',
@@ -1036,6 +1047,17 @@ const es: Record<string, string> = {
   'tools.summaryFoot1': 'Solo para organización de investigación. Verifica todos los valores de forma independiente.',
   'tools.summaryFoot2': 'Registrado con Monarch Prime Pin — apps.apple.com/app/id6770808426',
   'tools.calcFootnote': 'Cálculos: concentración = masa total ingresada ÷ volumen de líquido ingresado. Referencia U-100 = mL ingresados × 100, con cada marca mostrada en la unidad más clara. Verifica todos los valores y resultados de forma independiente.',
+  // Tools — worksheet: U-100 scale visual
+  'tools.gauge.label': 'VISUAL DE LA ESCALA U-100',
+  'tools.gauge.amountLabel': 'CANTIDAD A UBICAR EN LA ESCALA',
+  'tools.gauge.amountPh': 'p. ej. 1',
+  'tools.gauge.unitsBig': '{n} unidades',
+  'tools.gauge.mlLine': '{v} mL de solución',
+  'tools.gauge.scaleCaption': 'Mostrado en una escala de 0 a {scale} unidades',
+  'tools.gauge.over': 'La lectura supera las 100 unidades — más de una escala U-100 completa con esta concentración.',
+  'tools.gauge.empty': 'Ingresa los totales del vial arriba y una cantidad aquí para ver dónde se lee en la escala.',
+  'tools.gauge.note': 'Solo una referencia visual de lectura — ubica la cantidad que ingresaste en la escala de marcas de arriba. No recomienda ninguna cantidad. Verifícalo de forma independiente.',
+  'tools.gauge.summaryLine': '{amount} {unit} se lee en {units} unidades ({ml} mL) en la escala U-100',
 
   // Shared UI (banner, view toggle)
   'ui.researchOnly': 'SOLO PARA USO EN INVESTIGACIÓN',

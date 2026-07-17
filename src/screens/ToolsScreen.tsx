@@ -477,12 +477,18 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
 
 const KEY_WORKSHEET_INPUTS = '@mpp/worksheet_inputs';
 const U100_MARKINGS = [1, 5, 10, 20, 50];
+// Real U-100 barrels come in 30, 50, and 100 unit sizes; the gauge picks the
+// smallest scale the reading fits on so small readings stay legible.
+const GAUGE_SCALES = [30, 50, 100];
+const GAUGE_HEIGHT = 208;
 
 function ConversionTool({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
   const [solutionMass, setSolutionMass] = useState('');
   const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
   const [liquidVolume, setLiquidVolume] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [targetUnit, setTargetUnit] = useState('mg');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const hydrated = useRef(false);
 
@@ -494,6 +500,8 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
         if (typeof saved.mass === 'string') setSolutionMass(saved.mass);
         if (saved.unit === 'mg' || saved.unit === 'mcg') setSolutionMassUnit(saved.unit);
         if (typeof saved.volume === 'string') setLiquidVolume(saved.volume);
+        if (typeof saved.target === 'string') setTargetAmount(saved.target);
+        if (saved.targetUnit === 'mg' || saved.targetUnit === 'mcg') setTargetUnit(saved.targetUnit);
       })
       .catch(() => undefined)
       .finally(() => { hydrated.current = true; });
@@ -503,9 +511,9 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     if (!hydrated.current) return;
     AsyncStorage.setItem(
       KEY_WORKSHEET_INPUTS,
-      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume }),
+      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume, target: targetAmount, targetUnit }),
     ).catch(() => undefined);
-  }, [solutionMass, solutionMassUnit, liquidVolume]);
+  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit]);
 
   const copyText = async (key: string, text: string) => {
     try {
@@ -541,11 +549,26 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     };
   }, [liquidVolume, solutionMass, solutionMassUnit, t]);
 
+  const gauge = useMemo(() => {
+    const mass = parsePositiveNumber(solutionMass);
+    const volume = parsePositiveNumber(liquidVolume);
+    const target = parsePositiveNumber(targetAmount);
+    if (!mass || !volume || !target) return null;
+    const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
+    const mcgPerUnit = (massMg * 1000) / (volume * 100);
+    const targetMcg = targetUnit === 'mg' ? target * 1000 : target;
+    const units = targetMcg / mcgPerUnit;
+    return { units, ml: units / 100, massLabel: formatMass(targetMcg) };
+  }, [liquidVolume, solutionMass, solutionMassUnit, targetAmount, targetUnit]);
+
   const summaryText = worksheetResults.concentration.length === 0 ? null : [
     t('tools.summaryTitle'),
     t('tools.summaryEntered', { mass: solutionMass, unit: solutionMassUnit, vol: liquidVolume }),
     ...worksheetResults.concentration.map(result => `${result.label}: ${result.value}`),
     ...worksheetResults.u100.map(result => `${result.label}: ${result.value}`),
+    ...(gauge ? [t('tools.gauge.summaryLine', {
+      amount: targetAmount, unit: targetUnit, units: formatNumber(gauge.units), ml: formatNumber(gauge.ml),
+    })] : []),
     t('tools.summaryFoot1'),
     t('tools.summaryFoot2'),
   ].join('\n');
@@ -621,11 +644,80 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
           )}
         </Card>
 
+        <Card>
+          <CardLabel icon="▱">{t('tools.gauge.label')}</CardLabel>
+          <Text style={s.fieldLabel}>{t('tools.gauge.amountLabel')}</Text>
+          <View style={s.inlineInputRow}>
+            <Field value={targetAmount} setValue={setTargetAmount} placeholder={t('tools.gauge.amountPh')} keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
+            <View style={s.compactToggle}>
+              {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
+                <Pressable
+                  key={option.id}
+                  style={[s.compactBtn, targetUnit === option.id && s.compactBtnActive]}
+                  onPress={() => setTargetUnit(option.id)}
+                >
+                  <Text style={[s.compactText, targetUnit === option.id && s.compactTextActive]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {gauge ? (
+            <UnitGauge units={gauge.units} ml={gauge.ml} massLabel={gauge.massLabel} />
+          ) : (
+            <View style={[s.resultPanel, { marginTop: 14 }]}>
+              <Text style={s.resultEmpty}>{t('tools.gauge.empty')}</Text>
+            </View>
+          )}
+          <Text style={s.gaugeNote}>{t('tools.gauge.note')}</Text>
+        </Card>
+
         <Text style={s.calculatorFootnote}>
           {t('tools.calcFootnote')}
         </Text>
       </ScrollView>
     </ToolShell>
+  );
+}
+
+// Vertical unit-scale gauge: tick marks and a highlighted fill, drawn entirely
+// with views. Deliberately NOT a syringe illustration — it reads like a ruler.
+function UnitGauge({ units, ml, massLabel }: { units: number; ml: number; massLabel: string }) {
+  const { t } = useI18n();
+  const over = units > 100;
+  const scale = GAUGE_SCALES.find(max => units <= max) ?? 100;
+  const pct = Math.max(0.005, Math.min(1, units / scale));
+  const majorStep = scale === 100 ? 20 : 10;
+  const minorStep = scale === 100 ? 10 : 5;
+  const ticks: number[] = [];
+  for (let mark = 0; mark <= scale; mark += minorStep) ticks.push(mark);
+
+  return (
+    <View style={s.gaugeRow}>
+      <View style={s.gaugeScaleArea}>
+        {ticks.map(mark => {
+          const major = mark % majorStep === 0;
+          return (
+            <View key={mark} style={[s.gaugeTickRow, { bottom: (mark / scale) * GAUGE_HEIGHT - 5 }]}>
+              <Text style={s.gaugeTickLabel}>{major ? String(mark) : ''}</Text>
+              <View style={[s.gaugeTickLine, major && s.gaugeTickLineMajor]} />
+            </View>
+          );
+        })}
+        <View style={s.gaugeTrack}>
+          <View style={[s.gaugeFill, { height: pct * GAUGE_HEIGHT }, over && s.gaugeFillOver]} />
+          <View style={[s.gaugeMarker, { bottom: pct * GAUGE_HEIGHT - 1 }, over && s.gaugeMarkerOver]} />
+        </View>
+      </View>
+      <View style={s.gaugeReadout}>
+        <Text style={[s.gaugeUnitsBig, over && s.gaugeUnitsBigOver]}>
+          {t('tools.gauge.unitsBig', { n: formatNumber(units) })}
+        </Text>
+        <Text style={s.gaugeLine}>{t('tools.gauge.mlLine', { v: formatNumber(ml) })}</Text>
+        <Text style={s.gaugeMass}>= {massLabel}</Text>
+        <Text style={s.gaugeScaleCaption}>{t('tools.gauge.scaleCaption', { scale })}</Text>
+        {over && <Text style={s.gaugeOverText}>{t('tools.gauge.over')}</Text>}
+      </View>
+    </View>
   );
 }
 
@@ -750,6 +842,30 @@ const s = StyleSheet.create({
   resultValue: { color: colors.primary, fontSize: 16, fontWeight: '700', textAlign: 'right', flex: 1 },
   copyHint: { color: colors.textFaint, fontSize: 10, textAlign: 'center', marginTop: 8 },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
+
+  gaugeRow: { flexDirection: 'row', marginTop: 18, marginBottom: 4, gap: 20 },
+  gaugeScaleArea: { width: 86, height: GAUGE_HEIGHT },
+  gaugeTickRow: { position: 'absolute', left: 0, height: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gaugeTickLabel: { width: 24, textAlign: 'right', color: colors.textFaint, fontSize: 10, fontVariant: ['tabular-nums'] },
+  gaugeTickLine: { width: 8, height: 1, backgroundColor: colors.borderSubtle },
+  gaugeTickLineMajor: { width: 14, height: 1.5, backgroundColor: colors.border },
+  gaugeTrack: {
+    position: 'absolute', left: 54, top: 0, bottom: 0, width: 30,
+    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.sm, overflow: 'hidden',
+  },
+  gaugeFill: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(30,136,229,0.35)' },
+  gaugeFillOver: { backgroundColor: 'rgba(255,140,0,0.30)' },
+  gaugeMarker: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: colors.primary },
+  gaugeMarkerOver: { backgroundColor: colors.accent },
+  gaugeReadout: { flex: 1, justifyContent: 'center', gap: 4 },
+  gaugeUnitsBig: { color: colors.primary, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  gaugeUnitsBigOver: { color: colors.accent },
+  gaugeLine: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  gaugeMass: { color: colors.textMuted, fontSize: 13 },
+  gaugeScaleCaption: { color: colors.textFaint, fontSize: 11, marginTop: 6 },
+  gaugeOverText: { color: colors.accent, fontSize: 11, lineHeight: 16, marginTop: 6 },
+  gaugeNote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, marginTop: 12, textAlign: 'center' },
   referenceText: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
 });
