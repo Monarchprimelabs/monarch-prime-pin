@@ -35,10 +35,10 @@ function animateListChange(): void {
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; pro?: boolean }[] = [
+  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', pro: true },
   { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', pro: true },
   { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', pro: true },
   { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', pro: true },
-  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', pro: true },
   { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub' },
   { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub' },
 ];
