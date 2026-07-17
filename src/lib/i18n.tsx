@@ -234,6 +234,7 @@ const en: Record<string, string> = {
   'log.freeSavedMany': 'Your free log has been saved. You have {n} free logs remaining.',
   'log.invTitle': 'Update inventory?',
   'log.invBody': '{name}: {qty} {unit} on hand. Deduct 1 for this record?',
+  'log.invFullBody': 'Your logged records for {name} now add up to a full container ({mass}). Deduct 1 {unit}? {qty} on hand.',
   'log.invNotNow': 'Not Now',
   'log.invDeduct': 'Deduct 1',
 
@@ -424,6 +425,8 @@ const en: Record<string, string> = {
   'tools.itemName': 'Item name',
   'tools.quantity': 'Quantity',
   'tools.unitContainer': 'Unit or container',
+  'tools.containerMassPh': 'Mass per container (optional)',
+  'tools.checkMassBody': 'If you enter a mass per container, it must be a number greater than zero.',
   'tools.dateReceived': 'Date received (optional)',
   'tools.expDate': 'Expiration date (optional)',
   'tools.lowStockLevel': 'Low-stock level (optional)',
@@ -436,6 +439,7 @@ const en: Record<string, string> = {
   'tools.currentInventory': 'CURRENT INVENTORY',
   'tools.noInventory': 'No inventory items yet',
   'tools.metaLowStock': ' · Low stock',
+  'tools.metaEach': ' · {mass} each',
   'tools.metaExpires': 'Expires: {date}',
 
   // Templates tool
@@ -806,6 +810,7 @@ const es: Record<string, string> = {
   'log.freeSavedMany': 'Tu registro gratuito se guardó. Te quedan {n} registros gratuitos.',
   'log.invTitle': '¿Actualizar inventario?',
   'log.invBody': '{name}: {qty} {unit} disponibles. ¿Descontar 1 por este registro?',
+  'log.invFullBody': 'Tus registros de {name} ya suman un envase completo ({mass}). ¿Descontar 1 {unit}? {qty} disponibles.',
   'log.invNotNow': 'Ahora no',
   'log.invDeduct': 'Descontar 1',
 
@@ -996,6 +1001,8 @@ const es: Record<string, string> = {
   'tools.itemName': 'Nombre del artículo',
   'tools.quantity': 'Cantidad',
   'tools.unitContainer': 'Unidad o envase',
+  'tools.containerMassPh': 'Masa por envase (opcional)',
+  'tools.checkMassBody': 'Si ingresas una masa por envase, debe ser un número mayor que cero.',
   'tools.dateReceived': 'Fecha de recepción (opcional)',
   'tools.expDate': 'Fecha de caducidad (opcional)',
   'tools.lowStockLevel': 'Nivel de stock bajo (opcional)',
@@ -1008,6 +1015,7 @@ const es: Record<string, string> = {
   'tools.currentInventory': 'INVENTARIO ACTUAL',
   'tools.noInventory': 'Aún no hay artículos',
   'tools.metaLowStock': ' · Stock bajo',
+  'tools.metaEach': ' · {mass} c/u',
   'tools.metaExpires': 'Caduca: {date}',
 
   // Templates tool

@@ -294,7 +294,10 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
       };
 
       // Offer to deduct 1 from a matching inventory item (new records only,
-      // single unambiguous name match, never blocks the save).
+      // single unambiguous name match, never blocks the save). Items that know
+      // their per-container mass accumulate usage silently and only prompt
+      // once a full container's worth has been logged; items without it keep
+      // the per-save prompt.
       const offerInventoryDeduction = async () => {
         try {
           const items = await getInventory();
@@ -303,6 +306,48 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
           const match = matches.length === 1 ? matches[0] : undefined;
           if (!match || match.quantity <= 0) {
             finishSave();
+            return;
+          }
+          if (match.containerMassMcg && match.containerMassMcg > 0) {
+            const containerMcg = match.containerMassMcg;
+            const doseMcg = (Number(String(dose).replace(',', '.')) || 0) * (unit === 'mg' ? 1000 : 1);
+            const used = (match.usedMcg ?? 0) + doseMcg;
+            if (used < containerMcg) {
+              try {
+                await updateInventoryItem({ ...match, usedMcg: used });
+              } catch {
+                // Usage tracking is best-effort; the record is already saved.
+              }
+              finishSave();
+              return;
+            }
+            const massLabel = containerMcg >= 1000 ? `${containerMcg / 1000} mg` : `${containerMcg} mcg`;
+            Alert.alert(
+              t('log.invTitle'),
+              t('log.invFullBody', { name: match.name, mass: massLabel, qty: match.quantity, unit: match.unit }),
+              [
+                { text: t('log.invNotNow'), style: 'cancel', onPress: async () => {
+                  try {
+                    await updateInventoryItem({ ...match, usedMcg: used });
+                  } catch {
+                    // Best-effort; ask again after the next log.
+                  }
+                  finishSave();
+                }},
+                { text: t('log.invDeduct'), onPress: async () => {
+                  try {
+                    await updateInventoryItem({
+                      ...match,
+                      quantity: Math.max(0, match.quantity - 1),
+                      usedMcg: Math.max(0, used - containerMcg),
+                    });
+                  } catch {
+                    // Inventory update is best-effort; the record is already saved.
+                  }
+                  finishSave();
+                }},
+              ],
+            );
             return;
           }
           Alert.alert(

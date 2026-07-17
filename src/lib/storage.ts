@@ -32,6 +32,11 @@ export type InventoryItem = {
   expirationDate?: string;
   lowStockAt?: number;
   notes?: string;
+  /** Mass of one container in mcg. When set, injection logging accumulates
+   *  usage and only offers a deduction once a full container is used up. */
+  containerMassMcg?: number;
+  /** Logged usage (mcg) since the last container deduction. */
+  usedMcg?: number;
 };
 
 export type RecordTemplate = {

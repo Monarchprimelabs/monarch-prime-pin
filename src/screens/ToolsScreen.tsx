@@ -347,6 +347,8 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
+  const [containerMass, setContainerMass] = useState('');
+  const [containerMassUnit, setContainerMassUnit] = useState('mg');
   const [received, setReceived] = useState('');
   const [expiration, setExpiration] = useState('');
   const [lowAt, setLowAt] = useState('');
@@ -365,18 +367,24 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
       Alert.alert(t('tools.checkItemTitle'), t('tools.checkLowBody'));
       return;
     }
+    const massValue = containerMass.trim() ? parsePositiveNumber(containerMass) : undefined;
+    if (containerMass.trim() && !massValue) {
+      Alert.alert(t('tools.checkItemTitle'), t('tools.checkMassBody'));
+      return;
+    }
     if ((received.trim() && !isValidDate(received.trim())) || (expiration.trim() && !isValidDate(expiration.trim()))) {
       Alert.alert(t('tools.checkDatesTitle'), t('tools.checkDatesBody'));
       return;
     }
     await saveInventoryItem({
       name: name.trim(), quantity: qty, unit: unit.trim(),
+      containerMassMcg: massValue ? (containerMassUnit === 'mg' ? massValue * 1000 : massValue) : undefined,
       receivedDate: received.trim() || undefined,
       expirationDate: expiration.trim() || undefined,
       lowStockAt,
       notes: notes.trim() || undefined,
     });
-    setName(''); setQuantity(''); setUnit(''); setReceived(''); setExpiration(''); setLowAt(''); setNotes(''); refresh();
+    setName(''); setQuantity(''); setUnit(''); setContainerMass(''); setReceived(''); setExpiration(''); setLowAt(''); setNotes(''); refresh();
   };
 
   return (
@@ -389,6 +397,21 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
             <Field value={quantity} setValue={setQuantity} placeholder={t('tools.quantity')} keyboardType="decimal-pad" style={{ flex: 1 }} />
             <Field value={unit} setValue={setUnit} placeholder={t('tools.unitContainer')} style={{ flex: 1 }} />
           </View>
+          <View style={s.inlineInputRow}>
+            <Field value={containerMass} setValue={setContainerMass} placeholder={t('tools.containerMassPh')} keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
+            <View style={s.compactToggle}>
+              {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
+                <Pressable
+                  key={option.id}
+                  style={[s.compactBtn, containerMassUnit === option.id && s.compactBtnActive]}
+                  onPress={() => setContainerMassUnit(option.id)}
+                >
+                  <Text style={[s.compactText, containerMassUnit === option.id && s.compactTextActive]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={{ height: 10 }} />
           <Field value={received} setValue={setReceived} placeholder={t('tools.dateReceived')} />
           <Field value={expiration} setValue={setExpiration} placeholder={t('tools.expDate')} />
           <Field value={lowAt} setValue={setLowAt} placeholder={t('tools.lowStockLevel')} keyboardType="decimal-pad" />
@@ -403,7 +426,7 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
               <ListItem
                 key={item.id}
                 title={item.name}
-                meta={`${item.quantity} ${item.unit}${low ? t('tools.metaLowStock') : ''}${item.expirationDate ? `\n${t('tools.metaExpires', { date: item.expirationDate })}` : ''}${item.notes ? `\n${item.notes}` : ''}`}
+                meta={`${item.quantity} ${item.unit}${item.containerMassMcg ? t('tools.metaEach', { mass: formatContainerMass(item.containerMassMcg) }) : ''}${low ? t('tools.metaLowStock') : ''}${item.expirationDate ? `\n${t('tools.metaExpires', { date: item.expirationDate })}` : ''}${item.notes ? `\n${item.notes}` : ''}`}
                 accent={low ? colors.accent : undefined}
                 actions={(
                   <View style={s.stepper}>
@@ -739,6 +762,11 @@ function formatNumber(value: number): string {
 
 // Both units on every line, most readable one first — e.g. "0.5 mg (500 mcg)"
 // or "50 mcg (0.05 mg)". Adaptive precision keeps them short enough to fit.
+// Compact single-unit mass for list rows — "10 mg", not the dual-unit form.
+function formatContainerMass(mcg: number): string {
+  return mcg >= 1000 ? `${formatNumber(mcg / 1000)} mg` : `${formatNumber(mcg)} mcg`;
+}
+
 function formatMass(mcg: number): string {
   if (mcg >= 1000) return `${formatNumber(mcg / 1000)} mg (${formatNumber(mcg)} mcg)`;
   return `${formatNumber(mcg)} mcg (${formatNumber(mcg / 1000)} mg)`;
