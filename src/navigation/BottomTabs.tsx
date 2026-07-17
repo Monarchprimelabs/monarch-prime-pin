@@ -12,10 +12,12 @@ import { ToolsScreen } from '../screens/ToolsScreen';
 import { UpgradeScreen } from '../screens/UpgradeScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../lib/i18n';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
 export function BottomTabs() {
+  const { t } = useI18n();
   const [active, setActive] = React.useState<TabId>('home');
   const { hasPro } = useEntitlements();
   const { user } = useAuth();
@@ -34,20 +36,22 @@ export function BottomTabs() {
       <SafeAreaView edges={['bottom']} style={s.tabBarSafe}>
         <View style={s.tabBar}>
           {([
-            { id: 'home' as const, label: 'Home' },
-            { id: 'log' as const, label: 'Log' },
-            { id: 'history' as const, label: 'History' },
-            { id: 'analytics' as const, label: 'Reports' },
-            { id: 'settings' as const, label: 'Tools' },
-          ]).map(t => (
+            { id: 'home' as const, labelKey: 'tab.home' },
+            { id: 'log' as const, labelKey: 'tab.log' },
+            { id: 'history' as const, labelKey: 'tab.history' },
+            { id: 'analytics' as const, labelKey: 'tab.reports' },
+            { id: 'settings' as const, labelKey: 'tab.tools' },
+          ]).map(tab => (
             <Pressable
-              key={t.id}
-              onPress={() => setActive(t.id)}
-              style={s.tab}
+              key={tab.id}
+              onPress={() => setActive(tab.id)}
+              style={({ pressed }) => [s.tab, pressed && s.tabPressed]}
             >
-              <TabIcon id={t.id} active={active === t.id} />
-              <Text style={[s.tabLabel, active === t.id && s.tabLabelActive]}>
-                {t.label}
+              <View style={[s.tabIconWrap, active === tab.id && s.tabIconWrapActive]}>
+                <TabIcon id={tab.id} active={active === tab.id} />
+              </View>
+              <Text style={[s.tabLabel, active === tab.id && s.tabLabelActive]}>
+                {t(tab.labelKey)}
               </Text>
             </Pressable>
           ))}
@@ -123,6 +127,18 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     gap: 4,
+  },
+  tabPressed: {
+    transform: [{ scale: 0.9 }],
+    opacity: 0.7,
+  },
+  tabIconWrap: {
+    paddingHorizontal: 14,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  tabIconWrapActive: {
+    backgroundColor: 'rgba(30, 136, 229, 0.16)',
   },
   tabLabel: {
     fontSize: 10,

@@ -16,6 +16,11 @@ const en: Record<string, string> = {
   'common.delete': 'Delete',
   'common.done': 'Done',
   'common.tryAgain': 'Please try again.',
+  'tab.home': 'Home',
+  'tab.log': 'Log',
+  'tab.history': 'History',
+  'tab.reports': 'Reports',
+  'tab.tools': 'Tools',
 
   // Settings shell
   'settings.title': 'Settings',
@@ -592,6 +597,11 @@ const es: Record<string, string> = {
   'common.delete': 'Eliminar',
   'common.done': 'Listo',
   'common.tryAgain': 'Inténtalo de nuevo.',
+  'tab.home': 'Inicio',
+  'tab.log': 'Registrar',
+  'tab.history': 'Historial',
+  'tab.reports': 'Reportes',
+  'tab.tools': 'Herramientas',
 
   // Settings shell
   'settings.title': 'Ajustes',

@@ -34,13 +34,13 @@ function animateListChange(): void {
 
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
-const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; pro?: boolean }[] = [
-  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', pro: true },
-  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', pro: true },
-  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', pro: true },
-  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', pro: true },
-  { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub' },
-  { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub' },
+const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
+  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.teal, pro: true },
+  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.primary, pro: true },
+  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.accent, pro: true },
+  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: '#A78BFA', pro: true },
+  { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub', tint: '#38BDF8' },
+  { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub', tint: '#94A3B8' },
 ];
 
 function isValidDate(value: string): boolean {
@@ -95,12 +95,14 @@ export function ToolsScreen() {
         {TOOLS.map(tool => (
           <Pressable
             key={tool.id}
-            style={s.toolRow}
+            style={({ pressed }) => [s.toolRow, pressed && s.toolRowPressed]}
             onPress={() => openTool(tool)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${t(tool.titleKey)}`}
           >
-            <Ionicons name={tool.icon} size={22} color={colors.primary} style={s.toolIcon} />
+            <View style={[s.toolChip, { backgroundColor: `${tool.tint}1F`, borderColor: `${tool.tint}30` }]}>
+              <Ionicons name={tool.icon} size={20} color={tool.tint} />
+            </View>
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
@@ -804,8 +806,23 @@ function confirmDelete(t: (key: string, vars?: Record<string, string | number>) 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
-  toolRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: 14 },
-  toolIcon: { width: 42 },
+  toolRow: {
+    minHeight: 78, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: radius.lg, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3, shadowRadius: 10, elevation: 4,
+  },
+  toolRowPressed: {
+    transform: [{ scale: 0.98 }],
+    backgroundColor: 'rgba(30, 136, 229, 0.10)',
+    borderColor: 'rgba(30, 136, 229, 0.35)',
+  },
+  toolChip: {
+    width: 40, height: 40, borderRadius: 12, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center', marginRight: 13,
+  },
   toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   proBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
