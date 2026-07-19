@@ -17,6 +17,7 @@ import { useAuth } from '../lib/auth';
 import { UpgradeScreen } from './UpgradeScreen';
 import { notifySuccessfulSave } from '../lib/reviewPrompt';
 import { hapticSuccess, hapticTap } from '../lib/haptics';
+import { useI18n } from '../lib/i18n';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -35,6 +36,7 @@ type TimeChoice =
 export function LogInjectionScreen({ onDone, initialDate, initialInjection, prefillFrom, onCancel }: LogInjectionScreenProps) {
   const { hasPro, monetizationEnabled } = useEntitlements();
   const { user } = useAuth();
+  const { t, dateLocale } = useI18n();
   const seedRecord = initialInjection ?? prefillFrom ?? null;
   const initialPeptide = seedRecord
     ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === seedRecord.peptide)
@@ -130,12 +132,12 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   // ============================================================
   const pickPhoto = async () => {
     Alert.alert(
-      'Add Progress Photo',
-      'Choose a source',
+      t('log.photoTitle'),
+      t('log.photoSource'),
       [
-        { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Library', onPress: choosePhoto },
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('log.photoTake'), onPress: takePhoto },
+        { text: t('log.photoLibrary'), onPress: choosePhoto },
+        { text: t('common.cancel'), style: 'cancel' },
       ],
     );
   };
@@ -144,8 +146,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
-        'Permission needed',
-        'Monarch Prime Pin needs photo library access to attach progress photos. You can enable this in Settings.',
+        t('log.permTitle'),
+        t('log.permPhotos'),
       );
       return;
     }
@@ -163,8 +165,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
-        'Permission needed',
-        'Monarch Prime Pin needs camera access to capture progress photos. You can enable this in Settings.',
+        t('log.permTitle'),
+        t('log.permCamera'),
       );
       return;
     }
@@ -199,20 +201,20 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   // ============================================================
   const handleSave = async () => {
     if (!peptide) {
-      Alert.alert('Missing peptide', 'Please select a peptide.');
+      Alert.alert(t('log.missingPeptideTitle'), t('log.missingPeptideBody'));
       return;
     }
     if (!dose) {
-      Alert.alert('Missing dose', 'Please enter a dose.');
+      Alert.alert(t('log.missingDoseTitle'), t('log.missingDoseBody'));
       return;
     }
     if (selected.length === 0) {
-      Alert.alert('Missing site', 'Please select at least one injection site.');
+      Alert.alert(t('log.missingSiteTitle'), t('log.missingSiteBody'));
       return;
     }
     const resolvedTime = resolveRecordTime();
     if (!resolvedTime) {
-      Alert.alert('Check the time', 'Enter an hour from 1 to 12 and minutes from 00 to 59.');
+      Alert.alert(t('log.badTimeTitle'), t('log.badTimeBody'));
       return;
     }
 
@@ -227,7 +229,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
         }
         freeTrialSaveNumber = existing.length + 1;
       } catch (e: any) {
-        Alert.alert('Unable to check access', e?.message || 'Please try again.');
+        Alert.alert(t('log.accessCheckFailed'), e?.message || t('common.tryAgain'));
         return;
       }
     }
@@ -266,12 +268,14 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 
       const freeLogsLeftAfterSave = freeTrialSaveNumber ? FREE_INJECTION_LIMIT - freeTrialSaveNumber : 0;
       const savedMessage = isEditing
-        ? 'Your changes have been saved.'
+        ? t('log.updatedBody')
         : freeTrialSaveNumber
           ? freeTrialSaveNumber >= FREE_INJECTION_LIMIT
-            ? `Your free log has been saved. Unlock unlimited usage for ${LIFETIME_PRO_PRICE_LABEL} whenever you are ready.`
-            : `Your free log has been saved. You have ${freeLogsLeftAfterSave} free log${freeLogsLeftAfterSave === 1 ? '' : 's'} remaining.`
-          : 'Your injection has been logged.';
+            ? t('log.freeSavedLast', { price: LIFETIME_PRO_PRICE_LABEL })
+            : freeLogsLeftAfterSave === 1
+              ? t('log.freeSavedOne')
+              : t('log.freeSavedMany', { n: freeLogsLeftAfterSave })
+          : t('log.savedBody');
 
       hapticSuccess();
       if (!isEditing) {
@@ -290,7 +294,10 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
       };
 
       // Offer to deduct 1 from a matching inventory item (new records only,
-      // single unambiguous name match, never blocks the save).
+      // single unambiguous name match, never blocks the save). Items that know
+      // their per-container mass accumulate usage silently and only prompt
+      // once a full container's worth has been logged; items without it keep
+      // the per-save prompt.
       const offerInventoryDeduction = async () => {
         try {
           const items = await getInventory();
@@ -301,12 +308,54 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             finishSave();
             return;
           }
+          if (match.containerMassMcg && match.containerMassMcg > 0) {
+            const containerMcg = match.containerMassMcg;
+            const doseMcg = (Number(String(dose).replace(',', '.')) || 0) * (unit === 'mg' ? 1000 : 1);
+            const used = (match.usedMcg ?? 0) + doseMcg;
+            if (used < containerMcg) {
+              try {
+                await updateInventoryItem({ ...match, usedMcg: used });
+              } catch {
+                // Usage tracking is best-effort; the record is already saved.
+              }
+              finishSave();
+              return;
+            }
+            const massLabel = containerMcg >= 1000 ? `${containerMcg / 1000} mg` : `${containerMcg} mcg`;
+            Alert.alert(
+              t('log.invTitle'),
+              t('log.invFullBody', { name: match.name, mass: massLabel, qty: match.quantity, unit: match.unit }),
+              [
+                { text: t('log.invNotNow'), style: 'cancel', onPress: async () => {
+                  try {
+                    await updateInventoryItem({ ...match, usedMcg: used });
+                  } catch {
+                    // Best-effort; ask again after the next log.
+                  }
+                  finishSave();
+                }},
+                { text: t('log.invDeduct'), onPress: async () => {
+                  try {
+                    await updateInventoryItem({
+                      ...match,
+                      quantity: Math.max(0, match.quantity - 1),
+                      usedMcg: Math.max(0, used - containerMcg),
+                    });
+                  } catch {
+                    // Inventory update is best-effort; the record is already saved.
+                  }
+                  finishSave();
+                }},
+              ],
+            );
+            return;
+          }
           Alert.alert(
-            'Update inventory?',
-            `${match.name}: ${match.quantity} ${match.unit} on hand. Deduct 1 for this record?`,
+            t('log.invTitle'),
+            t('log.invBody', { name: match.name, qty: match.quantity, unit: match.unit }),
             [
-              { text: 'Not Now', style: 'cancel', onPress: finishSave },
-              { text: 'Deduct 1', onPress: async () => {
+              { text: t('log.invNotNow'), style: 'cancel', onPress: finishSave },
+              { text: t('log.invDeduct'), onPress: async () => {
                 try {
                   await updateInventoryItem({ ...match, quantity: Math.max(0, match.quantity - 1) });
                 } catch {
@@ -321,8 +370,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
         }
       };
 
-      Alert.alert(isEditing ? 'Record updated' : 'Saved!', savedMessage, [
-        { text: 'OK', onPress: () => {
+      Alert.alert(isEditing ? t('log.updatedTitle') : t('log.savedTitle'), savedMessage, [
+        { text: t('common.ok'), onPress: () => {
           if (isEditing) {
             finishSave();
           } else {
@@ -331,7 +380,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
         }},
       ]);
     } catch (e: any) {
-      Alert.alert('Save failed', e?.message || 'Please try again.');
+      Alert.alert(t('settings.saveFailedTitle'), e?.message || t('common.tryAgain'));
     } finally {
       setSaving(false);
     }
@@ -346,13 +395,13 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} keyboardShouldPersistTaps="handled">
         <Header
-          title={isEditing ? 'Edit Record' : 'Log Injection'}
+          title={isEditing ? t('log.titleEdit') : t('log.titleNew')}
           subtitle={
             (initialDate
               ? new Date(initialDate + 'T12:00:00')
               : new Date()
-            ).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-            + (initialDate ? ' · Backdated Entry' : '')
+            ).toLocaleDateString(dateLocale, { weekday: 'long', month: 'short', day: 'numeric' })
+            + (initialDate ? t('log.backdated') : '')
           }
         />
         {!!onCancel && (
@@ -363,18 +412,18 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
               accessibilityRole="button"
               accessibilityLabel={isEditing ? 'Cancel editing record' : 'Close logging form'}
             >
-              <Text style={s.cancelBtnText}>‹ {isEditing ? 'Record Details' : 'History'}</Text>
+              <Text style={s.cancelBtnText}>{isEditing ? t('log.backDetails') : t('log.backHistory')}</Text>
             </Pressable>
           </View>
         )}
         {freeTrialActive && freeLogCount !== null && (
           <Card style={s.trialCard}>
-            <CardLabel icon="◆">FREE TRIAL</CardLabel>
+            <CardLabel icon="◆">{t('log.freeTrialLabel')}</CardLabel>
             <Text style={s.trialTitle}>
-              {freeLogsRemaining} of {FREE_INJECTION_LIMIT} free logs remaining
+              {t('log.freeTrialTitle', { n: freeLogsRemaining, max: FREE_INJECTION_LIMIT })}
             </Text>
             <Text style={s.trialBody}>
-              Try the tracker with {FREE_INJECTION_LIMIT} saved injection records. Unlock unlimited usage for {LIFETIME_PRO_PRICE_LABEL}.
+              {t('log.freeTrialBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
             </Text>
           </Card>
         )}
@@ -388,7 +437,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             accessibilityLabel={peptide ? `Selected compound: ${peptide.name}. Change selection` : 'Select compound'}
           >
             <Text style={peptide ? s.peptideName : s.peptidePlaceholder}>
-              {peptide ? peptide.name : 'Select peptide…'}
+              {peptide ? peptide.name : t('log.selectPeptide')}
             </Text>
             <Text style={s.chev}>›</Text>
           </Pressable>
@@ -398,13 +447,13 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             accessibilityRole="button"
             accessibilityLabel="Use a saved record template"
           >
-            <Text style={s.templateBtnText}>{freeTrialActive ? 'Unlock Record Templates' : 'Use Record Template'}</Text>
+            <Text style={s.templateBtnText}>{freeTrialActive ? t('log.unlockTemplates') : t('log.useTemplate')}</Text>
           </Pressable>
         </View>
 
         {/* Dose */}
         <Card>
-          <Text style={s.cardLabel}>DOSE</Text>
+          <Text style={s.cardLabel}>{t('log.dose')}</Text>
           <View style={s.doseRow}>
             <TextInput
               placeholder="0"
@@ -430,7 +479,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 
         {/* Time */}
         <Card>
-          <Text style={s.cardLabel}>TIME</Text>
+          <Text style={s.cardLabel}>{t('log.time')}</Text>
           <View style={s.timeChips}>
             <Pressable
               onPress={() => { hapticTap(); setTimeChoice({ kind: 'now' }); }}
@@ -438,7 +487,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
               accessibilityRole="button"
               accessibilityLabel="Record the current time"
             >
-              <Text style={[s.timeChipText, timeChoice.kind === 'now' && s.timeChipTextActive]}>Now</Text>
+              <Text style={[s.timeChipText, timeChoice.kind === 'now' && s.timeChipTextActive]}>{t('log.timeNow')}</Text>
             </Pressable>
             {TIME_PERIODS.map(period => {
               const active = timeChoice.kind === 'period' && timeChoice.period === period.id;
@@ -450,7 +499,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
                   accessibilityRole="button"
                   accessibilityLabel={`Record time as ${period.label}`}
                 >
-                  <Text style={[s.timeChipText, active && s.timeChipTextActive]}>{period.label}</Text>
+                  <Text style={[s.timeChipText, active && s.timeChipTextActive]}>{t('period.' + period.id)}</Text>
                 </Pressable>
               );
             })}
@@ -460,7 +509,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
               accessibilityRole="button"
               accessibilityLabel="Enter an exact time"
             >
-              <Text style={[s.timeChipText, timeChoice.kind === 'custom' && s.timeChipTextActive]}>Exact…</Text>
+              <Text style={[s.timeChipText, timeChoice.kind === 'custom' && s.timeChipTextActive]}>{t('log.timeExact')}</Text>
             </Pressable>
           </View>
           {timeChoice.kind === 'custom' && (
@@ -497,26 +546,26 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
           )}
           <Text style={s.timeHint}>
             {timeChoice.kind === 'now'
-              ? `Records the time when you save (now ${formatClockTime(new Date().toTimeString().slice(0, 5))}).`
+              ? t('log.timeHintNow', { time: formatClockTime(new Date().toTimeString().slice(0, 5)) })
               : timeChoice.kind === 'period'
-                ? `Shown as “${TIME_PERIODS.find(p => p.id === timeChoice.period)?.label}” in your history.`
-                : 'Recorded exactly as entered.'}
+                ? t('log.timeHintPeriod', { label: t('period.' + timeChoice.period) })
+                : t('log.timeHintExact')}
           </Text>
         </Card>
 
         {/* Site */}
         <Card>
-          <Text style={s.cardLabel}>INJECTION SITE</Text>
+          <Text style={s.cardLabel}>{t('log.site')}</Text>
           <ViewPill view={view} setView={setView} />
           <BodyDiagram view={view} mode="select" selected={selected} onZoneTap={toggle} />
-          <Text style={s.anteriorLabel}>{view === 'front' ? 'ANTERIOR' : 'POSTERIOR'}</Text>
+          <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
           {selected.length > 0 && (
             <View style={s.chips}>
               {selected.map(id => {
                 const z = ALL_ZONES.find(x => x.id === id);
                 return (
                   <Pressable key={id} style={s.chip} onPress={() => toggle(id)}>
-                    <Text style={s.chipText}>{z?.short} ×</Text>
+                    <Text style={s.chipText}>{t('zoneShort.' + id)} ×</Text>
                   </Pressable>
                 );
               })}
@@ -526,13 +575,13 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 
         {/* Side effects */}
         <Card>
-          <Text style={s.cardLabel}>SIDE EFFECTS</Text>
+          <Text style={s.cardLabel}>{t('log.sideEffects')}</Text>
           <View style={s.sevRow}>
             {([
-              { v: 'none' as const, label: 'None',     c: sevColors.none },
-              { v: 'mild' as const, label: 'Mild',     c: sevColors.mild },
-              { v: 'mod'  as const, label: 'Moderate', c: sevColors.mod },
-              { v: 'sev'  as const, label: 'Severe',   c: sevColors.sev },
+              { v: 'none' as const, label: t('sev.none'), c: sevColors.none },
+              { v: 'mild' as const, label: t('sev.mild'), c: sevColors.mild },
+              { v: 'mod'  as const, label: t('sev.mod'), c: sevColors.mod },
+              { v: 'sev'  as const, label: t('sev.sev'), c: sevColors.sev },
             ]).map(s2 => (
               <Pressable
                 key={s2.v}
@@ -556,7 +605,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
                     onPress={() => toggleSymptom(tag)}
                     style={[s.symptomChip, active && s.symptomChipActive]}
                   >
-                    <Text style={[s.symptomChipText, active && s.symptomChipTextActive]}>{tag}</Text>
+                    <Text style={[s.symptomChipText, active && s.symptomChipTextActive]}>{t('symptom.' + tag)}</Text>
                   </Pressable>
                 );
               })}
@@ -566,7 +615,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 
         {/* Photo */}
         <Card>
-          <Text style={s.cardLabel}>PROGRESS PHOTO</Text>
+          <Text style={s.cardLabel}>{t('log.photo')}</Text>
           <Pressable style={s.photoArea} onPress={pickPhoto}>
             {photoUri ? (
               <>
@@ -575,13 +624,13 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
                   onPress={() => setPhotoUri(null)}
                   style={s.photoRemove}
                 >
-                  <Text style={s.photoRemoveText}>Remove</Text>
+                  <Text style={s.photoRemoveText}>{t('log.photoRemove')}</Text>
                 </Pressable>
               </>
             ) : (
               <>
                 <Text style={{ fontSize: 32 }}>📷</Text>
-                <Text style={s.photoText}>Tap to add progress photo</Text>
+                <Text style={s.photoText}>{t('log.photoTap')}</Text>
               </>
             )}
           </Pressable>
@@ -589,9 +638,9 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 
         {/* Weight */}
         <Card>
-          <Text style={s.cardLabel}>WEIGHT (LBS)</Text>
+          <Text style={s.cardLabel}>{t('log.weight')}</Text>
           <TextInput
-            placeholder="Enter weight…"
+            placeholder={t('log.weightPlaceholder')}
             placeholderTextColor={colors.textFaint}
             value={weight}
             onChangeText={setWeight}
@@ -602,9 +651,9 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 
         {/* Notes */}
         <Card>
-          <Text style={s.cardLabel}>NOTES</Text>
+          <Text style={s.cardLabel}>{t('log.notes')}</Text>
           <TextInput
-            placeholder="Add notes…"
+            placeholder={t('log.notesPlaceholder')}
             placeholderTextColor={colors.textFaint}
             value={notes}
             onChangeText={setNotes}
@@ -621,7 +670,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             accessibilityRole="button"
             accessibilityState={{ disabled: saving }}
           >
-            <Text style={s.submitText}>{saving ? 'SAVING…' : isEditing ? 'SAVE CHANGES' : 'SAVE INJECTION'}</Text>
+            <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -638,11 +687,11 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
           <Pressable style={s.sheetBackdrop} onPress={() => setTemplatePicker(false)} />
           <SafeAreaView style={s.sheet} edges={['bottom']}>
             <View style={s.sheetHeader}>
-              <Text style={s.sheetTitle}>Record Templates</Text>
-              <Pressable onPress={() => setTemplatePicker(false)}><Text style={s.sheetDone}>Done</Text></Pressable>
+              <Text style={s.sheetTitle}>{t('templates.title')}</Text>
+              <Pressable onPress={() => setTemplatePicker(false)}><Text style={s.sheetDone}>{t('common.done')}</Text></Pressable>
             </View>
             {templates.length === 0 ? (
-              <Text style={s.templateEmpty}>No templates saved. Create one from Tools.</Text>
+              <Text style={s.templateEmpty}>{t('templates.empty')}</Text>
             ) : (
               <FlatList
                 data={templates}
@@ -669,6 +718,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
 function PeptidePickerSheet({
   onClose, onSelect,
 }: { onClose: () => void; onSelect: (p: Peptide) => void }) {
+  const { t } = useI18n();
   const [q, setQ] = useState('');
   const [customMode, setCustomMode] = useState(false);
   const [customName, setCustomName] = useState('');
@@ -691,14 +741,14 @@ function PeptidePickerSheet({
         <Pressable style={s.sheetBackdrop} onPress={() => { Keyboard.dismiss(); onClose(); }} />
         <SafeAreaView style={s.sheet} edges={['bottom']}>
           <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle}>Custom Peptide</Text>
+            <Text style={s.sheetTitle}>{t('picker.customName')}</Text>
             <Pressable onPress={() => { Keyboard.dismiss(); onClose(); }}>
-              <Text style={s.sheetDone}>Done</Text>
+              <Text style={s.sheetDone}>{t('common.done')}</Text>
             </Pressable>
           </View>
           <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.md }}>
             <TextInput
-              placeholder="Enter peptide name…"
+              placeholder={t('picker.customPlaceholder')}
               placeholderTextColor={colors.textFaint}
               value={customName}
               onChangeText={setCustomName}
@@ -713,11 +763,11 @@ function PeptidePickerSheet({
               onPress={submitCustomName}
               disabled={!customName.trim()}
             >
-              <Text style={s.templateBtnText}>Use This Name</Text>
+              <Text style={s.templateBtnText}>{t('picker.useName')}</Text>
             </Pressable>
             <Pressable onPress={() => { setCustomMode(false); setCustomName(''); }}>
               <Text style={[s.templateBtnText, { color: colors.textMuted, marginTop: 4 }]}>
-                Choose from list instead
+                {t('picker.chooseList')}
               </Text>
             </Pressable>
           </View>
@@ -734,13 +784,13 @@ function PeptidePickerSheet({
       <Pressable style={s.sheetBackdrop} onPress={() => { Keyboard.dismiss(); onClose(); }} />
       <SafeAreaView style={s.sheet} edges={['bottom']}>
         <View style={s.sheetHeader}>
-          <Text style={s.sheetTitle}>Select Peptide</Text>
+          <Text style={s.sheetTitle}>{t('picker.title')}</Text>
           <Pressable onPress={() => { Keyboard.dismiss(); onClose(); }}>
-            <Text style={s.sheetDone}>Done</Text>
+            <Text style={s.sheetDone}>{t('common.done')}</Text>
           </Pressable>
         </View>
         <TextInput
-          placeholder="Search peptides…"
+          placeholder={t('picker.search')}
           placeholderTextColor={colors.textFaint}
           value={q}
           onChangeText={setQ}
@@ -764,7 +814,7 @@ function PeptidePickerSheet({
           contentContainerStyle={s.sheetListContent}
           renderItem={({ item }) => {
             if (item.__section) {
-              return <Text style={s.sheetSection}>{item.__section}</Text>;
+              return <Text style={s.sheetSection}>{item.__section === 'BLENDS' ? t('picker.blends') : t('picker.customSection')}</Text>;
             }
             return (
               <Pressable
@@ -778,7 +828,7 @@ function PeptidePickerSheet({
                   onSelect(item);
                 }}
               >
-                <Text style={s.sheetRowName}>{item.name}</Text>
+                <Text style={s.sheetRowName}>{item.id === 'custom' ? t('picker.customName') : item.name}</Text>
               </Pressable>
             );
           }}

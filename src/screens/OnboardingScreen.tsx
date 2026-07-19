@@ -8,33 +8,35 @@ import { BrandMark } from '../components/UI';
 import { colors, radius, spacing } from '../theme';
 import { setOnboardingDone } from '../lib/storage';
 import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
+import { useI18n } from '../lib/i18n';
 
-type MultiItem = { id: string; label: string; icon: string };
-type SingleItem = { id: string; label: string; icon: string; sub?: string };
+type MultiItem = { id: string; labelKey: string; icon: string };
+type SingleItem = { id: string; labelKey: string; icon: string; subKey?: string };
 
 // ── Step data ────────────────────────────────────────────────
 const TRACK_OPTIONS: MultiItem[] = [
-  { id: 'compounds',     label: 'Compound List',      icon: '🧪' },
-  { id: 'logs',          label: 'Log Entries',        icon: '📋' },
-  { id: 'notes',         label: 'Observation Notes',  icon: '📝' },
-  { id: 'inventory',     label: 'Inventory',          icon: '📦' },
-  { id: 'photos',        label: 'Progress Photos',    icon: '📷' },
-  { id: 'reminders',     label: 'Reminders',          icon: '🔔' },
-  { id: 'references',    label: 'Reference Notes',    icon: '🗂️' },
+  { id: 'compounds',     labelKey: 'ob.track.compounds',  icon: '🧪' },
+  { id: 'logs',          labelKey: 'ob.track.logs',       icon: '📋' },
+  { id: 'notes',         labelKey: 'ob.track.notes',      icon: '📝' },
+  { id: 'inventory',     labelKey: 'ob.track.inventory',  icon: '📦' },
+  { id: 'photos',        labelKey: 'ob.track.photos',     icon: '📷' },
+  { id: 'reminders',     labelKey: 'ob.track.reminders',  icon: '🔔' },
+  { id: 'references',    labelKey: 'ob.track.references', icon: '🗂️' },
 ];
 
 const GOAL_OPTIONS: SingleItem[] = [
-  { id: 'consistent', label: 'Stay Consistent',       icon: '✅', sub: 'Make logging easier to keep up with' },
-  { id: 'history',    label: 'Find Past Entries',     icon: '🕘', sub: 'Look back without digging around' },
-  { id: 'inventory',  label: 'Keep Inventory Clear',  icon: '📦', sub: 'Know what is on hand at a glance' },
-  { id: 'sites',      label: 'Review Site History',   icon: '📍', sub: 'Keep location records easy to scan' },
-  { id: 'photos',     label: 'Keep Photo Records',    icon: '📷', sub: 'Organize visual progress entries' },
-  { id: 'summaries',  label: 'Review Summaries',      icon: '📊', sub: 'See clean overviews when needed' },
+  { id: 'consistent', labelKey: 'ob.goal.consistent', icon: '✅', subKey: 'ob.goal.consistentSub' },
+  { id: 'history',    labelKey: 'ob.goal.history',    icon: '🕘', subKey: 'ob.goal.historySub' },
+  { id: 'inventory',  labelKey: 'ob.goal.inventory',  icon: '📦', subKey: 'ob.goal.inventorySub' },
+  { id: 'sites',      labelKey: 'ob.goal.sites',      icon: '📍', subKey: 'ob.goal.sitesSub' },
+  { id: 'photos',     labelKey: 'ob.goal.photos',     icon: '📷', subKey: 'ob.goal.photosSub' },
+  { id: 'summaries',  labelKey: 'ob.goal.summaries',  icon: '📊', subKey: 'ob.goal.summariesSub' },
 ];
 
 const TOTAL_STEPS = 3;
 
 export function OnboardingScreen({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [trackSelected, setTrackSelected] = useState<string[]>([]);
   const [goalSelected, setGoalSelected] = useState<string>('');
@@ -88,8 +90,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           >
             {step === 1 && (
               <StepShell
-                headline="What should feel easier first?"
-                sub="Choose the workflow you want Monarch to simplify."
+                headline={t('ob.step1Head')}
+                sub={t('ob.step1Sub')}
               >
                 <SingleSelect
                   options={GOAL_OPTIONS}
@@ -101,8 +103,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
             {step === 2 && (
               <StepShell
-                headline="What do you want close at hand?"
-                sub="Choose what you want to track. You can start logging immediately."
+                headline={t('ob.step2Head')}
+                sub={t('ob.step2Sub')}
               >
                 <MultiSelect
                   options={TRACK_OPTIONS}
@@ -121,10 +123,10 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               disabled={!canContinue()}
             >
               <Text style={s.ctaBtnText}>
-                {step === TOTAL_STEPS - 1 ? "Let's Go" : 'Continue'}
+                {step === TOTAL_STEPS - 1 ? t('ob.letsGo') : t('ob.continue')}
               </Text>
             </Pressable>
-            <Text style={s.stepCount}>{step} of {TOTAL_STEPS - 1}</Text>
+            <Text style={s.stepCount}>{t('ob.stepCount', { step, total: TOTAL_STEPS - 1 })}</Text>
           </View>
         </View>
       )}
@@ -134,6 +136,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
 // ── Welcome (step 0) ─────────────────────────────────────────
 function WelcomeStep({ onStart }: { onStart: () => void }) {
+  const { t } = useI18n();
   return (
     <View style={s.welcomeRoot}>
       <View style={s.welcomeLogoWrap}>
@@ -142,21 +145,21 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
 
       <View style={s.welcomeBody}>
         <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
-        <Text style={s.welcomeHeadline}>Private peptide tracking,{'\n'}without the clutter.</Text>
+        <Text style={s.welcomeHeadline}>{t('ob.headline')}</Text>
         <Text style={s.welcomeSub}>
-          Try the tracker with {FREE_INJECTION_LIMIT} saved logs. Unlock Lifetime Pro once for unlimited tracking, reports, reminders, and tools.
+          {t('ob.welcomeSub', { max: FREE_INJECTION_LIMIT })}
         </Text>
 
         <View style={s.featureList}>
           {[
-            { icon: '📋', text: 'Manual research log entries' },
-            { icon: '📍', text: 'Site history and rotation heatmap' },
-            { icon: '🕘', text: 'Complete history and calendar' },
-            { icon: '◆', text: 'Optional Lifetime Pro, no forced monthly plan' },
+            { icon: '📋', key: 'ob.feat1' },
+            { icon: '📍', key: 'ob.feat2' },
+            { icon: '🕘', key: 'ob.feat3' },
+            { icon: '◆', key: 'ob.feat4' },
           ].map(f => (
-            <View key={f.text} style={s.featureRow}>
+            <View key={f.key} style={s.featureRow}>
               <Text style={s.featureIcon}>{f.icon}</Text>
-              <Text style={s.featureText}>{f.text}</Text>
+              <Text style={s.featureText}>{t(f.key)}</Text>
             </View>
           ))}
         </View>
@@ -164,10 +167,10 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
 
       <View style={s.welcomeFooter}>
         <Pressable style={s.ctaBtn} onPress={onStart}>
-          <Text style={s.ctaBtnText}>Get Started</Text>
+          <Text style={s.ctaBtnText}>{t('ob.getStarted')}</Text>
         </Pressable>
         <Text style={s.complianceNote}>
-          Start free with {FREE_INJECTION_LIMIT} saved logs.{'\n'}For research organization only. Not medical advice.
+          {t('ob.compliance', { max: FREE_INJECTION_LIMIT })}
         </Text>
       </View>
     </View>
@@ -201,6 +204,7 @@ function StepShell({ headline, sub, children }: { headline: string; sub: string;
 function MultiSelect({
   options, selected, onToggle,
 }: { options: MultiItem[]; selected: string[]; onToggle: (id: string) => void }) {
+  const { t } = useI18n();
   return (
     <>
       {options.map(opt => {
@@ -212,7 +216,7 @@ function MultiSelect({
             onPress={() => onToggle(opt.id)}
           >
             <Text style={s.optIcon}>{opt.icon}</Text>
-            <Text style={[s.optLabel, active && s.optLabelActive]}>{opt.label}</Text>
+            <Text style={[s.optLabel, active && s.optLabelActive]}>{t(opt.labelKey)}</Text>
             <View style={[s.optCheck, active && s.optCheckActive]}>
               {active && <Text style={s.optCheckMark}>✓</Text>}
             </View>
@@ -227,6 +231,7 @@ function MultiSelect({
 function SingleSelect({
   options, selected, onSelect,
 }: { options: SingleItem[]; selected: string; onSelect: (id: string) => void }) {
+  const { t } = useI18n();
   return (
     <>
       {options.map(opt => {
@@ -239,8 +244,8 @@ function SingleSelect({
           >
             <Text style={s.optIcon}>{opt.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[s.optLabel, active && s.optLabelActive]}>{opt.label}</Text>
-              {!!opt.sub && <Text style={s.optSub}>{opt.sub}</Text>}
+              <Text style={[s.optLabel, active && s.optLabelActive]}>{t(opt.labelKey)}</Text>
+              {!!opt.subKey && <Text style={s.optSub}>{t(opt.subKey)}</Text>}
             </View>
             <View style={[s.optCheck, active && s.optCheckActive]}>
               {active && <Text style={s.optCheckMark}>✓</Text>}

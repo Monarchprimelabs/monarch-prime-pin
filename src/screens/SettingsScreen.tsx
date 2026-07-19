@@ -11,6 +11,7 @@ import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
 import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { hapticSuccess } from '../lib/haptics';
 import { KEY_APP_LOCK } from '../components/AppLockGate';
+import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -18,32 +19,33 @@ import { UpgradeScreen } from './UpgradeScreen';
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { t } = useI18n();
 
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <Header title="Settings" subtitle="" />
+      <Header title={t('settings.title')} subtitle="" />
       {!!onClose && (
         <View style={s.closeRow}>
           <Pressable style={s.closeBtn} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close settings">
-            <Text style={s.closeText}>‹ Tools</Text>
+            <Text style={s.closeText}>{t('settings.backToTools')}</Text>
           </Pressable>
         </View>
       )}
 
       <View style={s.subTabs}>
         {[
-          { id: 'rem' as const, label: 'Reminders' },
-          { id: 'acc' as const, label: 'Access' },
-          { id: 'leg' as const, label: 'Legal' },
-        ].map(t => (
+          { id: 'rem' as const, label: t('settings.tabReminders') },
+          { id: 'acc' as const, label: t('settings.tabAccess') },
+          { id: 'leg' as const, label: t('settings.tabLegal') },
+        ].map(item => (
           <Pressable
-            key={t.id}
-            onPress={() => setTab(t.id)}
-            style={[s.subTab, tab === t.id && s.subTabActive]}
+            key={item.id}
+            onPress={() => setTab(item.id)}
+            style={[s.subTab, tab === item.id && s.subTabActive]}
           >
-            <Text style={[s.subTabText, tab === t.id && s.subTabTextActive]}>
-              {t.label}
+            <Text style={[s.subTabText, tab === item.id && s.subTabTextActive]}>
+              {item.label}
             </Text>
           </Pressable>
         ))}
@@ -63,6 +65,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
 
 function RemindersTab() {
   const { user, signOut, updateProfileName } = useAuth();
+  const { t, language, setLanguage } = useI18n();
   const [profileName, setProfileName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
   const [funnel, setFunnel] = useState<FunnelStats | null>(null);
@@ -85,8 +88,8 @@ function RemindersTab() {
         const level = await LocalAuthentication.getEnrolledLevelAsync();
         if (level === LocalAuthentication.SecurityLevel.NONE) {
           Alert.alert(
-            'Set up a device passcode first',
-            'Add a passcode or Face ID in your device settings before turning on the app lock, so you cannot get locked out of your records.',
+            t('settings.appLockNeedPasscodeTitle'),
+            t('settings.appLockNeedPasscodeBody'),
           );
           return;
         }
@@ -105,7 +108,7 @@ function RemindersTab() {
     try {
       await exportBackup();
     } catch (error: any) {
-      Alert.alert('Backup failed', error?.message || 'Please try again.');
+      Alert.alert(t('settings.backupFailedTitle'), error?.message || t('common.tryAgain'));
     } finally {
       setBackupBusy(false);
     }
@@ -117,29 +120,35 @@ function RemindersTab() {
       const picked = await pickBackupFile();
       if (!picked) return;
       const { payload, counts } = picked;
-      const fromDate = payload.exportedAt ? payload.exportedAt.slice(0, 10) : 'an unknown date';
+      const fromDate = payload.exportedAt ? payload.exportedAt.slice(0, 10) : t('settings.unknownDate');
       Alert.alert(
-        'Restore this backup?',
-        `Backup from ${fromDate}:\n${counts.injections} injection records\n${counts.schedules} schedule entries\n${counts.inventory} inventory items\n${counts.templates} templates\n\nThis replaces ALL current records, schedules, inventory, and templates on this device. Photos and reminders are not included.`,
+        t('settings.restoreConfirmTitle'),
+        t('settings.restoreConfirmBody', {
+          date: fromDate,
+          inj: counts.injections,
+          sch: counts.schedules,
+          inv: counts.inventory,
+          tpl: counts.templates,
+        }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Replace Data',
+            text: t('settings.restoreReplace'),
             style: 'destructive',
             onPress: async () => {
               try {
                 await restoreBackup(payload);
                 hapticSuccess();
-                Alert.alert('Backup restored', 'Your data has been restored. Screens refresh the next time you open them.');
+                Alert.alert(t('settings.restoreDoneTitle'), t('settings.restoreDoneBody'));
               } catch (error: any) {
-                Alert.alert('Restore failed', error?.message || 'Please try again.');
+                Alert.alert(t('settings.restoreFailedTitle'), error?.message || t('common.tryAgain'));
               }
             },
           },
         ],
       );
     } catch (error: any) {
-      Alert.alert('Import failed', error?.message || 'Please try again.');
+      Alert.alert(t('settings.importFailedTitle'), error?.message || t('common.tryAgain'));
     } finally {
       setBackupBusy(false);
     }
@@ -148,36 +157,36 @@ function RemindersTab() {
   const saveProfileName = async () => {
     const trimmed = profileName.trim().replace(/\s+/g, ' ');
     if (!trimmed) {
-      Alert.alert('Missing name', 'Please enter the name you want shown on your dashboard.');
+      Alert.alert(t('settings.missingNameTitle'), t('settings.missingNameBody'));
       return;
     }
     setSavingName(true);
     try {
       await updateProfileName(trimmed);
       setProfileName(trimmed);
-      Alert.alert('Saved', 'Your dashboard greeting has been updated.');
+      Alert.alert(t('settings.nameSavedTitle'), t('settings.nameSavedBody'));
     } catch (e: any) {
-      Alert.alert('Save failed', e?.message || 'Please try again.');
+      Alert.alert(t('settings.saveFailedTitle'), e?.message || t('common.tryAgain'));
     } finally {
       setSavingName(false);
     }
   };
 
   const confirmSignOut = () => {
-    Alert.alert('Sign out?', 'You will need to sign back in to access this app.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: signOut },
+    Alert.alert(t('settings.signOutConfirmTitle'), t('settings.signOutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.signOut'), style: 'destructive', onPress: signOut },
     ]);
   };
 
   const confirmDeleteAccount = () => {
     Alert.alert(
-      'Delete account and local data?',
-      'This will remove your local account profile and all logs stored on this device. This action cannot be undone.',
+      t('settings.deleteConfirmTitle'),
+      t('settings.deleteConfirmBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             await cancelAllLocalReminders();
@@ -192,12 +201,37 @@ function RemindersTab() {
   return (
     <>
       <Card>
-        <CardLabel icon="👤">PROFILE</CardLabel>
+        <CardLabel icon="🌐">{t('settings.languageLabel')}</CardLabel>
         <Text style={s.profileHelp}>
-          This name is used for your dashboard greeting.
+          {t('settings.languageHelp')}
+        </Text>
+        <View style={s.langRow}>
+          {([
+            { id: 'en' as Language, label: 'English' },
+            { id: 'es' as Language, label: 'Español' },
+          ]).map(option => (
+            <Pressable
+              key={option.id}
+              onPress={() => setLanguage(option.id)}
+              style={[s.langBtn, language === option.id && s.langBtnActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === option.id }}
+            >
+              <Text style={[s.langBtnText, language === option.id && s.langBtnTextActive]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card>
+        <CardLabel icon="👤">{t('settings.profileLabel')}</CardLabel>
+        <Text style={s.profileHelp}>
+          {t('settings.profileHelp')}
         </Text>
         <TextInput
-          placeholder="Name"
+          placeholder={t('settings.namePlaceholder')}
           placeholderTextColor={colors.textFaint}
           value={profileName}
           onChangeText={setProfileName}
@@ -211,14 +245,14 @@ function RemindersTab() {
           onPress={saveProfileName}
           disabled={savingName}
         >
-          <Text style={s.saveNameText}>{savingName ? 'Saving...' : 'Save Name'}</Text>
+          <Text style={s.saveNameText}>{savingName ? t('settings.savingName') : t('settings.saveName')}</Text>
         </Pressable>
       </Card>
 
       <Card>
-        <CardLabel icon="🔔">NOTIFICATION SETTINGS</CardLabel>
+        <CardLabel icon="🔔">{t('settings.notificationsLabel')}</CardLabel>
         <Text style={s.localDataText}>
-          Create and manage local notifications from Tools → Schedule & Reminders. Monarch only reminds you about dates and times that you enter yourself.
+          {t('settings.notificationsBody')}
         </Text>
       </Card>
 
@@ -244,18 +278,18 @@ function RemindersTab() {
       )}
 
       <Card>
-        <CardLabel icon="💾">LOCAL DATA</CardLabel>
+        <CardLabel icon="💾">{t('settings.localDataLabel')}</CardLabel>
         <Text style={s.localDataText}>
-          Your research logs and organization-tool entries are stored locally on this device. Deleting your account removes the local profile, schedules, inventory, templates, and locally stored log data from this device.
+          {t('settings.localDataBody')}
         </Text>
       </Card>
 
       <Card>
-        <CardLabel icon="🔒">PRIVACY & APP LOCK</CardLabel>
+        <CardLabel icon="🔒">{t('settings.appLockLabel')}</CardLabel>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={s.localDataText}>
-              Require Face ID or your device passcode to open the app. Content is also hidden in the app switcher.
+              {t('settings.appLockBody')}
             </Text>
           </View>
           <Switch
@@ -268,33 +302,33 @@ function RemindersTab() {
       </Card>
 
       <Card>
-        <CardLabel icon="🗄">DATA BACKUP</CardLabel>
+        <CardLabel icon="🗄">{t('settings.backupLabel')}</CardLabel>
         <Text style={s.localDataText}>
-          Export all records, schedules, inventory, and templates as a single backup file you control — for safekeeping or moving to a new phone. Photos, reminders, and Pro unlock status are not included; restore Pro with Restore Prior Purchase and re-create reminders after importing.
+          {t('settings.backupBody')}
         </Text>
         <Pressable
           style={[s.saveNameBtn, backupBusy && { opacity: 0.5 }]}
           disabled={backupBusy}
           onPress={runBackupExport}
         >
-          <Text style={s.saveNameText}>Export Backup File</Text>
+          <Text style={s.saveNameText}>{t('settings.backupExport')}</Text>
         </Pressable>
         <Pressable
           style={[s.saveNameBtn, { marginTop: spacing.md }, backupBusy && { opacity: 0.5 }]}
           disabled={backupBusy}
           onPress={runBackupImport}
         >
-          <Text style={s.saveNameText}>Import Backup File</Text>
+          <Text style={s.saveNameText}>{t('settings.backupImport')}</Text>
         </Pressable>
       </Card>
 
       <View style={{ paddingHorizontal: spacing.xl }}>
         <Pressable style={s.signOutBtn} onPress={confirmSignOut}>
-          <Text style={s.signOutText}>Sign Out</Text>
+          <Text style={s.signOutText}>{t('settings.signOut')}</Text>
         </Pressable>
 
         <Pressable style={s.deleteBtn} onPress={confirmDeleteAccount}>
-          <Text style={s.deleteBtnText}>Delete Account & Local Data</Text>
+          <Text style={s.deleteBtnText}>{t('settings.deleteAccount')}</Text>
         </Pressable>
       </View>
     </>
@@ -303,75 +337,65 @@ function RemindersTab() {
 
 function AccessTab({ onOpen }: { onOpen: () => void }) {
   const { source, monetizationEnabled } = useEntitlements();
+  const { t } = useI18n();
   const label = source === 'paid-app' || source === 'legacy-install'
-    ? 'Founding purchaser · Lifetime Pro'
+    ? t('access.founding')
     : source === 'lifetime'
-      ? 'Lifetime Pro'
+      ? t('access.lifetime')
       : source === 'early-access'
-        ? 'Early access · Pro preview'
-        : 'Free plan';
+        ? t('access.earlyAccess')
+        : t('access.freePlan');
   return (
     <Card>
-      <CardLabel icon="◆">YOUR ACCESS</CardLabel>
+      <CardLabel icon="◆">{t('access.label')}</CardLabel>
       <Text style={s.accessTitle}>{label}</Text>
       <Text style={s.localDataText}>
-        Free installs include app exploration and {FREE_INJECTION_LIMIT} saved injection records. Lifetime Pro unlocks unlimited usage for {LIFETIME_PRO_PRICE_LABEL}. Prior paid-download customers keep full access permanently.
+        {t('access.body', { n: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
       </Text>
       {!monetizationEnabled && (
-        <Text style={s.accessPreview}>All Pro tools are open during early access.</Text>
+        <Text style={s.accessPreview}>{t('access.earlyNote')}</Text>
       )}
       <Pressable style={s.saveNameBtn} onPress={onOpen}>
-        <Text style={s.saveNameText}>View Access Details</Text>
+        <Text style={s.saveNameText}>{t('access.viewDetails')}</Text>
       </Pressable>
     </Card>
   );
 }
 
 function LegalTab() {
+  const { t } = useI18n();
   return (
     <Card>
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
         <Text style={{ fontSize: 18, color: colors.accent, fontWeight: '700' }}>
-          ⚠ FOR RESEARCH USE ONLY
+          {t('legal.banner')}
         </Text>
       </View>
 
-      <Text style={s.legalLabel}>IMPORTANT DISCLAIMER</Text>
+      <Text style={s.legalLabel}>{t('legal.disclaimerLabel')}</Text>
 
-      <Text style={s.legalP}>
-        All peptides, compounds, and substances referenced in this application are intended SOLELY for research purposes in controlled laboratory settings.
-      </Text>
+      <Text style={s.legalP}>{t('legal.p1')}</Text>
 
-      <Text style={s.legalP}>
-        These substances are NOT approved for human consumption, self-administration, or therapeutic use by any regulatory authority including the FDA, EMA, or equivalent bodies.
-      </Text>
+      <Text style={s.legalP}>{t('legal.p2')}</Text>
 
-      <Text style={s.legalP}>
-        MONARCH PRIME PIN TRACKER is a research data logging tool only. It does not constitute medical advice, diagnosis, or treatment recommendations.
-      </Text>
+      <Text style={s.legalP}>{t('legal.p3')}</Text>
 
-      <Text style={s.legalP}>
-        This application does not calculate, recommend, or prescribe dosages. The concentration worksheet only divides a user-entered total mass by a user-entered liquid volume and converts that user-entered volume into U-100 marking references. It is not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.
-      </Text>
+      <Text style={s.legalP}>{t('legal.p4')}</Text>
 
-      <Text style={s.legalP}>By using this application, you acknowledge:</Text>
+      <Text style={s.legalP}>{t('legal.ack')}</Text>
 
       <View style={{ paddingLeft: 18 }}>
-        <Text style={s.legalLi}>• You are using this for legitimate research recordkeeping purposes only</Text>
-        <Text style={s.legalLi}>• You will not use this application to facilitate human consumption of research compounds</Text>
-        <Text style={s.legalLi}>• You accept full legal and ethical responsibility for your research activities</Text>
-        <Text style={s.legalLi}>• The developers of this application bear no liability for misuse</Text>
+        <Text style={s.legalLi}>{t('legal.li1')}</Text>
+        <Text style={s.legalLi}>{t('legal.li2')}</Text>
+        <Text style={s.legalLi}>{t('legal.li3')}</Text>
+        <Text style={s.legalLi}>{t('legal.li4')}</Text>
       </View>
 
-      <Text style={s.legalP}>
-        Misuse of research peptides may be illegal in your jurisdiction and can pose serious health risks.
-      </Text>
+      <Text style={s.legalP}>{t('legal.p5')}</Text>
 
-      <Text style={s.legalP}>
-        If you are experiencing a medical emergency, contact emergency services immediately.
-      </Text>
+      <Text style={s.legalP}>{t('legal.p6')}</Text>
 
-      <Text style={s.legalFooter}>Monarch Prime Pin Tracker v1.2 — Research Use Only</Text>
+      <Text style={s.legalFooter}>{t('legal.footer')}</Text>
     </Card>
   );
 }
@@ -401,6 +425,20 @@ const s = StyleSheet.create({
   subTabActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)' },
   subTabText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   subTabTextActive: { color: colors.white },
+
+  langRow: { flexDirection: 'row', gap: 8 },
+  langBtn: {
+    flex: 1,
+    backgroundColor: colors.bgInput,
+    borderWidth: 1,
+    borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  langBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  langBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  langBtnTextActive: { color: colors.white },
 
   profileHelp: {
     color: colors.textMuted,

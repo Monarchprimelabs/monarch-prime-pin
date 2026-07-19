@@ -7,10 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, BrandMark } from '../components/UI';
 import { colors, radius, DEV_PASSCODE } from '../theme';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../lib/i18n';
 
 declare const __DEV__: boolean;
 
 export function SignInScreen() {
+  const { t } = useI18n();
   const { signInEmail, signUp, signInDeveloper } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -45,11 +47,11 @@ export function SignInScreen() {
 
   const handleAuth = async () => {
     if (!email || !password) {
-      Alert.alert('Missing info', 'Please enter your email and password.');
+      Alert.alert(t('auth.missingInfoTitle'), t('auth.missingInfoBody'));
       return;
     }
     if (mode === 'signup' && !name.trim()) {
-      Alert.alert('Missing name', 'Please enter your name so Monarch Prime Pin can personalize your dashboard.');
+      Alert.alert(t('settings.missingNameTitle'), t('auth.missingNameBody'));
       return;
     }
     setLoading(true);
@@ -60,7 +62,7 @@ export function SignInScreen() {
         await signInEmail(email, password);
       }
     } catch (e: any) {
-      Alert.alert('Authentication failed', e?.message || 'Please try again.');
+      Alert.alert(t('auth.failedTitle'), e?.message || t('common.tryAgain'));
     } finally {
       setLoading(false);
     }
@@ -90,7 +92,7 @@ export function SignInScreen() {
                     style={[s.modeTab, mode === m && s.modeTabActive]}
                   >
                     <Text style={[s.modeTabText, mode === m && s.modeTabTextActive]}>
-                      {m === 'signin' ? 'Sign In' : 'Sign Up'}
+                      {m === 'signin' ? t('auth.signIn') : t('auth.signUp')}
                     </Text>
                   </Pressable>
                 ))}
@@ -98,7 +100,7 @@ export function SignInScreen() {
 
               {mode === 'signup' && (
                 <TextInput
-                  placeholder="Name"
+                  placeholder={t('settings.namePlaceholder')}
                   placeholderTextColor={colors.textFaint}
                   value={name}
                   onChangeText={setName}
@@ -109,7 +111,7 @@ export function SignInScreen() {
                 />
               )}
               <TextInput
-                placeholder="Email"
+                placeholder={t('auth.email')}
                 placeholderTextColor={colors.textFaint}
                 value={email}
                 onChangeText={setEmail}
@@ -119,7 +121,7 @@ export function SignInScreen() {
                 autoCorrect={false}
               />
               <TextInput
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 placeholderTextColor={colors.textFaint}
                 value={password}
                 onChangeText={setPassword}
@@ -129,7 +131,7 @@ export function SignInScreen() {
 
               <Pressable style={s.primary} onPress={handleAuth} disabled={loading}>
                 <Text style={s.primaryText}>
-                  {loading ? '...' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
+                  {loading ? '...' : (mode === 'signin' ? t('auth.signIn') : t('auth.createAccount'))}
                 </Text>
               </Pressable>
             </>
@@ -161,7 +163,7 @@ export function SignInScreen() {
           )}
 
           <Text style={s.footer}>
-            For Research Use Only · Not for Human Consumption
+            {t('auth.footer')}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

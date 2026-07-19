@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { colors, spacing, radius, fonts } from '../theme';
+import { useI18n } from '../lib/i18n';
 
 const SYMBOL: number = require('../../assets/logo-symbol.png');
 const FULL_LOGO: number = require('../../assets/logo-full.png');
@@ -9,12 +10,13 @@ const FULL_LOGO: number = require('../../assets/logo-full.png');
 // Disclaimer banner — required on every main screen
 // ============================================================
 export function Disclaimer() {
+  const { t } = useI18n();
   return (
     <View style={s.disclaimer}>
       <Text style={s.warnIcon}>⚠</Text>
       <Text style={s.disclaimerText}>
-        <Text style={s.disclaimerStrong}>FOR RESEARCH USE ONLY</Text>
-        <Text> — Not for human consumption</Text>
+        <Text style={s.disclaimerStrong}>{t('ui.researchOnly')}</Text>
+        <Text>{t('ui.notForHuman')}</Text>
       </Text>
     </View>
   );
@@ -86,6 +88,7 @@ export function ViewPill({
   view: 'front' | 'back';
   setView: (v: 'front' | 'back') => void;
 }) {
+  const { t } = useI18n();
   return (
     <View style={s.viewPillWrap}>
       <View style={s.viewPill}>
@@ -96,7 +99,7 @@ export function ViewPill({
             style={[s.viewBtn, view === v && s.viewBtnActive]}
           >
             <Text style={[s.viewBtnText, view === v && s.viewBtnTextActive]}>
-              {v === 'front' ? 'Front' : 'Back'}
+              {v === 'front' ? t('ui.front') : t('ui.back')}
             </Text>
           </Pressable>
         ))}
@@ -185,10 +188,17 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.border,
+    // Lighter top edge + soft drop shadow fake a light source above the card.
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: radius.lg,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.8 },
   cardLabelIcon: { color: colors.primary, fontSize: 14, marginRight: 6 },

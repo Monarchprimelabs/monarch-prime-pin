@@ -3,7 +3,9 @@ import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors } from '../theme';
-import { Injection, formatRecordTime } from '../data/peptides';
+import { Injection, formatClockTime } from '../data/peptides';
+import { getInjectionSiteIds } from '../lib/sites';
+import { useI18n } from '../lib/i18n';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -21,27 +23,28 @@ export function HistoryScreen() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const { hasPro } = useEntitlements();
   const { user } = useAuth();
+  const { t, dateLocale } = useI18n();
   const canUsePro = hasPro || !!user?.isDeveloper;
 
   const refresh = async () => {
     try {
       setInjections(await getInjections());
     } catch (e: any) {
-      Alert.alert('Unable to load records', e?.message || 'Please try again.');
+      Alert.alert(t('history.loadFailed'), e?.message || t('common.tryAgain'));
     }
   };
   useEffect(() => { refresh(); }, []);
 
   const handleDelete = (record: Injection) => {
-    Alert.alert('Delete record?', `${record.peptide} from ${formatDate(record.date)} will be permanently deleted.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
+    Alert.alert(t('history.deleteTitle'), t('history.deleteBody', { peptide: record.peptide, date: formatDate(record.date, dateLocale) }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try {
           await deleteInjection(record.id);
           setSelectedRecord(null);
           await refresh();
         } catch (e: any) {
-          Alert.alert('Delete failed', e?.message || 'Please try again.');
+          Alert.alert(t('history.deleteFailed'), e?.message || t('common.tryAgain'));
         }
       }},
     ]);
@@ -50,17 +53,17 @@ export function HistoryScreen() {
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <Header title="History" />
+      <Header title={t('history.title')} />
       <View style={s.subTabs}>
-        {(['log', 'calendar', 'photos'] as const).map(t => (
+        {(['log', 'calendar', 'photos'] as const).map(tabId => (
           <Pressable
-            key={t}
-            onPress={() => (PRO_TABS.has(t) && !canUsePro ? setShowUpgrade(true) : setTab(t))}
-            style={[s.subTab, tab === t && s.subTabActive]}
+            key={tabId}
+            onPress={() => (PRO_TABS.has(tabId) && !canUsePro ? setShowUpgrade(true) : setTab(tabId))}
+            style={[s.subTab, tab === tabId && s.subTabActive]}
           >
-            <Text style={[s.subTabText, tab === t && s.subTabTextActive]}>
-              {t === 'log' ? 'Log' : t === 'calendar' ? 'Calendar' : 'Photos'}
-              {PRO_TABS.has(t) && !canUsePro ? ' 🔒' : ''}
+            <Text style={[s.subTabText, tab === tabId && s.subTabTextActive]}>
+              {tabId === 'log' ? t('history.tabLog') : tabId === 'calendar' ? t('history.tabCalendar') : t('history.tabPhotos')}
+              {PRO_TABS.has(tabId) && !canUsePro ? ' 🔒' : ''}
             </Text>
           </Pressable>
         ))}
@@ -125,14 +128,14 @@ export function HistoryScreen() {
   );
 }
 
-function formatDate(date: string) {
-  return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', {
+function formatDate(date: string, locale: string) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString(locale, {
     month: 'long', day: 'numeric', year: 'numeric',
   });
 }
 
-function severityLabel(value: Injection['sev']) {
-  return value === 'none' ? 'None' : value === 'mild' ? 'Mild' : value === 'mod' ? 'Moderate' : 'Severe';
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function RecordDetail({
@@ -143,39 +146,43 @@ function RecordDetail({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t, dateLocale } = useI18n();
+  const recordTime = record.timePeriod ? t('period.' + record.timePeriod) : formatClockTime(record.time);
+  const siteIds = getInjectionSiteIds(record);
+  const siteDisplay = siteIds.length ? siteIds.map(id => t('zone.' + id)).join(', ') : record.site;
   return (
     <SafeAreaView style={s.app}>
       <Disclaimer />
       <View style={s.detailHeader}>
         <Pressable onPress={onClose} style={s.headerAction} accessibilityRole="button" accessibilityLabel="Close record details">
-          <Text style={s.headerActionText}>‹ History</Text>
+          <Text style={s.headerActionText}>{t('log.backHistory')}</Text>
         </Pressable>
-        <Text style={s.detailTitle}>Record Details</Text>
+        <Text style={s.detailTitle}>{t('history.detailTitle')}</Text>
         <Pressable onPress={onEdit} style={s.headerAction} accessibilityRole="button" accessibilityLabel="Edit record">
-          <Text style={[s.headerActionText, { textAlign: 'right' }]}>Edit</Text>
+          <Text style={[s.headerActionText, { textAlign: 'right' }]}>{t('history.edit')}</Text>
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={s.detailContent}>
         <View style={[s.detailHero, { borderLeftColor: sevColors[record.sev] }]}>
           <Text style={s.detailName}>{record.peptide}</Text>
-          <Text style={s.detailDate}>{formatDate(record.date)} · {formatRecordTime(record)}</Text>
+          <Text style={s.detailDate}>{formatDate(record.date, dateLocale)} · {recordTime}</Text>
           <Text style={s.detailDose}>{record.dose}{record.unit}</Text>
         </View>
-        <DetailRow label="Recorded site" value={record.site} />
-        <DetailRow label="Side effects" value={severityLabel(record.sev)} />
+        <DetailRow label={t('history.recordedSite')} value={siteDisplay} />
+        <DetailRow label={t('history.sideEffects')} value={t('sev.' + record.sev)} />
         {!!record.symptoms?.length && (
-          <DetailRow label="Symptoms" value={record.symptoms.join(', ')} />
+          <DetailRow label={t('history.symptoms')} value={record.symptoms.map(tag => t('symptom.' + tag)).join(', ')} />
         )}
-        {record.weight > 0 && <DetailRow label="Weight" value={`${record.weight} lbs`} />}
-        {!!record.notes && <DetailRow label="Notes" value={record.notes} />}
+        {record.weight > 0 && <DetailRow label={t('history.weight')} value={`${record.weight} lbs`} />}
+        {!!record.notes && <DetailRow label={t('history.notes')} value={record.notes} />}
         {!!record.photoUri && (
           <View style={s.detailSection}>
-            <Text style={s.detailLabel}>PROGRESS PHOTO</Text>
+            <Text style={s.detailLabel}>{t('log.photo')}</Text>
             <Image source={{ uri: record.photoUri }} style={s.detailPhoto} />
           </View>
         )}
         <Pressable onPress={onDelete} style={s.detailDelete} accessibilityRole="button" accessibilityLabel="Delete record">
-          <Text style={s.detailDeleteText}>Delete Record</Text>
+          <Text style={s.detailDeleteText}>{t('history.deleteRecord')}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -192,6 +199,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
+  const { t, dateLocale } = useI18n();
+  const recordTime = (r: Injection) => r.timePeriod ? t('period.' + r.timePeriod) : formatClockTime(r.time);
   const [filter, setFilter] = useState<'all' | 'none' | 'mild' | 'mod' | 'sev'>('all');
   const [q, setQ] = useState('');
   const filtered = injections.filter(i => {
@@ -203,18 +212,18 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
     <View style={{ paddingHorizontal: spacing.xl }}>
       <TextInput
         style={s.search}
-        placeholder="Search logs…"
+        placeholder={t('history.search')}
         placeholderTextColor={colors.textFaint}
         value={q}
         onChangeText={setQ}
       />
       <View style={s.filterRow}>
         {[
-          { v: 'all',  label: 'All' },
-          { v: 'none', label: 'None' },
-          { v: 'mild', label: 'Mild' },
-          { v: 'mod',  label: 'Moderate' },
-          { v: 'sev',  label: 'Severe' },
+          { v: 'all',  label: t('history.filterAll') },
+          { v: 'none', label: t('sev.none') },
+          { v: 'mild', label: t('sev.mild') },
+          { v: 'mod',  label: t('sev.mod') },
+          { v: 'sev',  label: t('sev.sev') },
         ].map(f => (
           <Pressable
             key={f.v}
@@ -226,19 +235,19 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
         ))}
       </View>
       {filtered.length === 0 ? (
-        <Text style={s.empty}>No injections logged yet</Text>
+        <Text style={s.empty}>{t('history.empty')}</Text>
       ) : filtered.map(i => (
         <Pressable
           key={i.id}
           onPress={() => onOpen(i)}
           style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
           accessibilityRole="button"
-          accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date)}`}
+          accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date, dateLocale)}`}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={s.histName}>{i.peptide}</Text>
-              <Text style={s.histMeta}>{i.date} · {formatRecordTime(i)}</Text>
+              <Text style={s.histMeta}>{i.date} · {recordTime(i)}</Text>
               <Text style={s.histMeta}>📍 {i.site}</Text>
               {i.weight > 0 && <Text style={s.histMeta}>⚖ {i.weight} lbs</Text>}
             </View>
@@ -246,12 +255,12 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
               <Text style={s.histDose}>{i.dose}{i.unit}</Text>
               <View style={[s.sevBadge, { backgroundColor: sevColors[i.sev] + '20' }]}>
                 <Text style={[s.sevBadgeText, { color: sevColors[i.sev] }]}>
-                  {severityLabel(i.sev)}
+                  {t('sev.' + i.sev)}
                 </Text>
               </View>
             </View>
           </View>
-          <Text style={s.viewDetailText}>View details ›</Text>
+          <Text style={s.viewDetailText}>{t('history.viewDetails')}</Text>
         </Pressable>
       ))}
     </View>
@@ -259,13 +268,17 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
 }
 
 function CalendarView({ injections, onLogForDate, onOpen }: { injections: Injection[]; onLogForDate: (date: string) => void; onOpen: (record: Injection) => void }) {
+  const { t, dateLocale } = useI18n();
+  const recordTime = (r: Injection) => r.timePeriod ? t('period.' + r.timePeriod) : formatClockTime(r.time);
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState(today.getDate());
 
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  // 2026-06-07 is a Sunday; generates localized short weekday names Sun..Sat.
+  const monthTitle = capitalize(new Date(year, month, 1).toLocaleDateString(dateLocale, { month: 'long' }));
+  const dayNames = Array.from({ length: 7 }, (_, i) =>
+    capitalize(new Date(2026, 5, 7 + i).toLocaleDateString(dateLocale, { weekday: 'short' })));
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -307,7 +320,7 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
           <Pressable onPress={navPrev} style={s.calNav} accessibilityRole="button" accessibilityLabel="Previous month">
             <Text style={s.calNavText}>‹</Text>
           </Pressable>
-          <Text style={s.calMonth}>{monthNames[month]} {year}</Text>
+          <Text style={s.calMonth}>{monthTitle} {year}</Text>
           <Pressable
             onPress={navNext}
             style={[s.calNav, isCurrentMonth && s.calNavDisabled]}
@@ -344,15 +357,15 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
         </View>
       </Card>
       <Card>
-        <Text style={s.calSelDate}>{monthNames[month]} {selected}, {year}</Text>
+        <Text style={s.calSelDate}>{capitalize(new Date(year, month, selected).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' }))}</Text>
         {dayInj.length === 0 ? (
-          <Text style={s.empty}>No injections logged</Text>
+          <Text style={s.empty}>{t('history.emptyDay')}</Text>
         ) : dayInj.map(i => (
           <Pressable key={i.id} onPress={() => onOpen(i)} style={[s.histCard, { borderLeftColor: sevColors[i.sev], marginHorizontal: 0 }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
                 <Text style={s.histName}>{i.peptide}</Text>
-                <Text style={s.histMeta}>{formatRecordTime(i)}</Text>
+                <Text style={s.histMeta}>{recordTime(i)}</Text>
                 <Text style={s.histMeta}>📍 {i.site}</Text>
               </View>
               <Text style={s.histDose}>{i.dose}{i.unit}</Text>
@@ -364,7 +377,7 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
             style={s.logForDateBtn}
             onPress={() => onLogForDate(selectedDateStr)}
           >
-            <Text style={s.logForDateText}>+ Log for {monthNames[month]} {selected}</Text>
+            <Text style={s.logForDateText}>{t('history.logForDate', { date: capitalize(new Date(year, month, selected).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric' })) })}</Text>
           </Pressable>
         )}
       </Card>
@@ -373,6 +386,7 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
 }
 
 function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
+  const { t, dateLocale } = useI18n();
   const photos = injections.filter(i => i.photoUri);
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -389,7 +403,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
   };
 
   if (photos.length === 0) {
-    return <Text style={[s.empty, { paddingTop: 40 }]}>No progress photos yet</Text>;
+    return <Text style={[s.empty, { paddingTop: 40 }]}>{t('history.noPhotos')}</Text>;
   }
   return (
     <View>
@@ -399,13 +413,13 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
           onPress={() => { setCompareMode(current => !current); setCompareIds([]); }}
         >
           <Text style={s.compareToggleText}>
-            {compareMode ? 'Cancel Compare' : 'Compare Two Photos'}
+            {compareMode ? t('history.compareCancel') : t('history.compare')}
           </Text>
         </Pressable>
       )}
       {compareMode && (
         <Text style={s.compareHint}>
-          {comparePair.length < 2 ? `Select ${2 - comparePair.length} photo${comparePair.length === 1 ? '' : 's'} to compare` : 'Comparing'}
+          {comparePair.length < 2 ? (comparePair.length === 1 ? t('history.compareSelectOne') : t('history.compareSelectTwo')) : t('history.comparing')}
         </Text>
       )}
       <View style={s.photoGrid}>
@@ -417,7 +431,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
               style={[s.photoThumb, compareMode && selectedIndex >= 0 && s.photoThumbSelected]}
               onPress={() => (compareMode ? toggleCompareSelection(p) : onOpen(p))}
               accessibilityRole="button"
-              accessibilityLabel={compareMode ? `Select photo from ${formatDate(p.date)} for comparison` : `Open photo record from ${formatDate(p.date)}`}
+              accessibilityLabel={compareMode ? `Select photo from ${formatDate(p.date, dateLocale)} for comparison` : `Open photo record from ${formatDate(p.date, dateLocale)}`}
             >
               <Image source={{ uri: p.photoUri }} style={s.photoThumbImg} />
               <Text style={s.photoThumbDate}>{p.date}</Text>
@@ -437,9 +451,9 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
         {comparePair.length === 2 && (
           <SafeAreaView style={s.app}>
             <View style={s.compareHeader}>
-              <Text style={s.compareTitle}>Photo Comparison</Text>
+              <Text style={s.compareTitle}>{t('history.compareTitle')}</Text>
               <Pressable onPress={() => setCompareIds([])} style={s.headerAction}>
-                <Text style={[s.headerActionText, { textAlign: 'right' }]}>Close</Text>
+                <Text style={[s.headerActionText, { textAlign: 'right' }]}>{t('history.close')}</Text>
               </Pressable>
             </View>
             <View style={s.compareRow}>
@@ -448,7 +462,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
                 .map(record => (
                   <View key={record.id} style={s.comparePane}>
                     <Image source={{ uri: record.photoUri }} style={s.compareImg} resizeMode="cover" />
-                    <Text style={s.compareDate}>{formatDate(record.date)}</Text>
+                    <Text style={s.compareDate}>{formatDate(record.date, dateLocale)}</Text>
                     <Text style={s.compareMeta}>{record.peptide}</Text>
                   </View>
                 ))}
