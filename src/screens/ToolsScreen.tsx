@@ -505,7 +505,6 @@ const U100_MARKINGS = [1, 5, 10, 20, 50];
 // Real U-100 barrels come in 30, 50, and 100 unit sizes; the gauge picks the
 // smallest scale the reading fits on so small readings stay legible.
 const GAUGE_SCALES = [30, 50, 100];
-const GAUGE_HEIGHT = 208;
 
 function ConversionTool({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -704,8 +703,9 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Vertical unit-scale gauge: tick marks and a highlighted fill, drawn entirely
-// with views. Deliberately NOT a syringe illustration — it reads like a ruler.
+// Horizontal unit-scale gauge: a left-to-right fill with a ruler of tick marks
+// underneath, read the same way as the printed scale on a barrel. Drawn
+// entirely with views — deliberately NOT a syringe illustration.
 function UnitGauge({ units, ml, massLabel }: { units: number; ml: number; massLabel: string }) {
   const { t } = useI18n();
   const over = units > 100;
@@ -717,31 +717,33 @@ function UnitGauge({ units, ml, massLabel }: { units: number; ml: number; massLa
   for (let mark = 0; mark <= scale; mark += minorStep) ticks.push(mark);
 
   return (
-    <View style={s.gaugeRow}>
-      <View style={s.gaugeScaleArea}>
-        {ticks.map(mark => {
-          const major = mark % majorStep === 0;
-          return (
-            <View key={mark} style={[s.gaugeTickRow, { bottom: (mark / scale) * GAUGE_HEIGHT - 5 }]}>
-              <Text style={s.gaugeTickLabel}>{major ? String(mark) : ''}</Text>
-              <View style={[s.gaugeTickLine, major && s.gaugeTickLineMajor]} />
-            </View>
-          );
-        })}
-        <View style={s.gaugeTrack}>
-          <View style={[s.gaugeFill, { height: pct * GAUGE_HEIGHT }, over && s.gaugeFillOver]} />
-          <View style={[s.gaugeMarker, { bottom: pct * GAUGE_HEIGHT - 1 }, over && s.gaugeMarkerOver]} />
-        </View>
-      </View>
-      <View style={s.gaugeReadout}>
+    <View style={s.gaugeWrap}>
+      <View style={s.gaugeReadoutRow}>
         <Text style={[s.gaugeUnitsBig, over && s.gaugeUnitsBigOver]}>
           {t('tools.gauge.unitsBig', { n: formatNumber(units) })}
         </Text>
-        <Text style={s.gaugeLine}>{t('tools.gauge.mlLine', { v: formatNumber(ml) })}</Text>
-        <Text style={s.gaugeMass}>= {massLabel}</Text>
-        <Text style={s.gaugeScaleCaption}>{t('tools.gauge.scaleCaption', { scale })}</Text>
-        {over && <Text style={s.gaugeOverText}>{t('tools.gauge.over')}</Text>}
+        <View style={s.gaugeReadoutRight}>
+          <Text style={s.gaugeLine}>{t('tools.gauge.mlLine', { v: formatNumber(ml) })}</Text>
+          <Text style={s.gaugeMass}>= {massLabel}</Text>
+        </View>
       </View>
+      <View style={s.gaugeTrackH}>
+        <View style={[s.gaugeFillH, { width: `${pct * 100}%` }, over && s.gaugeFillOver]} />
+        <View style={[s.gaugeMarkerH, { left: `${pct * 100}%` }, over && s.gaugeMarkerOver]} />
+      </View>
+      <View style={s.gaugeRuler}>
+        {ticks.map(mark => {
+          const major = mark % majorStep === 0;
+          return (
+            <View key={mark} style={[s.gaugeTickCol, { left: `${(mark / scale) * 100}%` }]}>
+              <View style={[s.gaugeTickLineH, major && s.gaugeTickLineHMajor]} />
+              {major && <Text style={s.gaugeTickLabelH}>{mark}</Text>}
+            </View>
+          );
+        })}
+      </View>
+      <Text style={s.gaugeScaleCaption}>{t('tools.gauge.scaleCaption', { scale })}</Text>
+      {over && <Text style={s.gaugeOverText}>{t('tools.gauge.over')}</Text>}
     </View>
   );
 }
@@ -888,28 +890,29 @@ const s = StyleSheet.create({
   copyHint: { color: colors.textFaint, fontSize: 10, textAlign: 'center', marginTop: 8 },
   resultEmpty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
 
-  gaugeRow: { flexDirection: 'row', marginTop: 18, marginBottom: 4, gap: 20 },
-  gaugeScaleArea: { width: 86, height: GAUGE_HEIGHT },
-  gaugeTickRow: { position: 'absolute', left: 0, height: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  gaugeTickLabel: { width: 24, textAlign: 'right', color: colors.textFaint, fontSize: 10, fontVariant: ['tabular-nums'] },
-  gaugeTickLine: { width: 8, height: 1, backgroundColor: colors.borderSubtle },
-  gaugeTickLineMajor: { width: 14, height: 1.5, backgroundColor: colors.border },
-  gaugeTrack: {
-    position: 'absolute', left: 54, top: 0, bottom: 0, width: 30,
-    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.sm, overflow: 'hidden',
-  },
-  gaugeFill: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(30,136,229,0.35)' },
-  gaugeFillOver: { backgroundColor: 'rgba(255,140,0,0.30)' },
-  gaugeMarker: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: colors.primary },
-  gaugeMarkerOver: { backgroundColor: colors.accent },
-  gaugeReadout: { flex: 1, justifyContent: 'center', gap: 4 },
-  gaugeUnitsBig: { color: colors.primary, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  gaugeWrap: { marginTop: 16, paddingHorizontal: 14 },
+  gaugeReadoutRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 },
+  gaugeReadoutRight: { alignItems: 'flex-end', gap: 2 },
+  gaugeUnitsBig: { color: colors.primary, fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
   gaugeUnitsBigOver: { color: colors.accent },
   gaugeLine: { color: colors.text, fontSize: 14, fontWeight: '600' },
-  gaugeMass: { color: colors.textMuted, fontSize: 13 },
-  gaugeScaleCaption: { color: colors.textFaint, fontSize: 11, marginTop: 6 },
-  gaugeOverText: { color: colors.accent, fontSize: 11, lineHeight: 16, marginTop: 6 },
+  gaugeMass: { color: colors.textMuted, fontSize: 12 },
+  gaugeTrackH: {
+    height: 34, backgroundColor: colors.bgInput,
+    borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.sm, overflow: 'hidden',
+  },
+  gaugeFillH: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: 'rgba(30,136,229,0.35)' },
+  gaugeFillOver: { backgroundColor: 'rgba(255,140,0,0.30)' },
+  gaugeMarkerH: { position: 'absolute', top: 0, bottom: 0, width: 2, marginLeft: -1, backgroundColor: colors.primary },
+  gaugeMarkerOver: { backgroundColor: colors.accent },
+  gaugeRuler: { height: 30, marginTop: 3 },
+  gaugeTickCol: { position: 'absolute', top: 0, width: 28, marginLeft: -14, alignItems: 'center' },
+  gaugeTickLineH: { width: 1, height: 7, backgroundColor: colors.borderSubtle },
+  gaugeTickLineHMajor: { width: 1.5, height: 11, backgroundColor: colors.border },
+  gaugeTickLabelH: { color: colors.textFaint, fontSize: 10, marginTop: 3, fontVariant: ['tabular-nums'] },
+  gaugeScaleCaption: { color: colors.textFaint, fontSize: 11, marginTop: 4, textAlign: 'center' },
+  gaugeOverText: { color: colors.accent, fontSize: 11, lineHeight: 16, marginTop: 8, textAlign: 'center' },
   gaugeNote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, marginTop: 12, textAlign: 'center' },
   referenceText: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
