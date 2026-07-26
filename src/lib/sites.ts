@@ -1,4 +1,4 @@
-import { ALL_ZONES, DensityLevel, Injection } from '../data/peptides';
+import { ALL_ZONES, Injection } from '../data/peptides';
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -70,19 +70,4 @@ export function getSiteUsage(injections: Injection[]): Record<string, number> {
     });
   });
   return counts;
-}
-
-export function getSiteDensity(injections: Injection[]): Record<string, DensityLevel> {
-  const usage = getSiteUsage(injections);
-  return Object.fromEntries(
-    ALL_ZONES.map(zone => {
-      const count = usage[zone.id] || 0;
-      const level: DensityLevel =
-        count === 0 ? 'unused' :
-        count <= 2 ? 'light' :
-        count <= 4 ? 'moderate' :
-        'heavy';
-      return [zone.id, level];
-    })
-  );
 }

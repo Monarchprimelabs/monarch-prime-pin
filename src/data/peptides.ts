@@ -76,7 +76,6 @@ export const SIDE_EFFECT_TAGS = [
 ] as const;
 
 export type SideEffectTag = typeof SIDE_EFFECT_TAGS[number];
-export type DensityLevel = 'unused' | 'light' | 'moderate' | 'heavy';
 
 export type Zone = {
   id: string;

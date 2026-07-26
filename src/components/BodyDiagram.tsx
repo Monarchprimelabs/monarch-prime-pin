@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { ZONES, DensityLevel } from '../data/peptides';
-import { density as densityColors } from '../theme';
+import { ZONES } from '../data/peptides';
+import { heatColors } from '../theme';
+import type { HeatBand } from '../lib/heat';
 import { MannequinFront, MannequinBack } from './Mannequin';
 
 type Props = {
@@ -10,10 +11,10 @@ type Props = {
   mode: 'heatmap' | 'select';
   selected?: string[];
   onZoneTap?: (id: string) => void;
-  densityByZone?: Record<string, DensityLevel>;
+  bandsByZone?: Record<string, HeatBand>;
 };
 
-export function BodyDiagram({ view, mode, selected = [], onZoneTap, densityByZone = {} }: Props) {
+export function BodyDiagram({ view, mode, selected = [], onZoneTap, bandsByZone = {} }: Props) {
   const zones = view === 'front' ? ZONES.front : ZONES.back;
 
   return (
@@ -23,8 +24,8 @@ export function BodyDiagram({ view, mode, selected = [], onZoneTap, densityByZon
 
         {zones.map(z => {
           if (mode === 'heatmap') {
-            const lvl: DensityLevel = densityByZone[z.id] || 'unused';
-            const c = densityColors[lvl];
+            const band: HeatBand = bandsByZone[z.id] || 'clear';
+            const c = heatColors[band];
             return (
               <G key={z.id}>
                 <Circle cx={z.cx} cy={z.cy} r={z.r} fill="rgba(10, 25, 50, 0.6)" stroke={c.ring} strokeWidth="0.5" />

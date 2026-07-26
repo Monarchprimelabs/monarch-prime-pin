@@ -11,6 +11,7 @@ import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
 import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { hapticSuccess } from '../lib/haptics';
 import { KEY_APP_LOCK } from '../components/AppLockGate';
+import { getHeatHalfLife, setHeatHalfLife, HALF_LIFE_OPTIONS, DEFAULT_HALF_LIFE_DAYS } from '../lib/heat';
 import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
@@ -71,6 +72,16 @@ function RemindersTab() {
   const [funnel, setFunnel] = useState<FunnelStats | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [appLockEnabled, setAppLockEnabled] = useState(false);
+  const [heatHalfLife, setHeatHalfLifeState] = useState(DEFAULT_HALF_LIFE_DAYS);
+
+  useEffect(() => {
+    getHeatHalfLife().then(setHeatHalfLifeState).catch(() => undefined);
+  }, []);
+
+  const chooseHalfLife = (days: number) => {
+    setHeatHalfLifeState(days);
+    setHeatHalfLife(days).catch(() => undefined);
+  };
 
   useEffect(() => {
     if (user?.isDeveloper) getFunnelStats().then(setFunnel).catch(() => undefined);
@@ -219,6 +230,28 @@ function RemindersTab() {
             >
               <Text style={[s.langBtnText, language === option.id && s.langBtnTextActive]}>
                 {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card>
+        <CardLabel icon="📍">{t('settings.heatmapLabel')}</CardLabel>
+        <Text style={s.profileHelp}>
+          {t('settings.heatmapHelp')}
+        </Text>
+        <View style={s.langRow}>
+          {HALF_LIFE_OPTIONS.map(days => (
+            <Pressable
+              key={days}
+              onPress={() => chooseHalfLife(days)}
+              style={[s.langBtn, heatHalfLife === days && s.langBtnActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: heatHalfLife === days }}
+            >
+              <Text style={[s.langBtnText, heatHalfLife === days && s.langBtnTextActive]}>
+                {t('settings.heatmapDays', { n: days })}
               </Text>
             </Pressable>
           ))}

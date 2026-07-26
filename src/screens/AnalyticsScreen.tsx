@@ -9,6 +9,8 @@ import { colors, spacing, radius } from '../theme';
 import { ALL_ZONES, Injection } from '../data/peptides';
 import { getInjections } from '../lib/storage';
 import { getSiteUsage } from '../lib/sites';
+import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS, HeatBand } from '../lib/heat';
+import { heatColors } from '../theme';
 import { useI18n } from '../lib/i18n';
 
 export function AnalyticsScreen() {
@@ -92,11 +94,20 @@ export function AnalyticsScreen() {
   }, [injections]);
   const maxSymptom = Math.max(...symptomRanks.map(rank => rank.count), 1);
 
-  // Site usage
+  // Site usage — counts are all-time; the tile tint reflects decayed recent
+  // heat so the grid agrees with the dashboard heatmap.
+  const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
+  useEffect(() => { getHeatHalfLife().then(setHalfLife); }, []);
   const siteUsage = useMemo(() => {
     const counts = getSiteUsage(injections);
-    return ALL_ZONES.map(zone => ({ id: zone.id, name: zone.short, count: counts[zone.id] || 0 }));
-  }, [injections]);
+    const bands = bandsByZone(buildHeatEntries(injections), Date.now(), halfLife);
+    return ALL_ZONES.map(zone => ({
+      id: zone.id,
+      name: zone.short,
+      count: counts[zone.id] || 0,
+      band: (bands[zone.id] || 'clear') as HeatBand,
+    }));
+  }, [injections, halfLife]);
 
   // Chronological weight series (oldest → newest), capped to the most
   // recent 30 entries so the chart stays readable.
@@ -375,10 +386,16 @@ export function AnalyticsScreen() {
         <Card>
           <CardLabel icon="📍">{t('reports.siteUsage')}</CardLabel>
           <View style={s.siteGrid}>
-            {siteUsage.map(({ id, name, count }) => (
+            {siteUsage.map(({ id, name, count, band }) => (
               <View
                 key={id}
-                style={[s.siteCell, count >= 3 && s.siteCellActive]}
+                style={[
+                  s.siteCell,
+                  band !== 'clear' && {
+                    borderColor: heatColors[band].ring,
+                    backgroundColor: `${heatColors[band].dot}26`,
+                  },
+                ]}
               >
                 <Text style={s.siteCellName}>{t('zoneShort.' + id)}</Text>
                 <Text style={[s.siteCellCount, count > 0 && { color: colors.white }]}>{count}</Text>
@@ -462,7 +479,6 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.1)',
     borderRadius: 8, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center',
   },
-  siteCellActive: { backgroundColor: 'rgba(229, 57, 53, 0.15)', borderColor: 'rgba(229, 57, 53, 0.4)' },
   siteCellName: { color: colors.textMuted, fontSize: 10, marginBottom: 4, textAlign: 'center' },
   siteCellCount: { color: colors.textFaint, fontSize: 18, fontWeight: '700' },
 });
