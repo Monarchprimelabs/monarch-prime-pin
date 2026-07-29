@@ -11,6 +11,7 @@ import { getInjections } from '../lib/storage';
 import { getSiteUsage } from '../lib/sites';
 import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS, HeatBand } from '../lib/heat';
 import { heatColors } from '../theme';
+import { localDateISO, parseLocalDay } from '../lib/dates';
 import { useI18n } from '../lib/i18n';
 
 export function AnalyticsScreen() {
@@ -23,7 +24,7 @@ export function AnalyticsScreen() {
     const buckets = [0, 0, 0, 0, 0, 0, 0, 0];
     const now = new Date();
     injections.forEach(i => {
-      const d = new Date(i.date);
+      const d = parseLocalDay(i.date);
       const days = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
       const week = Math.floor(days / 7);
       if (week >= 0 && week < 8) {
@@ -135,7 +136,7 @@ export function AnalyticsScreen() {
       polyline: values.map((weight, index) => `${x(index)},${y(weight)}`).join(' '),
     };
   }, [weightSeries]);
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = localDateISO().slice(0, 7);
   const monthRecords = injections.filter(i => i.date.startsWith(currentMonth));
   const monthDays = new Set(monthRecords.map(i => i.date)).size;
   const monthSites = Object.values(getSiteUsage(monthRecords)).reduce((sum, count) => sum + count, 0);
@@ -205,7 +206,7 @@ export function AnalyticsScreen() {
             <tr><th>${esc(t('reports.pdfDate'))}</th><th>${esc(t('reports.pdfCompound'))}</th><th>${esc(t('reports.pdfDose'))}</th><th>${esc(t('reports.pdfSites'))}</th><th>${esc(t('reports.pdfSev'))}</th></tr>
             ${rows || `<tr><td colspan="5">${esc(t('reports.noSavedMonth'))}</td></tr>`}
           </table>
-          <p class="foot">${esc(t('reports.pdfFoot1', { date: new Date().toISOString().slice(0, 10) }))}</p>
+          <p class="foot">${esc(t('reports.pdfFoot1', { date: localDateISO() }))}</p>
           <p class="foot">${esc(t('reports.pdfFoot2'))}</p>
         </body></html>`;
       const { uri } = await Print.printToFileAsync({ html });

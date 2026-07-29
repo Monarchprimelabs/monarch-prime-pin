@@ -14,6 +14,7 @@ import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from 
 import { LogInjectionScreen } from './LogInjectionScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KEY_LAST_BACKUP_AT } from '../lib/backup';
+import { localDateISO, parseLocalDay } from '../lib/dates';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
@@ -70,12 +71,12 @@ export function DashboardScreen({ onNavigate }: Props) {
   const stats = useMemo(() => {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thisWeek = injections.filter(i => new Date(i.date) >= weekAgo).length;
+    const thisWeek = injections.filter(i => parseLocalDay(i.date) >= weekAgo).length;
 
     const logDays = new Set(injections.map(i => i.date).filter(Boolean));
     let streak = 0;
     const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    while (logDays.has(cursor.toISOString().slice(0, 10))) {
+    while (logDays.has(localDateISO(cursor))) {
       streak += 1;
       cursor.setDate(cursor.getDate() - 1);
     }
@@ -87,9 +88,9 @@ export function DashboardScreen({ onNavigate }: Props) {
     let previousDay: string | null = null;
     sortedDays.forEach(day => {
       if (previousDay) {
-        const next = new Date(`${previousDay}T12:00:00`);
+        const next = parseLocalDay(previousDay);
         next.setDate(next.getDate() + 1);
-        run = next.toISOString().slice(0, 10) === day ? run + 1 : 1;
+        run = localDateISO(next) === day ? run + 1 : 1;
       } else {
         run = 1;
       }
