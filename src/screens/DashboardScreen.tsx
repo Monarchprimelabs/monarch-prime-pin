@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder } from 'react-native';
+import { Alert, View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
+import { Disclaimer, Header, Card, CardLabel, ViewPill, BrandMark } from '../components/UI';
+import * as Sharing from 'expo-sharing';
+import { captureRef } from 'react-native-view-shot';
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity, heatColors } from '../theme';
 import { useAuth } from '../lib/auth';
@@ -45,6 +47,8 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [reminderDismissed, setReminderDismissed] = useState(false);
   const [repeatOpen, setRepeatOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareCardRef = useRef<View>(null);
 
   const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
   const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
@@ -98,18 +102,28 @@ export function DashboardScreen({ onNavigate }: Props) {
       previousDay = day;
     });
 
+    const monthPrefix = localDateISO().slice(0, 7);
+    const monthCount = injections.filter(i => i.date.startsWith(monthPrefix)).length;
+    const zonesUsed = new Set(injections.flatMap(i => getInjectionSiteIds(i))).size;
+
     return {
       streak,
       longestStreak,
       total: injections.length,
       thisWeek,
+      monthCount,
+      zonesUsed,
     };
   }, [injections]);
 
   const RECORD_MILESTONES = [500, 250, 100, 50, 25, 10];
   const recordMilestone = RECORD_MILESTONES.find(m => stats.total >= m);
 
-  const lastInj = injections[0];
+  // Latest by logged date+time (times are zero-padded, so string compare is
+  // safe) — insertion order lies when the user backfills an older date.
+  const lastInj = useMemo(() => [...injections].sort(
+    (a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`),
+  )[0], [injections]);
   const greetingName = getGreetingName(t('dash.researcher'), user?.name, user?.email);
   const lastInjSiteIds = lastInj ? getInjectionSiteIds(lastInj) : [];
   const lastInjSites = lastInjSiteIds.length ? lastInjSiteIds.map(id => t('zone.' + id)).join(', ') : lastInj?.site ?? '';
@@ -278,6 +292,14 @@ export function DashboardScreen({ onNavigate }: Props) {
             <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
           </Pressable>
         </View>
+
+        {stats.total > 0 && (
+          <Pressable style={s.shareRow} onPress={() => setShareOpen(true)}>
+            <Ionicons name="share-outline" size={17} color={colors.primary} />
+            <Text style={s.shareRowText}>{t('dash.shareBtn')}</Text>
+            <Text style={s.unlockChev}>›</Text>
+          </Pressable>
+        )}
       </ScrollView>
 
       <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}>
@@ -288,6 +310,53 @@ export function DashboardScreen({ onNavigate }: Props) {
             onCancel={() => setRepeatOpen(false)}
           />
         )}
+      </Modal>
+
+      <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}>
+        <View style={s.shareBackdrop}>
+          <View ref={shareCardRef} collapsable={false} style={s.shareCard}>
+            <View style={s.shareHeader}>
+              <BrandMark />
+              <View>
+                <Text style={s.shareBrand}>MONARCH PRIME PIN</Text>
+                <Text style={s.shareTitle}>{t('share.title')}</Text>
+              </View>
+            </View>
+            <Text style={s.shareBig}>{stats.total}</Text>
+            <Text style={s.shareBigLabel}>{t('share.records')}</Text>
+            <View style={s.shareGrid}>
+              <ShareStat label={t('share.streak')} value={t('share.days', { n: stats.streak })} />
+              <ShareStat label={t('share.longest')} value={t('share.days', { n: stats.longestStreak })} />
+              <ShareStat label={t('share.month')} value={String(stats.monthCount)} />
+              <ShareStat label={t('share.zones')} value={String(stats.zonesUsed)} />
+            </View>
+            <Text style={s.shareFooter}>{t('share.footer')}</Text>
+            <Text style={s.shareCompliance}>{t('share.compliance')}</Text>
+          </View>
+          <View style={s.shareActions}>
+            <Pressable style={s.shareCloseBtn} onPress={() => setShareOpen(false)}>
+              <Text style={s.shareCloseText}>{t('share.close')}</Text>
+            </Pressable>
+            <Pressable
+              style={s.shareGoBtn}
+              onPress={async () => {
+                try {
+                  const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
+                  if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(uri, { mimeType: 'image/png' });
+                  } else {
+                    Alert.alert(t('share.failed'));
+                  }
+                } catch {
+                  // Capture/share is best-effort; the card stays on screen.
+                }
+              }}
+            >
+              <Ionicons name="share-outline" size={17} color={colors.actionText} />
+              <Text style={s.shareGoText}>{t('share.action')}</Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -371,6 +440,15 @@ function ScrubBar({ daysAgo, maxDays, onChange }: { daysAgo: number; maxDays: nu
   );
 }
 
+function ShareStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={s.shareStat}>
+      <Text style={s.shareStatValue}>{value}</Text>
+      <Text style={s.shareStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={s.legendItem}>
@@ -446,6 +524,52 @@ const s = StyleSheet.create({
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
   legend: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 },
   legendCaption: { textAlign: 'center', color: colors.textFaint, fontSize: 10, lineHeight: 14, marginTop: 8 },
+
+  shareRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: spacing.xl, marginBottom: spacing.lg,
+    paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)', borderRadius: radius.lg,
+  },
+  shareRowText: { color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
+  shareBackdrop: {
+    flex: 1, backgroundColor: 'rgba(2, 6, 14, 0.92)',
+    alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  shareCard: {
+    width: 320, backgroundColor: colors.bg,
+    borderWidth: 1, borderColor: colors.borderOrange,
+    borderRadius: 18, padding: 24, alignItems: 'center',
+  },
+  shareHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'flex-start', marginBottom: 18 },
+  shareBrand: { color: colors.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1.6 },
+  shareTitle: { color: colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
+  shareBig: { color: colors.white, fontSize: 56, fontWeight: '800', letterSpacing: -1.5 },
+  shareBigLabel: { color: colors.textMuted, fontSize: 13, marginTop: -4, marginBottom: 18 },
+  shareGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  shareStat: {
+    width: 130, paddingVertical: 12, alignItems: 'center',
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md,
+  },
+  shareStatValue: { color: colors.primary, fontSize: 18, fontWeight: '800' },
+  shareStatLabel: { color: colors.textMuted, fontSize: 10, marginTop: 3 },
+  shareFooter: { color: colors.text, fontSize: 11, fontWeight: '600', marginTop: 18 },
+  shareCompliance: { color: colors.textFaint, fontSize: 9, letterSpacing: 0.8, marginTop: 4 },
+  shareActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  shareCloseBtn: {
+    minHeight: 48, paddingHorizontal: 22, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  shareCloseText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  shareGoBtn: {
+    minHeight: 48, paddingHorizontal: 28, borderRadius: radius.md,
+    backgroundColor: colors.action, flexDirection: 'row', gap: 8,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  shareGoText: { color: colors.actionText, fontSize: 14, fontWeight: '700' },
   windowRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 10 },
   windowBtn: {
     minHeight: 30, paddingHorizontal: 13, borderRadius: 15,
