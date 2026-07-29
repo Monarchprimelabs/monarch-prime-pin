@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
-import { colors, spacing, radius, severity } from '../theme';
+import { colors, spacing, radius, severity, heatColors } from '../theme';
 import { useAuth } from '../lib/auth';
 import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
-import { getInjectionSiteIds, getSiteDensity } from '../lib/sites';
+import { getInjectionSiteIds } from '../lib/sites';
+import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS, HEAT_BAND_ORDER, HeatBand } from '../lib/heat';
 import { useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KEY_LAST_BACKUP_AT } from '../lib/backup';
+import { localDateISO, parseLocalDay } from '../lib/dates';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
@@ -37,7 +39,7 @@ function getGreetingName(fallback: string, name?: string, email?: string) {
 export function DashboardScreen({ onNavigate }: Props) {
   const { user } = useAuth();
   const { hasPro, monetizationEnabled } = useEntitlements();
-  const { t } = useI18n();
+  const { t, dateLocale } = useI18n();
   const [view, setView] = useState<'front' | 'back'>('front');
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
@@ -45,8 +47,12 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [repeatOpen, setRepeatOpen] = useState(false);
 
   const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
+  const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
+  const [heatWindow, setHeatWindow] = useState<number | undefined>(undefined); // days; undefined = All
+  const [scrubDaysAgo, setScrubDaysAgo] = useState(0);
 
   const refresh = () => {
+    getHeatHalfLife().then(setHalfLife);
     getInjections().then(setInjections);
     getSchedules().then(setSchedules);
     AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
@@ -65,12 +71,12 @@ export function DashboardScreen({ onNavigate }: Props) {
   const stats = useMemo(() => {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thisWeek = injections.filter(i => new Date(i.date) >= weekAgo).length;
+    const thisWeek = injections.filter(i => parseLocalDay(i.date) >= weekAgo).length;
 
     const logDays = new Set(injections.map(i => i.date).filter(Boolean));
     let streak = 0;
     const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    while (logDays.has(cursor.toISOString().slice(0, 10))) {
+    while (logDays.has(localDateISO(cursor))) {
       streak += 1;
       cursor.setDate(cursor.getDate() - 1);
     }
@@ -82,9 +88,9 @@ export function DashboardScreen({ onNavigate }: Props) {
     let previousDay: string | null = null;
     sortedDays.forEach(day => {
       if (previousDay) {
-        const next = new Date(`${previousDay}T12:00:00`);
+        const next = parseLocalDay(previousDay);
         next.setDate(next.getDate() + 1);
-        run = next.toISOString().slice(0, 10) === day ? run + 1 : 1;
+        run = localDateISO(next) === day ? run + 1 : 1;
       } else {
         run = 1;
       }
@@ -107,7 +113,19 @@ export function DashboardScreen({ onNavigate }: Props) {
   const greetingName = getGreetingName(t('dash.researcher'), user?.name, user?.email);
   const lastInjSiteIds = lastInj ? getInjectionSiteIds(lastInj) : [];
   const lastInjSites = lastInjSiteIds.length ? lastInjSiteIds.map(id => t('zone.' + id)).join(', ') : lastInj?.site ?? '';
-  const siteDensity = useMemo(() => getSiteDensity(injections), [injections]);
+  const heatEntries = useMemo(() => buildHeatEntries(injections), [injections]);
+  // Heat depends on the calendar day, not the render — dayKey keeps the memo
+  // stable within a day and rolls it over at local midnight.
+  const dayKey = new Date().toDateString();
+  const siteBands = useMemo(() => {
+    const nowMs = Date.now() - scrubDaysAgo * 86400000;
+    return bandsByZone(heatEntries, nowMs, halfLife, heatWindow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heatEntries, halfLife, heatWindow, scrubDaysAgo, dayKey]);
+  const scrubDate = useMemo(() => {
+    const d = new Date(Date.now() - scrubDaysAgo * 86400000);
+    return d.toLocaleDateString(dateLocale);
+  }, [scrubDaysAgo, dayKey, dateLocale]);
   const nextSchedule = useMemo(() => schedules
     .filter(item => !item.completedAt && new Date(`${item.date}T${item.time}:00`).getTime() >= Date.now())
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
@@ -203,14 +221,38 @@ export function DashboardScreen({ onNavigate }: Props) {
         <Card>
           <CardLabel icon="📍">{t('dash.siteHeatmap')}</CardLabel>
           <ViewPill view={view} setView={setView} />
-          <BodyDiagram view={view} mode="heatmap" densityByZone={siteDensity} />
+          <View style={s.windowRow}>
+            {([
+              { days: 7, label: t('dash.window7') },
+              { days: 30, label: t('dash.window30') },
+              { days: 90, label: t('dash.window90') },
+              { days: undefined, label: t('dash.windowAll') },
+            ] as { days?: number; label: string }[]).map(option => (
+              <Pressable
+                key={option.label}
+                onPress={() => setHeatWindow(option.days)}
+                style={[s.windowBtn, heatWindow === option.days && s.windowBtnActive]}
+              >
+                <Text style={[s.windowBtnText, heatWindow === option.days && s.windowBtnTextActive]}>
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <BodyDiagram view={view} mode="heatmap" bandsByZone={siteBands} />
           <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
           <View style={s.legend}>
-            <LegendDot color={colors.primary} label={t('dash.legendUnused')} />
-            <LegendDot color={colors.teal} label={t('dash.legendLight')} />
-            <LegendDot color={colors.accent} label={t('dash.legendModerate')} />
-            <LegendDot color={colors.red} label={t('dash.legendHeavy')} />
+            {HEAT_BAND_ORDER.map(band => (
+              <LegendDot key={band} color={heatColors[band].dot} label={t('dash.band.' + band)} />
+            ))}
           </View>
+          <Text style={s.legendCaption}>{t('dash.legendCaption')}</Text>
+          <ScrubBar daysAgo={scrubDaysAgo} maxDays={90} onChange={setScrubDaysAgo} />
+          <Text style={s.scrubLabel}>
+            {scrubDaysAgo === 0
+              ? t('dash.scrubToday')
+              : t('dash.scrubDaysAgo', { n: scrubDaysAgo, date: scrubDate })}
+          </Text>
         </Card>
 
         {lastInj && (
@@ -290,6 +332,45 @@ function StatCard({ icon, color, value, label }: {
   );
 }
 
+// Dependency-free history scrub: drag to move "now" back up to maxDays.
+// Left edge = maxDays ago, right edge = today. Values quantize to whole days
+// so heat memos only recompute when the day under the thumb changes.
+function ScrubBar({ daysAgo, maxDays, onChange }: { daysAgo: number; maxDays: number; onChange: (days: number) => void }) {
+  const widthRef = useRef(0);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const handleX = (x: number) => {
+    const width = widthRef.current;
+    if (width <= 0) return;
+    const fraction = Math.max(0, Math.min(1, x / width));
+    onChangeRef.current(Math.round((1 - fraction) * maxDays));
+  };
+
+  const responder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: evt => handleX(evt.nativeEvent.locationX),
+      onPanResponderMove: evt => handleX(evt.nativeEvent.locationX),
+    }),
+  ).current;
+
+  const fraction = 1 - daysAgo / maxDays;
+  return (
+    <View
+      style={s.scrubTrackWrap}
+      onLayout={event => { widthRef.current = event.nativeEvent.layout.width; }}
+      {...responder.panHandlers}
+    >
+      <View style={s.scrubTrack}>
+        <View style={[s.scrubFill, { width: `${fraction * 100}%` }]} />
+      </View>
+      <View style={[s.scrubThumb, { left: `${fraction * 100}%` }]} />
+    </View>
+  );
+}
+
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={s.legendItem}>
@@ -364,6 +445,28 @@ const s = StyleSheet.create({
 
   anteriorLabel: { textAlign: 'center', color: colors.textDim, fontSize: 11, fontWeight: '600', letterSpacing: 3, marginTop: 8 },
   legend: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 },
+  legendCaption: { textAlign: 'center', color: colors.textFaint, fontSize: 10, lineHeight: 14, marginTop: 8 },
+  windowRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 10 },
+  windowBtn: {
+    minHeight: 30, paddingHorizontal: 13, borderRadius: 15,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  windowBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  windowBtnText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  windowBtnTextActive: { color: colors.white },
+  scrubTrackWrap: { marginTop: 14, paddingVertical: 10, justifyContent: 'center' },
+  scrubTrack: {
+    height: 4, borderRadius: 2, backgroundColor: 'rgba(30, 136, 229, 0.15)',
+    overflow: 'hidden',
+  },
+  scrubFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },
+  scrubThumb: {
+    position: 'absolute', top: 3, width: 18, height: 18, marginLeft: -9,
+    borderRadius: 9, backgroundColor: colors.white,
+    borderWidth: 2, borderColor: colors.primary,
+  },
+  scrubLabel: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 2 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { color: colors.textMuted, fontSize: 11 },

@@ -37,11 +37,15 @@ export const severity = {
   sev: colors.red,
 };
 
-export const density = {
-  unused:   { ring: colors.primary, dot: colors.primary },
-  light:    { ring: colors.teal,    dot: colors.teal },
-  moderate: { ring: colors.accent,  dot: colors.accent },
-  heavy:    { ring: colors.red,     dot: colors.red },
+// Heatmap band colors — clear = rested (neutral outline), then a cool→hot
+// ramp. Band meaning is logging cadence, decided in src/lib/heatMath.js.
+export const heatColors = {
+  clear:  { ring: 'rgba(122, 143, 173, 0.55)', dot: 'rgba(122, 143, 173, 0.4)' },
+  blue:   { ring: colors.primary, dot: colors.primary },
+  green:  { ring: '#34D399', dot: '#34D399' },
+  yellow: { ring: '#FACC15', dot: '#FACC15' },
+  orange: { ring: colors.accent, dot: colors.accent },
+  red:    { ring: colors.red, dot: colors.red },
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 };

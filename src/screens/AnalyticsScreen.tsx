@@ -9,6 +9,9 @@ import { colors, spacing, radius } from '../theme';
 import { ALL_ZONES, Injection } from '../data/peptides';
 import { getInjections } from '../lib/storage';
 import { getSiteUsage } from '../lib/sites';
+import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS, HeatBand } from '../lib/heat';
+import { heatColors } from '../theme';
+import { localDateISO, parseLocalDay } from '../lib/dates';
 import { useI18n } from '../lib/i18n';
 
 export function AnalyticsScreen() {
@@ -21,7 +24,7 @@ export function AnalyticsScreen() {
     const buckets = [0, 0, 0, 0, 0, 0, 0, 0];
     const now = new Date();
     injections.forEach(i => {
-      const d = new Date(i.date);
+      const d = parseLocalDay(i.date);
       const days = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
       const week = Math.floor(days / 7);
       if (week >= 0 && week < 8) {
@@ -92,11 +95,20 @@ export function AnalyticsScreen() {
   }, [injections]);
   const maxSymptom = Math.max(...symptomRanks.map(rank => rank.count), 1);
 
-  // Site usage
+  // Site usage — counts are all-time; the tile tint reflects decayed recent
+  // heat so the grid agrees with the dashboard heatmap.
+  const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
+  useEffect(() => { getHeatHalfLife().then(setHalfLife); }, []);
   const siteUsage = useMemo(() => {
     const counts = getSiteUsage(injections);
-    return ALL_ZONES.map(zone => ({ id: zone.id, name: zone.short, count: counts[zone.id] || 0 }));
-  }, [injections]);
+    const bands = bandsByZone(buildHeatEntries(injections), Date.now(), halfLife);
+    return ALL_ZONES.map(zone => ({
+      id: zone.id,
+      name: zone.short,
+      count: counts[zone.id] || 0,
+      band: (bands[zone.id] || 'clear') as HeatBand,
+    }));
+  }, [injections, halfLife]);
 
   // Chronological weight series (oldest → newest), capped to the most
   // recent 30 entries so the chart stays readable.
@@ -124,7 +136,7 @@ export function AnalyticsScreen() {
       polyline: values.map((weight, index) => `${x(index)},${y(weight)}`).join(' '),
     };
   }, [weightSeries]);
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = localDateISO().slice(0, 7);
   const monthRecords = injections.filter(i => i.date.startsWith(currentMonth));
   const monthDays = new Set(monthRecords.map(i => i.date)).size;
   const monthSites = Object.values(getSiteUsage(monthRecords)).reduce((sum, count) => sum + count, 0);
@@ -194,7 +206,7 @@ export function AnalyticsScreen() {
             <tr><th>${esc(t('reports.pdfDate'))}</th><th>${esc(t('reports.pdfCompound'))}</th><th>${esc(t('reports.pdfDose'))}</th><th>${esc(t('reports.pdfSites'))}</th><th>${esc(t('reports.pdfSev'))}</th></tr>
             ${rows || `<tr><td colspan="5">${esc(t('reports.noSavedMonth'))}</td></tr>`}
           </table>
-          <p class="foot">${esc(t('reports.pdfFoot1', { date: new Date().toISOString().slice(0, 10) }))}</p>
+          <p class="foot">${esc(t('reports.pdfFoot1', { date: localDateISO() }))}</p>
           <p class="foot">${esc(t('reports.pdfFoot2'))}</p>
         </body></html>`;
       const { uri } = await Print.printToFileAsync({ html });
@@ -375,10 +387,16 @@ export function AnalyticsScreen() {
         <Card>
           <CardLabel icon="📍">{t('reports.siteUsage')}</CardLabel>
           <View style={s.siteGrid}>
-            {siteUsage.map(({ id, name, count }) => (
+            {siteUsage.map(({ id, name, count, band }) => (
               <View
                 key={id}
-                style={[s.siteCell, count >= 3 && s.siteCellActive]}
+                style={[
+                  s.siteCell,
+                  band !== 'clear' && {
+                    borderColor: heatColors[band].ring,
+                    backgroundColor: `${heatColors[band].dot}26`,
+                  },
+                ]}
               >
                 <Text style={s.siteCellName}>{t('zoneShort.' + id)}</Text>
                 <Text style={[s.siteCellCount, count > 0 && { color: colors.white }]}>{count}</Text>
@@ -462,7 +480,6 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.1)',
     borderRadius: 8, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center',
   },
-  siteCellActive: { backgroundColor: 'rgba(229, 57, 53, 0.15)', borderColor: 'rgba(229, 57, 53, 0.4)' },
   siteCellName: { color: colors.textMuted, fontSize: 10, marginBottom: 4, textAlign: 'center' },
   siteCellCount: { color: colors.textFaint, fontSize: 18, fontWeight: '700' },
 });

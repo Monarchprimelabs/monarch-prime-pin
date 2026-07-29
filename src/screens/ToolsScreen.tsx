@@ -23,6 +23,7 @@ import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications
 import { exportInjectionsCsv } from '../lib/exportData';
 import { hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
+import { localDateISO } from '../lib/dates';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -170,7 +171,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
   const { t, dateLocale } = useI18n();
   const [items, setItems] = useState<ScheduleEntry[]>([]);
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(localDateISO());
   const [time, setTime] = useState('09:00');
   const [notes, setNotes] = useState('');
   const [repeat, setRepeat] = useState<ScheduleRepeat>('once');

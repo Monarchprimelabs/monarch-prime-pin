@@ -18,6 +18,7 @@ import { UpgradeScreen } from './UpgradeScreen';
 import { notifySuccessfulSave } from '../lib/reviewPrompt';
 import { hapticSuccess, hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
+import { localDateISO } from '../lib/dates';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -76,7 +77,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const isEditing = !!initialInjection;
-  const logDate = initialInjection?.date ?? initialDate ?? new Date().toISOString().slice(0, 10);
+  const logDate = initialInjection?.date ?? initialDate ?? localDateISO();
   const canUsePro = hasPro || !!user?.isDeveloper;
   const freeTrialActive = monetizationEnabled && !canUsePro && !isEditing;
   const freeLogsRemaining = freeLogCount === null
