@@ -5,7 +5,7 @@ import { Disclaimer, Header, Card, CardLabel, ViewPill, BrandMark } from '../com
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { BodyDiagram } from '../components/BodyDiagram';
-import { colors, spacing, radius, severity, heatColors } from '../theme';
+import { colors, spacing, radius, severity, heatColors, withAlpha } from '../theme';
 import { useAuth } from '../lib/auth';
 import { getInjections, getSchedules, ScheduleEntry } from '../lib/storage';
 import { Injection } from '../data/peptides';
@@ -576,12 +576,12 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
     alignItems: 'center', justifyContent: 'center',
   },
-  windowBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  windowBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
   windowBtnText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   windowBtnTextActive: { color: colors.white },
   scrubTrackWrap: { marginTop: 14, paddingVertical: 10, justifyContent: 'center' },
   scrubTrack: {
-    height: 4, borderRadius: 2, backgroundColor: 'rgba(30, 136, 229, 0.15)',
+    height: 4, borderRadius: 2, backgroundColor: withAlpha(colors.primary, 0.15),
     overflow: 'hidden',
   },
   scrubFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },

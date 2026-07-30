@@ -8,7 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, withAlpha } from '../theme';
 import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
   getInventory, getRecordTemplates, getSchedules,
@@ -819,8 +819,8 @@ const s = StyleSheet.create({
   },
   toolRowPressed: {
     transform: [{ scale: 0.98 }],
-    backgroundColor: 'rgba(30, 136, 229, 0.10)',
-    borderColor: 'rgba(30, 136, 229, 0.35)',
+    backgroundColor: withAlpha(colors.primary, 0.10),
+    borderColor: withAlpha(colors.primary, 0.35),
   },
   toolChip: {
     width: 40, height: 40, borderRadius: 12, borderWidth: 1,
@@ -859,7 +859,7 @@ const s = StyleSheet.create({
   empty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 18 },
   segment: { flexDirection: 'row', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 3, marginBottom: 10 },
   segmentBtn: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
-  segmentBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)' },
+  segmentBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   segmentText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   segmentTextActive: { color: colors.white },
   repeatHint: { color: colors.textMuted, fontSize: 11, marginTop: -4, marginBottom: 10 },
@@ -873,14 +873,14 @@ const s = StyleSheet.create({
   pickerDoneText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   unitRow: { flexDirection: 'row', gap: 7, marginBottom: 10 },
   unitBtn: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, backgroundColor: colors.bgInput },
-  unitBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)', borderColor: colors.primary },
+  unitBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
   unitBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   unitBtnTextActive: { color: colors.white },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 7 },
   inlineInputRow: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
   compactToggle: { flexDirection: 'row', backgroundColor: colors.bgPill, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 3 },
   compactBtn: { minWidth: 48, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
-  compactBtnActive: { backgroundColor: 'rgba(30,136,229,0.25)' },
+  compactBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   compactText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   compactTextActive: { color: colors.white },
   resultPanel: { minHeight: 78, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center' },
@@ -903,7 +903,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.sm, overflow: 'hidden',
   },
-  gaugeFillH: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: 'rgba(30,136,229,0.35)' },
+  gaugeFillH: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: withAlpha(colors.primary, 0.35) },
   gaugeFillOver: { backgroundColor: 'rgba(255,140,0,0.30)' },
   gaugeMarkerH: { position: 'absolute', top: 0, bottom: 0, width: 2, marginLeft: -1, backgroundColor: colors.primary },
   gaugeMarkerOver: { backgroundColor: colors.accent },

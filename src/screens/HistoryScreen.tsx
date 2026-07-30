@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
-import { colors, spacing, radius, severity as sevColors } from '../theme';
+import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
 import { Injection, formatClockTime } from '../data/peptides';
 import { getInjectionSiteIds } from '../lib/sites';
 import { useI18n } from '../lib/i18n';
@@ -483,19 +483,19 @@ const s = StyleSheet.create({
     borderRadius: radius.md, padding: 3,
   },
   subTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 9 },
-  subTabActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)' },
+  subTabActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   subTabText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   subTabTextActive: { color: colors.white },
 
   search: {
     backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12,
     color: colors.text, fontSize: 14, marginBottom: 12,
   },
   filterRow: { flexDirection: 'row', gap: 6, marginBottom: 14, flexWrap: 'wrap' },
   pill: {
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)', borderRadius: 20,
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2), borderRadius: 20,
     paddingHorizontal: 14, paddingVertical: 6,
   },
   pillActive: { borderColor: colors.primary },
@@ -521,7 +521,7 @@ const s = StyleSheet.create({
   calMonth: { color: colors.white, fontSize: 16, fontWeight: '700' },
   calNav: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: 'rgba(30, 136, 229, 0.15)',
+    backgroundColor: withAlpha(colors.primary, 0.15),
     alignItems: 'center', justifyContent: 'center',
   },
   calNavText: { color: colors.primary, fontSize: 18, fontWeight: '700' },
@@ -534,14 +534,14 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderRadius: 8,
   },
-  calCellSel: { backgroundColor: 'rgba(30, 136, 229, 0.4)' },
+  calCellSel: { backgroundColor: withAlpha(colors.primary, 0.4) },
   calCellText: { color: colors.white, fontSize: 14 },
   calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.teal, marginTop: 2 },
   calSelDate: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 8 },
   logForDateBtn: {
     marginTop: 14,
-    backgroundColor: 'rgba(30, 136, 229, 0.15)',
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.4)',
+    backgroundColor: withAlpha(colors.primary, 0.15),
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.4),
     borderRadius: radius.md, paddingVertical: 14, alignItems: 'center',
   },
   logForDateText: { color: colors.primary, fontSize: 14, fontWeight: '700' },

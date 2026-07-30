@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
-import { colors, spacing, radius, severity as sevColors } from '../theme';
+import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS, TIME_PERIODS, TimePeriod, formatClockTime } from '../data/peptides';
 import { getInjections, getInventory, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
 import { getInjectionSiteIds } from '../lib/sites';
@@ -866,33 +866,33 @@ const s = StyleSheet.create({
   doseRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
   doseInput: {
     flex: 1, backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 14,
     color: colors.text, fontSize: 22, fontWeight: '600',
   },
   unitToggle: {
     flexDirection: 'row', backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, padding: 3,
   },
   unitBtn: { paddingHorizontal: 14, justifyContent: 'center', borderRadius: 9 },
-  unitBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)' },
+  unitBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   unitBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   unitBtnTextActive: { color: colors.white },
 
   timeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   timeChip: {
     backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
   },
-  timeChipActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  timeChipActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
   timeChipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   timeChipTextActive: { color: colors.white },
   customTimeRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8, marginTop: 12 },
   customTimeInput: {
     width: 62, backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 12,
     color: colors.text, fontSize: 18, fontWeight: '600', textAlign: 'center',
   },
@@ -911,7 +911,7 @@ const s = StyleSheet.create({
   sevRow: { flexDirection: 'row', gap: 8 },
   sevBtn: {
     flex: 1, backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: 10, paddingVertical: 12, alignItems: 'center',
   },
   sevBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
@@ -919,7 +919,7 @@ const s = StyleSheet.create({
   symptomWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   symptomChip: {
     backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8,
   },
   symptomChipActive: {
@@ -932,7 +932,7 @@ const s = StyleSheet.create({
   photoArea: {
     alignItems: 'center', justifyContent: 'center', minHeight: 120,
     paddingVertical: 32, paddingHorizontal: 20,
-    borderWidth: 2, borderColor: 'rgba(30, 136, 229, 0.3)', borderStyle: 'dashed',
+    borderWidth: 2, borderColor: withAlpha(colors.primary, 0.3), borderStyle: 'dashed',
     borderRadius: radius.md, backgroundColor: colors.bgInput,
   },
   photoText: { color: colors.textFaint, fontSize: 13, marginTop: 8 },
@@ -942,13 +942,13 @@ const s = StyleSheet.create({
 
   textInput: {
     backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 14,
     color: colors.text, fontSize: 16,
   },
   notes: {
     backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12,
     color: colors.text, fontSize: 14, minHeight: 70, textAlignVertical: 'top',
   },
@@ -974,7 +974,7 @@ const s = StyleSheet.create({
   sheetDone: { color: colors.primary, fontSize: 16, fontWeight: '600' },
   sheetSearch: {
     margin: 16, backgroundColor: 'rgba(20, 30, 50, 0.5)',
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
     color: colors.text, fontSize: 15,
   },

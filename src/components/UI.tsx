@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
-import { colors, spacing, radius, fonts } from '../theme';
+import { colors, spacing, radius, fonts, withAlpha } from '../theme';
 import { useI18n } from '../lib/i18n';
 
 const SYMBOL: number = require('../../assets/logo-symbol.png');
@@ -175,7 +175,7 @@ const s = StyleSheet.create({
   avatar: {
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: colors.bgCard,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.15)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.15),
     alignItems: 'center', justifyContent: 'center',
     marginRight: 14, overflow: 'hidden',
   },
@@ -208,11 +208,11 @@ const s = StyleSheet.create({
   viewPill: {
     flexDirection: 'row',
     backgroundColor: colors.bgPill,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: 10, padding: 3,
   },
   viewBtn: { paddingHorizontal: 22, paddingVertical: 8, borderRadius: 8 },
-  viewBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.2)' },
+  viewBtnActive: { backgroundColor: withAlpha(colors.primary, 0.2) },
   viewBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   viewBtnTextActive: { color: colors.white },
 

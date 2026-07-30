@@ -33,6 +33,8 @@ const en: Record<string, string> = {
   'settings.heatmapLabel': 'SITE HEATMAP',
   'settings.heatmapHelp': 'How quickly heatmap colors fade as your logged records age. Each record counts for half as much after this many days.',
   'settings.heatmapDays': '{n} days',
+  'settings.themeLabel': 'APPEARANCE',
+  'settings.themeHelp': 'Choose a color accent for the app. The change applies the next time you open the app.',
   'settings.languageLabel': 'LANGUAGE',
   'settings.languageHelp': 'Choose the language for the app interface.',
 
@@ -639,6 +641,8 @@ const es: Record<string, string> = {
   'settings.heatmapLabel': 'MAPA DE SITIOS',
   'settings.heatmapHelp': 'Qué tan rápido se desvanecen los colores del mapa a medida que tus registros envejecen. Cada registro cuenta la mitad después de este número de días.',
   'settings.heatmapDays': '{n} días',
+  'settings.themeLabel': 'APARIENCIA',
+  'settings.themeHelp': 'Elige un acento de color para la app. El cambio se aplica la próxima vez que abras la app.',
   'settings.languageLabel': 'IDIOMA',
   'settings.languageHelp': 'Elige el idioma de la interfaz de la app.',
 

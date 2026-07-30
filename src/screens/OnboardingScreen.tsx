@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, withAlpha } from '../theme';
 import { setOnboardingDone } from '../lib/storage';
 import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
 import { useI18n } from '../lib/i18n';
@@ -289,7 +289,7 @@ const s = StyleSheet.create({
   // Progress bar
   progressWrap: { paddingHorizontal: spacing.xl, paddingTop: 16, paddingBottom: 4 },
   progressTrack: {
-    height: 4, backgroundColor: 'rgba(30,136,229,0.15)',
+    height: 4, backgroundColor: withAlpha(colors.primary, 0.15),
     borderRadius: 2, overflow: 'hidden',
   },
   progressFill: {
@@ -341,7 +341,7 @@ const s = StyleSheet.create({
   },
   optCardActive: {
     borderColor: colors.primary,
-    backgroundColor: 'rgba(30,136,229,0.10)',
+    backgroundColor: withAlpha(colors.primary, 0.10),
   },
   optIcon: { fontSize: 22, width: 28, textAlign: 'center' },
   optLabel: { fontSize: 15, fontWeight: '600', color: colors.textMuted, flex: 1 },
