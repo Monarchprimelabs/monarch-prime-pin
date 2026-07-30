@@ -200,7 +200,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
     });
     if (reminderEnabled) {
       try {
-        const notificationId = await scheduleLocalReminder(saved.id, saved.title, saved.date, saved.time, repeat);
+        const notificationId = await scheduleLocalReminder(saved.id, saved.title, saved.date, saved.time, repeat, t('tools.reminderNotifTitle'));
         await updateSchedule({ ...saved, reminderEnabled: true, notificationId });
       } catch (error: any) {
         Alert.alert(t('tools.savedNoReminderTitle'), error?.message || t('tools.savedNoReminderBody'));
@@ -210,13 +210,30 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
   };
 
   const toggleComplete = async (item: ScheduleEntry) => {
-    if (!item.completedAt) await cancelLocalReminder(item.notificationId);
-    await updateSchedule({
-      ...item,
-      completedAt: item.completedAt ? undefined : new Date().toISOString(),
-      notificationId: item.completedAt ? item.notificationId : undefined,
-      reminderEnabled: item.completedAt ? item.reminderEnabled : false,
-    });
+    if (!item.completedAt) {
+      await cancelLocalReminder(item.notificationId);
+      await updateSchedule({
+        ...item,
+        completedAt: new Date().toISOString(),
+        notificationId: undefined,
+        reminderEnabled: false,
+      });
+    } else {
+      // Re-opening an entry: re-arm its reminder. Repeats always re-arm;
+      // one-time entries whose date already passed can't, so the reminder
+      // silently stays off for those.
+      let notificationId: string | undefined;
+      let reminderEnabled = false;
+      try {
+        notificationId = await scheduleLocalReminder(
+          item.id, item.title, item.date, item.time, item.repeat ?? 'once', t('tools.reminderNotifTitle'),
+        );
+        reminderEnabled = true;
+      } catch {
+        // Leave the reminder off.
+      }
+      await updateSchedule({ ...item, completedAt: undefined, notificationId, reminderEnabled });
+    }
     refresh();
   };
 

@@ -4,6 +4,7 @@ export async function scheduleLocalReminder(
   _date: string,
   _time: string,
   _repeat: 'once' | 'daily' | 'weekly' = 'once',
+  _notificationTitle?: string,
 ): Promise<string> {
   throw new Error('Local reminders are available in the installed app.');
 }
