@@ -803,6 +803,9 @@ function PeptidePickerSheet({
         />
         <FlatList
           data={[
+            // Whatever is typed is always usable as a custom compound with
+            // one tap — covers anything not in the built-in list.
+            ...(q.trim() ? [{ __quick: q.trim() } as any] : []),
             ...filt(PEPTIDES.singles),
             { __section: 'BLENDS' } as any,
             ...filt(PEPTIDES.blends),
@@ -814,6 +817,19 @@ function PeptidePickerSheet({
           keyboardDismissMode="on-drag"
           contentContainerStyle={s.sheetListContent}
           renderItem={({ item }) => {
+            if (item.__quick) {
+              return (
+                <Pressable
+                  style={[s.sheetRow, s.sheetQuickRow]}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    onSelect({ id: 'custom', name: item.__quick, defaultUnit: 'mcg' });
+                  }}
+                >
+                  <Text style={s.sheetQuickText}>{t('picker.useTyped', { name: item.__quick })}</Text>
+                </Pressable>
+              );
+            }
             if (item.__section) {
               return <Text style={s.sheetSection}>{item.__section === 'BLENDS' ? t('picker.blends') : t('picker.customSection')}</Text>;
             }
@@ -979,6 +995,8 @@ const s = StyleSheet.create({
     color: colors.text, fontSize: 15,
   },
   sheetListContent: { paddingBottom: 28 },
+  sheetQuickRow: { backgroundColor: withAlpha(colors.primary, 0.12), borderRadius: radius.md, marginBottom: 4 },
+  sheetQuickText: { color: colors.primary, fontSize: 15, fontWeight: '700', paddingVertical: 2 },
   sheetRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingVertical: 16,
