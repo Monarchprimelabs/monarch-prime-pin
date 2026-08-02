@@ -106,10 +106,14 @@ export const ZONES: { front: Zone[]; back: Zone[] } = {
     { id: 'b_sh_r',  label: 'Right Rear Shoulder', short: 'R Rear Shoulder',  cx: 68, cy: 28, r: 2.8 },
     { id: 'b_arm_l', label: 'Left Tricep',         short: 'L Tricep',      cx: 24, cy: 38, r: 2.4 },
     { id: 'b_arm_r', label: 'Right Tricep',        short: 'R Tricep',      cx: 76, cy: 38, r: 2.4 },
+    { id: 'hip_l',   label: 'Left Hip',            short: 'L Hip',         cx: 36, cy: 47, r: 2.4 },
+    { id: 'hip_r',   label: 'Right Hip',           short: 'R Hip',         cx: 64, cy: 47, r: 2.4 },
     { id: 'glute_l', label: 'Left Glute',          short: 'L Glute',       cx: 43, cy: 53, r: 3 },
     { id: 'glute_r', label: 'Right Glute',         short: 'R Glute',       cx: 57, cy: 53, r: 3 },
     { id: 'b_th_l',  label: 'Left Hamstring',      short: 'L Hamstring',   cx: 42, cy: 70, r: 2.6 },
     { id: 'b_th_r',  label: 'Right Hamstring',     short: 'R Hamstring',   cx: 58, cy: 70, r: 2.6 },
+    { id: 'calf_l',  label: 'Left Calf',           short: 'L Calf',        cx: 41, cy: 94, r: 2.4 },
+    { id: 'calf_r',  label: 'Right Calf',          short: 'R Calf',        cx: 59, cy: 94, r: 2.4 },
   ],
 };
 

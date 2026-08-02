@@ -5,10 +5,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, withAlpha } from '../theme';
 import { setOnboardingDone } from '../lib/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
-import { useI18n } from '../lib/i18n';
 
 type MultiItem = { id: string; labelKey: string; icon: string };
 type SingleItem = { id: string; labelKey: string; icon: string; subKey?: string };
@@ -59,6 +60,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
     if (step < TOTAL_STEPS - 1) {
       setStep(s => s + 1);
     } else {
+      // Persisted for future personalization; display never depends on it.
+      AsyncStorage.setItem(
+        '@mpp/onboarding_prefs',
+        JSON.stringify({ goal: goalSelected, track: trackSelected }),
+      ).catch(() => undefined);
       await setOnboardingDone();
       onDone();
     }
@@ -136,9 +142,27 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
 // ── Welcome (step 0) ─────────────────────────────────────────
 function WelcomeStep({ onStart }: { onStart: () => void }) {
-  const { t } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   return (
     <View style={s.welcomeRoot}>
+      <View style={s.langPickRow}>
+        {([
+          { id: 'en' as Language, label: 'English' },
+          { id: 'es' as Language, label: 'Español' },
+        ]).map(option => (
+          <Pressable
+            key={option.id}
+            onPress={() => setLanguage(option.id)}
+            style={[s.langPickBtn, language === option.id && s.langPickBtnActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: language === option.id }}
+          >
+            <Text style={[s.langPickText, language === option.id && s.langPickTextActive]}>
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
       <View style={s.welcomeLogoWrap}>
         <BrandMark large />
       </View>
@@ -263,7 +287,16 @@ const s = StyleSheet.create({
 
   // Welcome
   welcomeRoot: { flex: 1, paddingHorizontal: spacing.xl },
-  welcomeLogoWrap: { alignItems: 'center', paddingTop: 48, paddingBottom: 32 },
+  welcomeLogoWrap: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
+  langPickRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 14 },
+  langPickBtn: {
+    minHeight: 34, paddingHorizontal: 16, borderRadius: 17,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  langPickBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
+  langPickText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  langPickTextActive: { color: colors.white },
   welcomeBody: { flex: 1 },
   welcomeEyebrow: {
     fontSize: 11, fontWeight: '700', letterSpacing: 2.5,
@@ -289,7 +322,7 @@ const s = StyleSheet.create({
   // Progress bar
   progressWrap: { paddingHorizontal: spacing.xl, paddingTop: 16, paddingBottom: 4 },
   progressTrack: {
-    height: 4, backgroundColor: 'rgba(30,136,229,0.15)',
+    height: 4, backgroundColor: withAlpha(colors.primary, 0.15),
     borderRadius: 2, overflow: 'hidden',
   },
   progressFill: {
@@ -341,7 +374,7 @@ const s = StyleSheet.create({
   },
   optCardActive: {
     borderColor: colors.primary,
-    backgroundColor: 'rgba(30,136,229,0.10)',
+    backgroundColor: withAlpha(colors.primary, 0.10),
   },
   optIcon: { fontSize: 22, width: 28, textAlign: 'center' },
   optLabel: { fontSize: 15, fontWeight: '600', color: colors.textMuted, flex: 1 },

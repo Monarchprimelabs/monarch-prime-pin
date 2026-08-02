@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
-import { colors, spacing, radius } from '../theme';
+import { colors, spacing, radius, withAlpha } from '../theme';
 import { useAuth } from '../lib/auth';
 import { clearLocalData } from '../lib/storage';
 import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
@@ -12,6 +12,7 @@ import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { hapticSuccess } from '../lib/haptics';
 import { KEY_APP_LOCK } from '../components/AppLockGate';
 import { getHeatHalfLife, setHeatHalfLife, HALF_LIFE_OPTIONS, DEFAULT_HALF_LIFE_DAYS } from '../lib/heat';
+import { COLORWAYS, ColorwayId, getColorway, setColorwaySetting } from '../theme';
 import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
@@ -73,10 +74,17 @@ function RemindersTab() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [appLockEnabled, setAppLockEnabled] = useState(false);
   const [heatHalfLife, setHeatHalfLifeState] = useState(DEFAULT_HALF_LIFE_DAYS);
+  const [colorway, setColorwayState] = useState<ColorwayId>('monarch');
 
   useEffect(() => {
     getHeatHalfLife().then(setHeatHalfLifeState).catch(() => undefined);
+    getColorway().then(setColorwayState).catch(() => undefined);
   }, []);
+
+  const chooseColorway = (id: ColorwayId) => {
+    setColorwayState(id);
+    setColorwaySetting(id).catch(() => undefined);
+  };
 
   const chooseHalfLife = (days: number) => {
     setHeatHalfLifeState(days);
@@ -230,6 +238,29 @@ function RemindersTab() {
             >
               <Text style={[s.langBtnText, language === option.id && s.langBtnTextActive]}>
                 {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card>
+        <CardLabel icon="🎨">{t('settings.themeLabel')}</CardLabel>
+        <Text style={s.profileHelp}>
+          {t('settings.themeHelp')}
+        </Text>
+        <View style={s.langRow}>
+          {(Object.keys(COLORWAYS) as ColorwayId[]).map(id => (
+            <Pressable
+              key={id}
+              onPress={() => chooseColorway(id)}
+              style={[s.langBtn, s.swatchBtn, colorway === id && s.langBtnActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: colorway === id }}
+            >
+              <View style={[s.swatchDot, { backgroundColor: COLORWAYS[id].primary }]} />
+              <Text style={[s.langBtnText, colorway === id && s.langBtnTextActive]}>
+                {COLORWAYS[id].label}
               </Text>
             </Pressable>
           ))}
@@ -455,21 +486,23 @@ const s = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 9,
   },
-  subTabActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)' },
+  subTabActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   subTabText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   subTabTextActive: { color: colors.white },
 
   langRow: { flexDirection: 'row', gap: 8 },
+  swatchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  swatchDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   langBtn: {
     flex: 1,
     backgroundColor: colors.bgInput,
     borderWidth: 1,
-    borderColor: 'rgba(30, 136, 229, 0.2)',
+    borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md,
     paddingVertical: 12,
     alignItems: 'center',
   },
-  langBtnActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)', borderColor: colors.primary },
+  langBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
   langBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   langBtnTextActive: { color: colors.white },
 

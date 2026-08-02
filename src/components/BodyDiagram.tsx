@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { ZONES } from '../data/peptides';
-import { heatColors } from '../theme';
+import { heatColors, colors, withAlpha } from '../theme';
 import type { HeatBand } from '../lib/heat';
 import { MannequinFront, MannequinBack } from './Mannequin';
 
@@ -47,14 +47,14 @@ export function BodyDiagram({ view, mode, selected = [], onZoneTap, bandsByZone 
                   cy={z.cy}
                   r={z.r}
                   fill={isSelected ? 'rgba(255, 140, 0, 0.25)' : 'rgba(10, 25, 50, 0.6)'}
-                  stroke={isSelected ? '#FF8C00' : '#1E88E5'}
+                  stroke={isSelected ? '#FF8C00' : colors.primary}
                   strokeWidth={isSelected ? '0.7' : '0.5'}
                 />
                 <Circle
                   cx={z.cx}
                   cy={z.cy}
                   r={z.r * 0.35}
-                  fill={isSelected ? '#FF8C00' : '#1E88E5'}
+                  fill={isSelected ? '#FF8C00' : colors.primary}
                 />
               </G>
             );

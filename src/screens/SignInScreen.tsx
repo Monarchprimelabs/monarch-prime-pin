@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, BrandMark } from '../components/UI';
-import { colors, radius, DEV_PASSCODE } from '../theme';
+import { colors, radius, DEV_PASSCODE, withAlpha } from '../theme';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
     borderRadius: radius.md, padding: 3, marginBottom: 18,
   },
   modeTab: { flex: 1, paddingVertical: 12, borderRadius: 9, alignItems: 'center' },
-  modeTabActive: { backgroundColor: 'rgba(30, 136, 229, 0.25)' },
+  modeTabActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   modeTabText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   modeTabTextActive: { color: colors.white },
   input: {

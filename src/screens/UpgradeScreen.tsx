@@ -6,7 +6,7 @@ import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from 
 import { getInjections } from '../lib/storage';
 import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
 import { hapticSuccess } from '../lib/haptics';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, withAlpha } from '../theme';
 import { useI18n } from '../lib/i18n';
 
 const PRO_FEATURE_KEYS = [
@@ -194,7 +194,7 @@ const s = StyleSheet.create({
   closeRow: { paddingHorizontal: spacing.xl, marginTop: -10, marginBottom: spacing.md },
   closeBtn: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   closeText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
-  statusCard: { borderColor: colors.primary, backgroundColor: 'rgba(30,136,229,0.09)' },
+  statusCard: { borderColor: colors.primary, backgroundColor: withAlpha(colors.primary, 0.09) },
   statusEyebrow: { color: colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.8, marginBottom: 8 },
   statusTitle: { color: colors.white, fontSize: 19, fontWeight: '700', marginBottom: 8 },
   statusBody: { color: colors.text, fontSize: 13, lineHeight: 20 },

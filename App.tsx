@@ -1,16 +1,21 @@
 import 'react-native-gesture-handler';
 import 'react-native-url-polyfill/auto';
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { Image, Platform } from 'react-native';
+import { Image, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider } from './src/lib/auth';
-import { EntitlementProvider } from './src/lib/entitlements';
-import { LanguageProvider } from './src/lib/i18n';
-import { AppLockGate } from './src/components/AppLockGate';
-import { RootNavigator } from './src/navigation/RootNavigator';
+import { loadColorway } from './src/theme';
 
+// The saved colorway must be applied before any screen module is evaluated,
+// because StyleSheets capture theme values at import time. The app tree is
+// therefore require()d only after loadColorway() resolves; until then we
+// show a bare background matching the splash color.
 export default function App() {
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    loadColorway().finally(() => setReady(true));
+  }, []);
+
   React.useEffect(() => {
     if (Platform.OS === 'web') return;
 
@@ -21,18 +26,14 @@ export default function App() {
     Promise.all(sources.map(source => Image.prefetch(source))).catch(() => undefined);
   }, []);
 
+  if (!ready) {
+    return <View style={{ flex: 1, backgroundColor: '#050810' }} />;
+  }
+
+  const { AppRoot } = require('./src/AppRoot');
   return (
     <SafeAreaProvider>
-      <LanguageProvider>
-        <EntitlementProvider>
-          <AuthProvider>
-            <StatusBar style="light" />
-            <AppLockGate>
-              <RootNavigator />
-            </AppLockGate>
-          </AuthProvider>
-        </EntitlementProvider>
-      </LanguageProvider>
+      <AppRoot />
     </SafeAreaProvider>
   );
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { colors } from '../theme';
+import { colors, withAlpha } from '../theme';
 
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { LogInjectionScreen } from '../screens/LogInjectionScreen';
@@ -115,7 +115,7 @@ const s = StyleSheet.create({
   tabBarSafe: {
     backgroundColor: colors.bgSheet,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(30, 136, 229, 0.2)',
+    borderTopColor: withAlpha(colors.primary, 0.2),
   },
   tabBar: {
     flexDirection: 'row',
@@ -138,7 +138,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
   },
   tabIconWrapActive: {
-    backgroundColor: 'rgba(30, 136, 229, 0.16)',
+    backgroundColor: withAlpha(colors.primary, 0.16),
   },
   tabLabel: {
     fontSize: 10,

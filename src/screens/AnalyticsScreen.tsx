@@ -5,7 +5,7 @@ import Svg, { Line, Circle as SvgCircle, Polyline, Text as SvgText } from 'react
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
-import { colors, spacing, radius } from '../theme';
+import { colors, spacing, radius, withAlpha } from '../theme';
 import { ALL_ZONES, Injection } from '../data/peptides';
 import { getInjections } from '../lib/storage';
 import { getSiteUsage } from '../lib/sites';
@@ -470,14 +470,14 @@ const s = StyleSheet.create({
 
   rankRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   rankName: { width: 130, color: colors.white, fontSize: 13 },
-  rankBarWrap: { flex: 1, height: 8, backgroundColor: 'rgba(30, 136, 229, 0.1)', borderRadius: 4, overflow: 'hidden' },
+  rankBarWrap: { flex: 1, height: 8, backgroundColor: withAlpha(colors.primary, 0.1), borderRadius: 4, overflow: 'hidden' },
   rankBar: { height: '100%', backgroundColor: colors.primary },
   rankCount: { color: colors.textMuted, fontSize: 14, fontWeight: '600', minWidth: 16, textAlign: 'right' },
 
   siteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   siteCell: {
     width: '23.5%', backgroundColor: colors.bgInput,
-    borderWidth: 1, borderColor: 'rgba(30, 136, 229, 0.1)',
+    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.1),
     borderRadius: 8, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center',
   },
   siteCellName: { color: colors.textMuted, fontSize: 10, marginBottom: 4, textAlign: 'center' },
