@@ -111,7 +111,7 @@ const en: Record<string, string> = {
   'legal.li4': '• The developers of this application bear no liability for misuse',
   'legal.p5': 'Misuse of research peptides may be illegal in your jurisdiction and can pose serious health risks.',
   'legal.p6': 'If you are experiencing a medical emergency, contact emergency services immediately.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.4 — Research Use Only',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.5 — Research Use Only',
 
   // OK button
   'common.ok': 'OK',
@@ -729,7 +729,7 @@ const es: Record<string, string> = {
   'legal.li4': '• Los desarrolladores de esta aplicación no asumen responsabilidad por el mal uso',
   'legal.p5': 'El mal uso de péptidos de investigación puede ser ilegal en tu jurisdicción y puede representar riesgos graves para la salud.',
   'legal.p6': 'Si tienes una emergencia médica, contacta a los servicios de emergencia de inmediato.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.4 — Solo para uso en investigación',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.5 — Solo para uso en investigación',
 
   // OK button
   'common.ok': 'OK',
