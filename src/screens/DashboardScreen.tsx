@@ -17,6 +17,7 @@ import { LogInjectionScreen } from './LogInjectionScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KEY_LAST_BACKUP_AT } from '../lib/backup';
 import { localDateISO, parseLocalDay } from '../lib/dates';
+import { updateWidgetSnapshot } from '../lib/widget';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
@@ -57,7 +58,10 @@ export function DashboardScreen({ onNavigate }: Props) {
 
   const refresh = () => {
     getHeatHalfLife().then(setHalfLife);
-    getInjections().then(setInjections);
+    getInjections().then(records => {
+      setInjections(records);
+      updateWidgetSnapshot(records, t);
+    });
     getSchedules().then(setSchedules);
     AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
   };

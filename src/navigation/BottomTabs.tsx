@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors, withAlpha } from '../theme';
@@ -33,7 +34,11 @@ export function BottomTabs() {
         {active === 'settings' && <ToolsScreen />}
       </View>
 
-      <SafeAreaView edges={['bottom']} style={s.tabBarSafe}>
+      <View style={s.tabBarWrap}>
+        {Platform.OS === 'ios' && (
+          <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFill} />
+        )}
+        <SafeAreaView edges={['bottom']} style={s.tabBarSafe}>
         <View style={s.tabBar}>
           {([
             { id: 'home' as const, labelKey: 'tab.home' },
@@ -56,7 +61,8 @@ export function BottomTabs() {
             </Pressable>
           ))}
         </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -112,10 +118,20 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
-  tabBarSafe: {
-    backgroundColor: colors.bgSheet,
+  // Floating bar: content scrolls underneath, blur shows through on iOS.
+  // Android gets a solid sheet (no cheap live blur there).
+  tabBarWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
     borderTopWidth: 1,
     borderTopColor: withAlpha(colors.primary, 0.2),
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(5, 8, 16, 0.62)' : colors.bgSheet,
+  },
+  tabBarSafe: {
+    backgroundColor: 'transparent',
   },
   tabBar: {
     flexDirection: 'row',
