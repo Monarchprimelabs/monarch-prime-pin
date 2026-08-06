@@ -122,6 +122,17 @@ function RemindersTab() {
     if (next) hapticSuccess();
   };
 
+  const confirmBackupExport = () => {
+    Alert.alert(
+      t('settings.backupWarnTitle'),
+      t('settings.backupWarnBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('settings.backupWarnGo'), onPress: runBackupExport },
+      ],
+    );
+  };
+
   const runBackupExport = async () => {
     setBackupBusy(true);
     try {
@@ -373,7 +384,7 @@ function RemindersTab() {
         <Pressable
           style={[s.saveNameBtn, backupBusy && { opacity: 0.5 }]}
           disabled={backupBusy}
-          onPress={runBackupExport}
+          onPress={confirmBackupExport}
         >
           <Text style={s.saveNameText}>{t('settings.backupExport')}</Text>
         </Pressable>
