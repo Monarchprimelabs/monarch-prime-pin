@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, UIManager, View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -115,14 +115,14 @@ export function ToolsScreen() {
           </Pressable>
         ))}
       </ScrollView>
-      <Modal visible={active !== null} animationType="slide" onRequestClose={() => setActive(null)}>
+      <Modal visible={active !== null} animationType="slide" onRequestClose={() => setActive(null)}><SafeAreaProvider>
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
         {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
         {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
         {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
         {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
         {active === 'upgrade' && <UpgradeScreen onClose={() => setActive(null)} />}
-      </Modal>
+      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }

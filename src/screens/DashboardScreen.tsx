@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Alert, View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill, BrandMark } from '../components/UI';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
@@ -306,7 +306,7 @@ export function DashboardScreen({ onNavigate }: Props) {
         )}
       </ScrollView>
 
-      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}>
+      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}><SafeAreaProvider>
         {lastInj && (
           <LogInjectionScreen
             prefillFrom={lastInj}
@@ -314,9 +314,9 @@ export function DashboardScreen({ onNavigate }: Props) {
             onCancel={() => setRepeatOpen(false)}
           />
         )}
-      </Modal>
+      </SafeAreaProvider></Modal>
 
-      <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}>
+      <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>
         <View style={s.shareBackdrop}>
           <View ref={shareCardRef} collapsable={false} style={s.shareCard}>
             <View style={s.shareHeader}>
@@ -361,7 +361,7 @@ export function DashboardScreen({ onNavigate }: Props) {
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
 import { Injection, formatClockTime } from '../data/peptides';
@@ -80,11 +80,11 @@ export function HistoryScreen() {
         {tab === 'photos' && canUsePro && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
       </ScrollView>
 
-      <Modal visible={showUpgrade} animationType="slide" onRequestClose={() => setShowUpgrade(false)}>
+      <Modal visible={showUpgrade} animationType="slide" onRequestClose={() => setShowUpgrade(false)}><SafeAreaProvider>
         <UpgradeScreen onClose={() => setShowUpgrade(false)} />
-      </Modal>
+      </SafeAreaProvider></Modal>
 
-      <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}>
+      <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}><SafeAreaProvider>
         {backdateFor && (
           <LogInjectionScreen
             initialDate={backdateFor}
@@ -92,9 +92,9 @@ export function HistoryScreen() {
             onCancel={() => setBackdateFor(null)}
           />
         )}
-      </Modal>
+      </SafeAreaProvider></Modal>
 
-      <Modal visible={!!selectedRecord} animationType="slide" onRequestClose={() => setSelectedRecord(null)}>
+      <Modal visible={!!selectedRecord} animationType="slide" onRequestClose={() => setSelectedRecord(null)}><SafeAreaProvider>
         {selectedRecord && (
           <RecordDetail
             record={selectedRecord}
@@ -106,9 +106,9 @@ export function HistoryScreen() {
             onDelete={() => handleDelete(selectedRecord)}
           />
         )}
-      </Modal>
+      </SafeAreaProvider></Modal>
 
-      <Modal visible={!!editingRecord} animationType="slide" onRequestClose={() => setEditingRecord(null)}>
+      <Modal visible={!!editingRecord} animationType="slide" onRequestClose={() => setEditingRecord(null)}><SafeAreaProvider>
         {editingRecord && (
           <LogInjectionScreen
             initialInjection={editingRecord}
@@ -123,7 +123,7 @@ export function HistoryScreen() {
             }}
           />
         )}
-      </Modal>
+      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }
@@ -447,7 +447,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
         visible={compareMode && comparePair.length === 2}
         animationType="slide"
         onRequestClose={() => setCompareIds([])}
-      >
+      ><SafeAreaProvider>
         {comparePair.length === 2 && (
           <SafeAreaView style={s.app}>
             <View style={s.compareHeader}>
@@ -469,7 +469,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
             </View>
           </SafeAreaView>
         )}
-      </Modal>
+      </SafeAreaProvider></Modal>
     </View>
   );
 }
