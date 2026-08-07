@@ -48,9 +48,20 @@ export type RecordTemplate = {
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+// A corrupt stored value must never brick the app — fall back to the
+// empty state instead of throwing into every screen that lists records.
+function safeParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
 async function getLocalList<T>(key: string): Promise<T[]> {
   const raw = await AsyncStorage.getItem(key);
-  return raw ? JSON.parse(raw) : [];
+  return safeParse<T[]>(raw, []);
 }
 
 async function setLocalList<T>(key: string, values: T[]): Promise<void> {
@@ -78,7 +89,7 @@ export type LocalUser = {
 
 export async function getUser(): Promise<LocalUser | null> {
   const raw = await AsyncStorage.getItem(KEY_USER);
-  return raw ? JSON.parse(raw) : null;
+  return safeParse<LocalUser | null>(raw, null);
 }
 
 export async function setUser(u: LocalUser | null) {
@@ -105,7 +116,8 @@ export async function getInjections(): Promise<Injection[]> {
 
   // Otherwise use local storage
   const raw = await AsyncStorage.getItem(KEY_INJECTIONS);
-  if (raw) return JSON.parse(raw);
+  const parsed = safeParse<Injection[] | null>(raw, null);
+  if (parsed) return parsed;
 
   // First launch starts with an empty log.
   return [];

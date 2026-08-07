@@ -84,6 +84,9 @@ export function DashboardScreen({ onNavigate }: Props) {
     const logDays = new Set(injections.map(i => i.date).filter(Boolean));
     let streak = 0;
     const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Not having logged YET today shouldn't zero an active streak — the
+    // streak only breaks once a full day passes with no record.
+    if (!logDays.has(localDateISO(cursor))) cursor.setDate(cursor.getDate() - 1);
     while (logDays.has(localDateISO(cursor))) {
       streak += 1;
       cursor.setDate(cursor.getDate() - 1);
