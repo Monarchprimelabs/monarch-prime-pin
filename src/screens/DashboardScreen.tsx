@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Alert, View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Disclaimer, Header, Card, CardLabel, ViewPill, BrandMark } from '../components/UI';
+import { Alert, View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder, useWindowDimensions } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { BodyDiagram } from '../components/BodyDiagram';
@@ -17,6 +17,7 @@ import { LogInjectionScreen } from './LogInjectionScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KEY_LAST_BACKUP_AT } from '../lib/backup';
 import { localDateISO, parseLocalDay } from '../lib/dates';
+import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '../components/ProgressCard';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
@@ -49,6 +50,14 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const shareCardRef = useRef<View>(null);
+  const [shareFormat, setShareFormat] = useState<ShareFormat>('story');
+  const { width: winW, height: winH } = useWindowDimensions();
+  // Fit the card between the format chips and the action buttons.
+  const previewScale = Math.min(
+    (winW - 48) / BASE_W,
+    (winH - 240) / cardHeight(shareFormat),
+    1,
+  );
 
   const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
   const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
@@ -80,6 +89,9 @@ export function DashboardScreen({ onNavigate }: Props) {
     const logDays = new Set(injections.map(i => i.date).filter(Boolean));
     let streak = 0;
     const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Not having logged YET today shouldn't zero an active streak — the
+    // streak only breaks once a full day passes with no record.
+    if (!logDays.has(localDateISO(cursor))) cursor.setDate(cursor.getDate() - 1);
     while (logDays.has(localDateISO(cursor))) {
       streak += 1;
       cursor.setDate(cursor.getDate() - 1);
@@ -302,7 +314,7 @@ export function DashboardScreen({ onNavigate }: Props) {
         )}
       </ScrollView>
 
-      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}>
+      <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}><SafeAreaProvider>
         {lastInj && (
           <LogInjectionScreen
             prefillFrom={lastInj}
@@ -310,29 +322,33 @@ export function DashboardScreen({ onNavigate }: Props) {
             onCancel={() => setRepeatOpen(false)}
           />
         )}
-      </Modal>
+      </SafeAreaProvider></Modal>
 
-      <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}>
+      <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>
         <View style={s.shareBackdrop}>
-          <View ref={shareCardRef} collapsable={false} style={s.shareCard}>
-            <View style={s.shareHeader}>
-              <BrandMark />
-              <View>
-                <Text style={s.shareBrand}>MONARCH PRIME PIN</Text>
-                <Text style={s.shareTitle}>{t('share.title')}</Text>
-              </View>
-            </View>
-            <Text style={s.shareBig}>{stats.total}</Text>
-            <Text style={s.shareBigLabel}>{t('share.records')}</Text>
-            <View style={s.shareGrid}>
-              <ShareStat label={t('share.streak')} value={t('share.days', { n: stats.streak })} />
-              <ShareStat label={t('share.longest')} value={t('share.days', { n: stats.longestStreak })} />
-              <ShareStat label={t('share.month')} value={String(stats.monthCount)} />
-              <ShareStat label={t('share.zones')} value={String(stats.zonesUsed)} />
-            </View>
-            <Text style={s.shareFooter}>{t('share.footer')}</Text>
-            <Text style={s.shareCompliance}>{t('share.compliance')}</Text>
+          <View style={s.formatRow}>
+            {(Object.keys(SHARE_FORMATS) as ShareFormat[]).map(id => (
+              <Pressable
+                key={id}
+                onPress={() => setShareFormat(id)}
+                style={[s.formatBtn, shareFormat === id && s.formatBtnActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: shareFormat === id }}
+              >
+                <Text style={[s.formatText, shareFormat === id && s.formatTextActive]}>
+                  {t(SHARE_FORMATS[id].labelKey)}
+                </Text>
+              </Pressable>
+            ))}
           </View>
+
+          {/* Preview: the same card, scaled to fit the screen. */}
+          <View style={{ width: BASE_W * previewScale, height: cardHeight(shareFormat) * previewScale, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: BASE_W, height: cardHeight(shareFormat), transform: [{ scale: previewScale }] }}>
+              <ProgressCard format={shareFormat} stats={stats} t={t} />
+            </View>
+          </View>
+
           <View style={s.shareActions}>
             <Pressable style={s.shareCloseBtn} onPress={() => setShareOpen(false)}>
               <Text style={s.shareCloseText}>{t('share.close')}</Text>
@@ -341,7 +357,10 @@ export function DashboardScreen({ onNavigate }: Props) {
               style={s.shareGoBtn}
               onPress={async () => {
                 try {
-                  const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
+                  const target = SHARE_FORMATS[shareFormat].export;
+                  const uri = await captureRef(shareCardRef, {
+                    format: 'png', quality: 1, width: target.width, height: target.height,
+                  });
                   if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(uri, { mimeType: 'image/png' });
                   } else {
@@ -356,8 +375,16 @@ export function DashboardScreen({ onNavigate }: Props) {
               <Text style={s.shareGoText}>{t('share.action')}</Text>
             </Pressable>
           </View>
+
+          {/* Off-screen at full size: what actually gets captured, so the
+              export is never affected by the preview's scaling. */}
+          <View style={s.captureHost} pointerEvents="none">
+            <View ref={shareCardRef} collapsable={false}>
+              <ProgressCard format={shareFormat} stats={stats} t={t} />
+            </View>
+          </View>
         </View>
-      </Modal>
+      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }
@@ -436,15 +463,6 @@ function ScrubBar({ daysAgo, maxDays, onChange }: { daysAgo: number; maxDays: nu
         <View style={[s.scrubFill, { width: `${fraction * 100}%` }]} />
       </View>
       <View style={[s.scrubThumb, { left: `${fraction * 100}%` }]} />
-    </View>
-  );
-}
-
-function ShareStat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.shareStat}>
-      <Text style={s.shareStatValue}>{value}</Text>
-      <Text style={s.shareStatLabel}>{label}</Text>
     </View>
   );
 }
@@ -534,29 +552,20 @@ const s = StyleSheet.create({
   },
   shareRowText: { color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
   shareBackdrop: {
-    flex: 1, backgroundColor: 'rgba(2, 6, 14, 0.92)',
-    alignItems: 'center', justifyContent: 'center', padding: 24,
+    flex: 1, backgroundColor: 'rgba(2, 6, 14, 0.94)',
+    alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16,
   },
-  shareCard: {
-    width: 320, backgroundColor: colors.bg,
-    borderWidth: 1, borderColor: colors.borderOrange,
-    borderRadius: 18, padding: 24, alignItems: 'center',
+  formatRow: { flexDirection: 'row', gap: 8 },
+  formatBtn: {
+    minHeight: 36, paddingHorizontal: 16, borderRadius: 18,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
+    alignItems: 'center', justifyContent: 'center',
   },
-  shareHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'flex-start', marginBottom: 18 },
-  shareBrand: { color: colors.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1.6 },
-  shareTitle: { color: colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
-  shareBig: { color: colors.white, fontSize: 56, fontWeight: '800', letterSpacing: -1.5 },
-  shareBigLabel: { color: colors.textMuted, fontSize: 13, marginTop: -4, marginBottom: 18 },
-  shareGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
-  shareStat: {
-    width: 130, paddingVertical: 12, alignItems: 'center',
-    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md,
-  },
-  shareStatValue: { color: colors.primary, fontSize: 18, fontWeight: '800' },
-  shareStatLabel: { color: colors.textMuted, fontSize: 10, marginTop: 3 },
-  shareFooter: { color: colors.text, fontSize: 11, fontWeight: '600', marginTop: 18 },
-  shareCompliance: { color: colors.textFaint, fontSize: 9, letterSpacing: 0.8, marginTop: 4 },
+  formatBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
+  formatText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  formatTextActive: { color: colors.white },
+  // Mounted (so it can be captured) but parked well outside the screen.
+  captureHost: { position: 'absolute', left: -10000, top: 0, opacity: 0 },
   shareActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
   shareCloseBtn: {
     minHeight: 48, paddingHorizontal: 22, borderRadius: radius.md,

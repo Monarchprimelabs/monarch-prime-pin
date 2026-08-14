@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius, withAlpha } from '../theme';
 import { useAuth } from '../lib/auth';
@@ -58,9 +58,9 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
         {tab === 'acc' && <AccessTab onOpen={() => setUpgradeOpen(true)} />}
         {tab === 'leg' && <LegalTab />}
       </ScrollView>
-      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}>
+      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}><SafeAreaProvider>
         <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
-      </Modal>
+      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }
@@ -120,6 +120,17 @@ function RemindersTab() {
     setAppLockEnabled(next);
     AsyncStorage.setItem(KEY_APP_LOCK, next ? 'true' : 'false').catch(() => undefined);
     if (next) hapticSuccess();
+  };
+
+  const confirmBackupExport = () => {
+    Alert.alert(
+      t('settings.backupWarnTitle'),
+      t('settings.backupWarnBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('settings.backupWarnGo'), onPress: runBackupExport },
+      ],
+    );
   };
 
   const runBackupExport = async () => {
@@ -373,7 +384,7 @@ function RemindersTab() {
         <Pressable
           style={[s.saveNameBtn, backupBusy && { opacity: 0.5 }]}
           disabled={backupBusy}
-          onPress={runBackupExport}
+          onPress={confirmBackupExport}
         >
           <Text style={s.saveNameText}>{t('settings.backupExport')}</Text>
         </Pressable>

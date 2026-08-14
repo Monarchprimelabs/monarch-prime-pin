@@ -65,8 +65,12 @@ async function getIapModule(): Promise<IapModule | null> {
 }
 
 async function readStoredEntitlement(): Promise<StoredEntitlement | null> {
-  const raw = await AsyncStorage.getItem(KEY_ENTITLEMENT);
-  return raw ? JSON.parse(raw) : null;
+  try {
+    const raw = await AsyncStorage.getItem(KEY_ENTITLEMENT);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null; // corrupt value = no stored entitlement; purchases re-restore
+  }
 }
 
 async function saveEntitlement(entitlement: StoredEntitlement): Promise<void> {

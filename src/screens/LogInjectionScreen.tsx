@@ -4,7 +4,7 @@ import {
   TextInput, Image, Alert, Modal, FlatList,
   Keyboard, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
@@ -677,13 +677,13 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
       </ScrollView>
 
       {/* Peptide picker modal */}
-      <Modal visible={picker} animationType="slide" transparent onRequestClose={() => setPicker(false)}>
+      <Modal visible={picker} animationType="slide" transparent onRequestClose={() => setPicker(false)}><SafeAreaProvider>
         <PeptidePickerSheet
           onClose={() => setPicker(false)}
           onSelect={handlePeptideSelect}
         />
-      </Modal>
-      <Modal visible={templatePicker} animationType="slide" transparent onRequestClose={() => setTemplatePicker(false)}>
+      </SafeAreaProvider></Modal>
+      <Modal visible={templatePicker} animationType="slide" transparent onRequestClose={() => setTemplatePicker(false)}><SafeAreaProvider>
         <View style={s.sheetOverlay}>
           <Pressable style={s.sheetBackdrop} onPress={() => setTemplatePicker(false)} />
           <SafeAreaView style={s.sheet} edges={['bottom']}>
@@ -708,10 +708,10 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             )}
           </SafeAreaView>
         </View>
-      </Modal>
-      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}>
+      </SafeAreaProvider></Modal>
+      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}><SafeAreaProvider>
         <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
-      </Modal>
+      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }

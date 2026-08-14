@@ -273,9 +273,11 @@ export function AnalyticsScreen() {
               <View style={s.weightSummaryRow}>
                 <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
                 <Text style={s.weightDelta}>
-                  {weightChart.last === weightChart.first
-                    ? t('reports.weightNoChange')
-                    : t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })}
+                  {weightChart.last !== weightChart.first
+                    ? t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })
+                    : weightChart.max > weightChart.min
+                      ? t('reports.weightRanged', { min: weightChart.min, max: weightChart.max })
+                      : t('reports.weightNoChange')}
                 </Text>
               </View>
               <Svg viewBox="0 0 200 60" width="100%" height={90}>
