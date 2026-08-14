@@ -832,7 +832,7 @@ const s = StyleSheet.create({
     borderTopColor: colors.hairline,
     borderRadius: radius.lg, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3, shadowRadius: 10, elevation: 4,
+    shadowOpacity: colors.cardShadow, shadowRadius: 10, elevation: 4,
   },
   toolRowPressed: {
     transform: [{ scale: 0.98 }],

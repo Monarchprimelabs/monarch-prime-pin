@@ -196,7 +196,7 @@ const s = StyleSheet.create({
     paddingBottom: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
+    shadowOpacity: colors.cardShadow,
     shadowRadius: 10,
     elevation: 4,
   },

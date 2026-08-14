@@ -33,6 +33,7 @@ type Palette = {
   primary: string; primaryDark: string; action: string; actionText: string;
   accent: string; accentLight: string; gold: string; teal: string; red: string;
   disclaimerBg1: string; disclaimerBg2: string;
+  cardShadow: number;     // drop-shadow strength; light mode needs far less
   statusBar: 'light' | 'dark';
 };
 
@@ -66,41 +67,46 @@ const DARK: Palette = {
   red: '#E53935',
   disclaimerBg1: '#2a1a08',
   disclaimerBg2: '#1a1004',
+  cardShadow: 0.3,
   statusBar: 'light',
 };
 
 // Light mode keeps the same brand hues but darkens them enough to hold
 // contrast on white, and uses the logo's navy as the ink color.
 const LIGHT: Palette = {
-  bg: '#F4F7FC',
+  // Structure comes from white cards sitting on a cool grey ground, the way
+  // FuelRing does it — borders stay near-invisible so the contrast does the
+  // work instead of outlines.
+  bg: '#E9EEF4',
   bgCard: '#FFFFFF',
   bgInput: '#FFFFFF',
-  bgPill: '#E9EFF8',
+  bgPill: '#E3EAF2',
   bgSheet: '#FFFFFF',
-  bgTabBar: 'rgba(255, 255, 255, 0.78)',
-  scrim: 'rgba(12, 22, 40, 0.55)',
-  hairline: 'rgba(18, 48, 95, 0.06)',
-  zoneFill: 'rgba(30, 136, 229, 0.10)',
-  border: withAlpha(BRAND.navy, 0.16),
-  borderSubtle: withAlpha(BRAND.navy, 0.10),
-  borderFaint: withAlpha(BRAND.navy, 0.06),
-  borderOrange: withAlpha('#C2670A', 0.35),
-  text: '#16223A',
-  textMuted: '#5A6B87',
-  textFaint: '#7C8AA3',
-  textDim: '#9AA6BC',
-  white: BRAND.navy,          // "white" means max-contrast ink in both themes
+  bgTabBar: 'rgba(255, 255, 255, 0.86)',
+  scrim: 'rgba(10, 24, 45, 0.5)',
+  hairline: 'rgba(255, 255, 255, 0.9)',
+  zoneFill: 'rgba(30, 136, 229, 0.08)',
+  border: withAlpha(BRAND.navy, 0.09),
+  borderSubtle: withAlpha(BRAND.navy, 0.06),
+  borderFaint: withAlpha(BRAND.navy, 0.035),
+  borderOrange: withAlpha('#C2670A', 0.3),
+  text: '#123157',
+  textMuted: '#5C7189',
+  textFaint: '#8A9AAE',
+  textDim: '#A8B4C4',
+  white: '#0A2540',           // "white" means max-contrast ink in both themes
   primary: '#1565C0',
   primaryDark: '#0D47A1',
   action: '#1565C0',
   actionText: '#FFFFFF',
-  accent: '#C2670A',
-  accentLight: '#9A5208',
+  accent: '#D9770A',
+  accentLight: '#B35F06',
   gold: '#B8860B',
   teal: '#2E7D32',
   red: '#C62828',
-  disclaimerBg1: '#FDF0DC',
-  disclaimerBg2: '#FBE6C8',
+  disclaimerBg1: '#FDEFD8',
+  disclaimerBg2: '#FBE4C2',
+  cardShadow: 0.07,
   statusBar: 'dark',
 };
 
