@@ -24,6 +24,9 @@ export const SHARE_FORMATS: Record<ShareFormat, {
 };
 
 export const BASE_W = 360;
+// Row widths are sized to provably fit BASE_W minus padding at this gap:
+// 2-up = 2x48% + 10 = 306 < 308; 4-up = 4x22% + 30 = 308 < 316.
+const STAT_GAP = 10;
 export const cardHeight = (format: ShareFormat) => Math.round(BASE_W * SHARE_FORMATS[format].ratio);
 
 export type ProgressStats = {
@@ -77,7 +80,7 @@ export function ProgressCard({ format, stats, t }: Props) {
             style={[s.hero, { fontSize: spec.hero, lineHeight: spec.hero * 1.02 }]}
             numberOfLines={1}
             adjustsFontSizeToFit
-allowFontScaling={false}
+            allowFontScaling={false}
           >
             {stats.total}
           </Text>
@@ -92,7 +95,7 @@ allowFontScaling={false}
               style={[
                 s.stat,
                 {
-                  width: spec.statsPerRow === 2 ? '48.5%' : '23.5%',
+                  width: spec.statsPerRow === 2 ? '48%' : '22%',
                   paddingVertical: tall ? 14 : 10,
                 },
               ]}
@@ -163,7 +166,7 @@ const s = StyleSheet.create({
     letterSpacing: 3.2,
   },
 
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: '3%' },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: STAT_GAP },
   stat: {
     backgroundColor: withAlpha(colors.primary, 0.14),
     borderWidth: 1.5,
