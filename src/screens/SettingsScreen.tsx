@@ -12,7 +12,7 @@ import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { hapticSuccess } from '../lib/haptics';
 import { KEY_APP_LOCK } from '../components/AppLockGate';
 import { getHeatHalfLife, setHeatHalfLife, HALF_LIFE_OPTIONS, DEFAULT_HALF_LIFE_DAYS } from '../lib/heat';
-import { COLORWAYS, ColorwayId, getColorway, setColorwaySetting } from '../theme';
+import { THEMES, ThemeId, getTheme, setThemeSetting } from '../theme';
 import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
@@ -74,16 +74,16 @@ function RemindersTab() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [appLockEnabled, setAppLockEnabled] = useState(false);
   const [heatHalfLife, setHeatHalfLifeState] = useState(DEFAULT_HALF_LIFE_DAYS);
-  const [colorway, setColorwayState] = useState<ColorwayId>('monarch');
+  const [theme, setThemeState] = useState<ThemeId>('dark');
 
   useEffect(() => {
     getHeatHalfLife().then(setHeatHalfLifeState).catch(() => undefined);
-    getColorway().then(setColorwayState).catch(() => undefined);
+    getTheme().then(setThemeState).catch(() => undefined);
   }, []);
 
-  const chooseColorway = (id: ColorwayId) => {
-    setColorwayState(id);
-    setColorwaySetting(id).catch(() => undefined);
+  const chooseTheme = (id: ThemeId) => {
+    setThemeState(id);
+    setThemeSetting(id).catch(() => undefined);
   };
 
   const chooseHalfLife = (days: number) => {
@@ -261,17 +261,17 @@ function RemindersTab() {
           {t('settings.themeHelp')}
         </Text>
         <View style={s.langRow}>
-          {(Object.keys(COLORWAYS) as ColorwayId[]).map(id => (
+          {(Object.keys(THEMES) as ThemeId[]).map(id => (
             <Pressable
               key={id}
-              onPress={() => chooseColorway(id)}
-              style={[s.langBtn, s.swatchBtn, colorway === id && s.langBtnActive]}
+              onPress={() => chooseTheme(id)}
+              style={[s.langBtn, s.swatchBtn, theme === id && s.langBtnActive]}
               accessibilityRole="button"
-              accessibilityState={{ selected: colorway === id }}
+              accessibilityState={{ selected: theme === id }}
             >
-              <View style={[s.swatchDot, { backgroundColor: COLORWAYS[id].primary }]} />
-              <Text style={[s.langBtnText, colorway === id && s.langBtnTextActive]}>
-                {COLORWAYS[id].label}
+              <View style={[s.swatchDot, { backgroundColor: THEMES[id].swatch }]} />
+              <Text style={[s.langBtnText, theme === id && s.langBtnTextActive]}>
+                {t(THEMES[id].labelKey)}
               </Text>
             </Pressable>
           ))}
@@ -503,7 +503,7 @@ const s = StyleSheet.create({
 
   langRow: { flexDirection: 'row', gap: 8 },
   swatchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  swatchDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
+  swatchDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: colors.border },
   langBtn: {
     flex: 1,
     backgroundColor: colors.bgInput,

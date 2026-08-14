@@ -34,7 +34,9 @@ const en: Record<string, string> = {
   'settings.heatmapHelp': 'How quickly heatmap colors fade as your logged records age. Each record counts for half as much after this many days.',
   'settings.heatmapDays': '{n} days',
   'settings.themeLabel': 'APPEARANCE',
-  'settings.themeHelp': 'Choose a color accent for the app. The change applies the next time you open the app.',
+  'settings.themeHelp': 'Light or dark. Fully close the app — swipe it away in the app switcher — then reopen to apply.',
+  'settings.themeDark': 'Dark',
+  'settings.themeLight': 'Light',
   'settings.languageLabel': 'LANGUAGE',
   'settings.languageHelp': 'Choose the language for the app interface.',
 
@@ -659,7 +661,9 @@ const es: Record<string, string> = {
   'settings.heatmapHelp': 'Qué tan rápido se desvanecen los colores del mapa a medida que tus registros envejecen. Cada registro cuenta la mitad después de este número de días.',
   'settings.heatmapDays': '{n} días',
   'settings.themeLabel': 'APARIENCIA',
-  'settings.themeHelp': 'Elige un acento de color para la app. El cambio se aplica la próxima vez que abras la app.',
+  'settings.themeHelp': 'Claro u oscuro. Cierra la app por completo — deslízala en el selector de apps — y vuelve a abrirla para aplicar el cambio.',
+  'settings.themeDark': 'Oscuro',
+  'settings.themeLight': 'Claro',
   'settings.languageLabel': 'IDIOMA',
   'settings.languageHelp': 'Elige el idioma de la interfaz de la app.',
 

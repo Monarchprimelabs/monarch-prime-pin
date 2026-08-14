@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import Svg from 'react-native-svg';
 import { MannequinFront } from './Mannequin';
-import { colors, withAlpha } from '../theme';
+import { SHARE_PALETTE as P, withAlpha } from '../theme';
 
 const LOGO: number = require('../../assets/logo-symbol.png');
 
@@ -125,7 +125,7 @@ export function ProgressCard({ format, stats, t }: Props) {
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: colors.bg,
+    backgroundColor: P.bg,
     overflow: 'hidden',
     justifyContent: 'flex-start',
   },
@@ -134,13 +134,13 @@ const s = StyleSheet.create({
     opacity: 0.09,
     paddingVertical: '12%',
   },
-  accentTop: { height: 7, backgroundColor: colors.accent },
+  accentTop: { height: 7, backgroundColor: P.accent },
   body: { flex: 1, justifyContent: 'space-between' },
 
   header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 30, height: 30 },
   brand: {
-    color: colors.accent,
+    color: P.accent,
     fontSize: 15,
     fontWeight: '900',
     letterSpacing: 1.9,
@@ -148,19 +148,19 @@ const s = StyleSheet.create({
 
   heroBlock: { alignItems: 'flex-start' },
   hero: {
-    color: colors.white,
+    color: P.ink,
     fontWeight: '900',
     letterSpacing: -4,
   },
   heroRule: {
     width: 74,
     height: 5,
-    backgroundColor: colors.accent,
+    backgroundColor: P.accent,
     marginTop: 4,
     marginBottom: 9,
   },
   heroLabel: {
-    color: colors.text,
+    color: P.text,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 3.2,
@@ -168,16 +168,16 @@ const s = StyleSheet.create({
 
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: STAT_GAP },
   stat: {
-    backgroundColor: withAlpha(colors.primary, 0.14),
+    backgroundColor: withAlpha(P.primary, 0.14),
     borderWidth: 1.5,
-    borderColor: withAlpha(colors.primary, 0.45),
+    borderColor: withAlpha(P.primary, 0.45),
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 8,
   },
-  statValue: { color: colors.primary, fontWeight: '900', letterSpacing: -0.5 },
+  statValue: { color: P.primary, fontWeight: '900', letterSpacing: -0.5 },
   statLabel: {
-    color: colors.textMuted,
+    color: P.muted,
     fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 1.5,
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
   },
 
   cta: {
-    backgroundColor: colors.accent,
+    backgroundColor: P.accent,
     paddingVertical: 13,
     alignItems: 'center',
   },
@@ -203,8 +203,8 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   compliance: {
-    backgroundColor: colors.bg,
-    color: colors.textFaint,
+    backgroundColor: P.bg,
+    color: P.faint,
     fontSize: 8.5,
     letterSpacing: 0.8,
     textAlign: 'center',

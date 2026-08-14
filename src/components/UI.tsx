@@ -189,7 +189,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     // Lighter top edge + soft drop shadow fake a light source above the card.
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: colors.hairline,
     borderRadius: radius.lg,
     paddingHorizontal: 16,
     paddingTop: 14,

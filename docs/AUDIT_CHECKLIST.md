@@ -78,3 +78,24 @@ These escape every static audit. Explicitly hand them to George's QA pass:
 - [ ] Old records (missing new optional fields) still render and edit
 - [ ] Backup from a previous version imports cleanly
 - [ ] New fields survive the backup/restore round trip
+
+## 7. Theme-safety (added when light mode shipped)
+
+Light and dark are applied at launch by mutating the `colors` object before
+any screen module imports (App.tsx gates on `loadTheme()`), so StyleSheets
+capture the right palette with no per-render cost. That only holds if:
+
+- [ ] **No raw color literals outside `src/theme/index.ts`.** Grep for `'#`
+      and `'rgba(` across src/ — every hit must be theme-independent
+      (a scrim over a photo, a fixed brand asset) and commented as such.
+- [ ] **`colors.white` means "max-contrast ink", not literal white.** It is
+      navy in light mode. Anything that must stay white — text over a photo,
+      a label on a saturated fill — uses `colors.actionText`.
+- [ ] **`SHARE_PALETTE` is fixed dark** and never follows the theme; the
+      progress card is a social asset and must look the same for every user.
+- [ ] **Data-semantic colors stay fixed**: `severity` and `heatColors` must
+      read identically in both themes.
+- [ ] **StatusBar style comes from `colors.statusBar`**, never hardcoded.
+- [ ] Render-level (device only): every screen in BOTH themes — check the
+      research banner, the body map, disabled/placeholder text, and the
+      blurred tab bar.

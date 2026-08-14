@@ -513,7 +513,7 @@ const s = StyleSheet.create({
   reminderCompound: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 4 },
   reminderMeta: { color: colors.text, fontSize: 13, marginBottom: 2 },
   reminderNext: {
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.hairline,
   },
   reminderNextText: { color: colors.textMuted, fontSize: 13 },
   scheduleCard: {
@@ -548,11 +548,11 @@ const s = StyleSheet.create({
     marginHorizontal: spacing.xl, marginBottom: spacing.lg,
     paddingHorizontal: 16, paddingVertical: 14,
     backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)', borderRadius: radius.lg,
+    borderTopColor: colors.hairline, borderRadius: radius.lg,
   },
   shareRowText: { color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
   shareBackdrop: {
-    flex: 1, backgroundColor: 'rgba(2, 6, 14, 0.94)',
+    flex: 1, backgroundColor: colors.scrim,
     alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16,
   },
   formatRow: { flexDirection: 'row', gap: 8 },

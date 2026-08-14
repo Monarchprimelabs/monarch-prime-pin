@@ -3,9 +3,9 @@ import 'react-native-url-polyfill/auto';
 import React from 'react';
 import { Image, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { loadColorway } from './src/theme';
+import { loadTheme } from './src/theme';
 
-// The saved colorway must be applied before any screen module is evaluated,
+// The saved theme must be applied before any screen module is evaluated,
 // because StyleSheets capture theme values at import time. The app tree is
 // therefore require()d only after loadColorway() resolves; until then we
 // show a bare background matching the splash color.
@@ -13,7 +13,7 @@ export default function App() {
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
-    loadColorway().finally(() => setReady(true));
+    loadTheme().finally(() => setReady(true));
   }, []);
 
   React.useEffect(() => {

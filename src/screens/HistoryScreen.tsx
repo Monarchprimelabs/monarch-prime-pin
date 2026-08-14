@@ -549,7 +549,7 @@ const s = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.xl, gap: 8 },
   photoThumb: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative' },
   photoThumbImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  photoThumbDate: { position: 'absolute', bottom: 6, left: 8, color: colors.white, fontSize: 11, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 4 },
+  photoThumbDate: { position: 'absolute', bottom: 6, left: 8, color: colors.actionText, fontSize: 11, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 4 },
   photoThumbSelected: { borderWidth: 2, borderColor: colors.teal, borderRadius: 8 },
   compareToggle: {
     marginHorizontal: spacing.xl, marginBottom: 10, minHeight: 44,
@@ -562,7 +562,7 @@ const s = StyleSheet.create({
     position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11,
     backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center',
   },
-  compareBadgeText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  compareBadgeText: { color: colors.actionText, fontSize: 12, fontWeight: '700' },
   compareHeader: {
     minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.xl, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle,

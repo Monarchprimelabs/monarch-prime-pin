@@ -36,7 +36,7 @@ export function BottomTabs() {
 
       <View style={s.tabBarWrap}>
         {Platform.OS === 'ios' && (
-          <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={48} tint={colors.statusBar === 'light' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
         )}
         <SafeAreaView edges={['bottom']} style={s.tabBarSafe}>
         <View style={s.tabBar}>
@@ -128,7 +128,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     borderTopWidth: 1,
     borderTopColor: withAlpha(colors.primary, 0.2),
-    backgroundColor: Platform.OS === 'ios' ? 'rgba(5, 8, 16, 0.62)' : colors.bgSheet,
+    backgroundColor: Platform.OS === 'ios' ? colors.bgTabBar : colors.bgSheet,
   },
   tabBarSafe: {
     backgroundColor: 'transparent',

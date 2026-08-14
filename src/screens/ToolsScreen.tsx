@@ -829,7 +829,7 @@ const s = StyleSheet.create({
   toolRow: {
     minHeight: 78, flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: colors.hairline,
     borderRadius: radius.lg, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3, shadowRadius: 10, elevation: 4,
