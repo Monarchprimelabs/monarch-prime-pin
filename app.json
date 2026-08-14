@@ -2,7 +2,7 @@
   "expo": {
     "name": "Monarch Prime Pin",
     "slug": "monarch-prime-pin",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -22,11 +22,6 @@
         "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library for your research records.",
         "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries.",
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.com.monarchprime.pin"
-        ]
       }
     },
     "android": {
@@ -61,13 +56,7 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font",
-      [
-        "@bacons/apple-targets",
-        {
-          "appleTeamId": "W9UL986ZC6"
-        }
-      ]
+      "expo-font"
     ],
     "extra": {
       "eas": {

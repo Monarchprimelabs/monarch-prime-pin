@@ -1,6 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getInjections } from './storage';
+import { localDateISO } from './dates';
 
 // CSV export of all locally stored injection records via the native share
 // sheet. Available to FREE and Pro users alike — data portability is never
@@ -41,7 +42,7 @@ export async function exportInjectionsCsv(): Promise<{ shared: boolean; count: n
 
   const csv = [HEADERS.join(','), ...rows].join('\r\n');
 
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = localDateISO();
   const file = new File(Paths.cache, `monarch-prime-pin-records-${stamp}.csv`);
   if (file.exists) file.delete();
   file.create();

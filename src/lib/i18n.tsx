@@ -114,7 +114,7 @@ const en: Record<string, string> = {
   'legal.li4': '• The developers of this application bear no liability for misuse',
   'legal.p5': 'Misuse of research peptides may be illegal in your jurisdiction and can pose serious health risks.',
   'legal.p6': 'If you are experiencing a medical emergency, contact emergency services immediately.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.5 — Research Use Only',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.6 — Research Use Only',
 
   // OK button
   'common.ok': 'OK',
@@ -356,9 +356,6 @@ const en: Record<string, string> = {
   'share.sZones': 'ZONES',
   'share.ctaTitle': 'TRACK YOURS',
   'share.ctaSub': 'Monarch Prime Pin · on the App Store',
-  'widget.today': 'Today',
-  'widget.daysSince': 'days since last record',
-  'widget.total': '{n} records logged',
   'dash.lastInjection': 'LAST INJECTION',
   'dash.sites': 'Sites: {site}',
   'dash.logAgain': 'Log This Again',
@@ -742,7 +739,7 @@ const es: Record<string, string> = {
   'legal.li4': '• Los desarrolladores de esta aplicación no asumen responsabilidad por el mal uso',
   'legal.p5': 'El mal uso de péptidos de investigación puede ser ilegal en tu jurisdicción y puede representar riesgos graves para la salud.',
   'legal.p6': 'Si tienes una emergencia médica, contacta a los servicios de emergencia de inmediato.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.5 — Solo para uso en investigación',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.6 — Solo para uso en investigación',
 
   // OK button
   'common.ok': 'OK',
@@ -984,9 +981,6 @@ const es: Record<string, string> = {
   'share.sZones': 'ZONAS',
   'share.ctaTitle': 'REGISTRA EL TUYO',
   'share.ctaSub': 'Monarch Prime Pin · en el App Store',
-  'widget.today': 'Hoy',
-  'widget.daysSince': 'días desde el último registro',
-  'widget.total': '{n} registros guardados',
   'dash.lastInjection': 'ÚLTIMA INYECCIÓN',
   'dash.sites': 'Sitios: {site}',
   'dash.logAgain': 'Registrar de nuevo',
