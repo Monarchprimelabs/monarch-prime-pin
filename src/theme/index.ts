@@ -9,100 +9,173 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export type ColorwayId = 'monarch' | 'jade' | 'royal';
-
-// Colorways swap the app's primary hue (buttons, borders, active states).
-// The orange research accent, all neutrals, and every data-semantic color
-// (severity, heatmap bands) stay fixed in every colorway.
-export const COLORWAYS: Record<ColorwayId, { label: string; primary: string; primaryDark: string }> = {
-  monarch: { label: 'Monarch', primary: '#1E88E5', primaryDark: '#1565C0' },
-  jade:    { label: 'Jade',    primary: '#10B981', primaryDark: '#047857' },
-  royal:   { label: 'Royal',   primary: '#8B5CF6', primaryDark: '#6D28D9' },
+// ============================================================
+// Brand palette — taken from the Monarch Prime logo.
+// Change a brand hue HERE and both themes follow.
+// ============================================================
+export const BRAND = {
+  navy:   '#12305F', // wordmark + figure silhouette
+  blue:   '#1E88E5', // left helix / globe ocean
+  orange: '#F5871F', // "PRIME" wordmark + right helix
+  green:  '#43A047', // swoosh + globe landmass
+  cyan:   '#29ABE2', // helix highlights
 };
 
-export const KEY_COLORWAY = '@mpp/colorway';
+export type ThemeId = 'dark' | 'light';
 
-export const colors = {
+type Palette = {
+  bg: string; bgCard: string; bgInput: string; bgPill: string; bgSheet: string;
+  bgTabBar: string; scrim: string;
+  hairline: string;      // top-edge highlight that fakes a light source
+  zoneFill: string;      // body-map dot interior
+  border: string; borderSubtle: string; borderFaint: string; borderOrange: string;
+  text: string; textMuted: string; textFaint: string; textDim: string; white: string;
+  primary: string; primaryDark: string; action: string; actionText: string;
+  accent: string; accentLight: string; gold: string; teal: string; red: string;
+  disclaimerBg1: string; disclaimerBg2: string;
+  cardShadow: number;     // drop-shadow strength; light mode needs far less
+  statusBar: 'light' | 'dark';
+};
+
+const DARK: Palette = {
   bg: '#050810',
   bgCard: 'rgba(15, 25, 45, 0.4)',
   bgInput: 'rgba(10, 20, 38, 0.5)',
   bgPill: 'rgba(10, 20, 38, 0.6)',
   bgSheet: '#0a1019',
-
-  border: 'rgba(30, 136, 229, 0.25)',
-  borderSubtle: 'rgba(30, 136, 229, 0.15)',
-  borderFaint: 'rgba(30, 136, 229, 0.08)',
-  borderOrange: 'rgba(255, 140, 0, 0.25)',
-
+  bgTabBar: 'rgba(5, 8, 16, 0.62)',
+  scrim: 'rgba(2, 6, 14, 0.94)',
+  hairline: 'rgba(255, 255, 255, 0.08)',
+  zoneFill: 'rgba(10, 25, 50, 0.6)',
+  border: withAlpha(BRAND.blue, 0.25),
+  borderSubtle: withAlpha(BRAND.blue, 0.15),
+  borderFaint: withAlpha(BRAND.blue, 0.08),
+  borderOrange: withAlpha(BRAND.orange, 0.25),
   text: '#E8EEF7',
   textMuted: '#7B8FAB',
   textFaint: '#5A6B85',
   textDim: '#3A4A66',
   white: '#FFFFFF',
-
-  primary: '#1E88E5',
+  primary: BRAND.blue,
   primaryDark: '#1565C0',
-  action: '#1E88E5',
+  action: BRAND.blue,
   actionText: '#FFFFFF',
-  accent: '#FF8C00',
+  accent: BRAND.orange,
   accentLight: '#FFB066',
   gold: '#FFD700',
-  teal: '#14b8a6',
+  teal: BRAND.green,
   red: '#E53935',
-
   disclaimerBg1: '#2a1a08',
   disclaimerBg2: '#1a1004',
+  cardShadow: 0.3,
+  statusBar: 'light',
 };
 
-// Data-semantic: severity colors never follow the colorway.
+// Light mode keeps the same brand hues but darkens them enough to hold
+// contrast on white, and uses the logo's navy as the ink color.
+const LIGHT: Palette = {
+  // Structure comes from white cards sitting on a cool grey ground, the way
+  // FuelRing does it — borders stay near-invisible so the contrast does the
+  // work instead of outlines.
+  bg: '#E9EEF4',
+  bgCard: '#FFFFFF',
+  bgInput: '#FFFFFF',
+  bgPill: '#E3EAF2',
+  bgSheet: '#FFFFFF',
+  bgTabBar: 'rgba(255, 255, 255, 0.86)',
+  scrim: 'rgba(10, 24, 45, 0.5)',
+  hairline: 'rgba(255, 255, 255, 0.9)',
+  zoneFill: 'rgba(30, 136, 229, 0.08)',
+  border: withAlpha(BRAND.navy, 0.09),
+  borderSubtle: withAlpha(BRAND.navy, 0.06),
+  borderFaint: withAlpha(BRAND.navy, 0.035),
+  borderOrange: withAlpha('#C2670A', 0.3),
+  text: '#123157',
+  textMuted: '#5C7189',
+  textFaint: '#8A9AAE',
+  textDim: '#A8B4C4',
+  white: '#0A2540',           // "white" means max-contrast ink in both themes
+  primary: '#1565C0',
+  primaryDark: '#0D47A1',
+  action: '#1565C0',
+  actionText: '#FFFFFF',
+  accent: '#D9770A',
+  accentLight: '#B35F06',
+  gold: '#B8860B',
+  teal: '#2E7D32',
+  red: '#C62828',
+  disclaimerBg1: '#FDEFD8',
+  disclaimerBg2: '#FBE4C2',
+  cardShadow: 0.07,
+  statusBar: 'dark',
+};
+
+export const THEMES: Record<ThemeId, { labelKey: string; swatch: string; palette: Palette }> = {
+  dark:  { labelKey: 'settings.themeDark',  swatch: '#0B224A', palette: DARK },
+  light: { labelKey: 'settings.themeLight', swatch: '#F4F7FC', palette: LIGHT },
+};
+
+export const KEY_THEME = '@mpp/theme';
+
+// Live palette. Mutated by applyTheme() before any screen module is imported,
+// because StyleSheets capture these values at import time.
+export const colors = { ...DARK };
+
+// The share card is a social asset — it stays dark in both themes so posts
+// look consistent and on-brand regardless of the user's app theme.
+export const SHARE_PALETTE = {
+  bg: DARK.bg,
+  card: DARK.bgCard,
+  ink: '#FFFFFF',
+  text: DARK.text,
+  muted: DARK.textMuted,
+  faint: DARK.textFaint,
+  primary: BRAND.blue,
+  accent: BRAND.orange,
+};
+
+// Data-semantic: severity never follows the theme's accent.
 export const severity = {
-  none: colors.teal,
-  mild: '#1E88E5',
-  mod: colors.accent,
-  sev: colors.red,
+  none: BRAND.green,
+  mild: BRAND.blue,
+  mod: BRAND.orange,
+  sev: '#E53935',
 };
 
-// Heatmap band colors — clear = rested (neutral outline), then a cool→hot
-// ramp. Band meaning is logging cadence, decided in src/lib/heatMath.js.
-// Data-semantic: fixed hues in every colorway so band colors stay readable.
+// Heatmap band colors — clear = rested, then a cool→hot ramp. Band meaning is
+// logging cadence (src/lib/heatMath.js). Fixed hues so a "red zone" reads the
+// same in both themes.
 export const heatColors = {
   clear:  { ring: 'rgba(122, 143, 173, 0.55)', dot: 'rgba(122, 143, 173, 0.4)' },
-  blue:   { ring: '#1E88E5', dot: '#1E88E5' },
+  blue:   { ring: BRAND.blue, dot: BRAND.blue },
   green:  { ring: '#34D399', dot: '#34D399' },
   yellow: { ring: '#FACC15', dot: '#FACC15' },
-  orange: { ring: colors.accent, dot: colors.accent },
-  red:    { ring: colors.red, dot: colors.red },
+  orange: { ring: BRAND.orange, dot: BRAND.orange },
+  red:    { ring: '#E53935', dot: '#E53935' },
 };
 
-// Must run BEFORE screen modules are evaluated — StyleSheets capture these
-// values at import time. App.tsx guarantees that by require()ing the app
-// tree only after loadColorway() resolves. Changing the colorway at runtime
-// therefore takes effect on the next app launch.
-export function applyColorway(id: ColorwayId): void {
-  const palette = COLORWAYS[id] ?? COLORWAYS.monarch;
-  colors.primary = palette.primary;
-  colors.primaryDark = palette.primaryDark;
-  colors.action = palette.primary;
-  colors.border = withAlpha(palette.primary, 0.25);
-  colors.borderSubtle = withAlpha(palette.primary, 0.15);
-  colors.borderFaint = withAlpha(palette.primary, 0.08);
+export function applyTheme(id: ThemeId): void {
+  Object.assign(colors, (THEMES[id] ?? THEMES.dark).palette);
 }
 
-export async function getColorway(): Promise<ColorwayId> {
+export async function getTheme(): Promise<ThemeId> {
   try {
-    const raw = await AsyncStorage.getItem(KEY_COLORWAY);
-    return raw && raw in COLORWAYS ? (raw as ColorwayId) : 'monarch';
+    const raw = await AsyncStorage.getItem(KEY_THEME);
+    if (raw === 'light' || raw === 'dark') return raw;
+    // Migrate the v1.5 colorway setting: every colorway was a dark theme.
+    const legacy = await AsyncStorage.getItem('@mpp/colorway');
+    return legacy ? 'dark' : 'dark';
   } catch {
-    return 'monarch';
+    return 'dark';
   }
 }
 
-export async function setColorwaySetting(id: ColorwayId): Promise<void> {
-  await AsyncStorage.setItem(KEY_COLORWAY, id);
+export async function setThemeSetting(id: ThemeId): Promise<void> {
+  await AsyncStorage.setItem(KEY_THEME, id);
 }
 
-export async function loadColorway(): Promise<void> {
-  applyColorway(await getColorway());
+export async function loadTheme(): Promise<void> {
+  applyTheme(await getTheme());
 }
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 };

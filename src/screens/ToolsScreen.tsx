@@ -825,14 +825,14 @@ function confirmDelete(t: (key: string, vars?: Record<string, string | number>) 
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
-  pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
+  pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 124, gap: 10 },
   toolRow: {
     minHeight: 78, flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: colors.hairline,
     borderRadius: radius.lg, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3, shadowRadius: 10, elevation: 4,
+    shadowOpacity: colors.cardShadow, shadowRadius: 10, elevation: 4,
   },
   toolRowPressed: {
     transform: [{ scale: 0.98 }],

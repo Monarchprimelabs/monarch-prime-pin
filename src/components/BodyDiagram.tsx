@@ -28,7 +28,7 @@ export function BodyDiagram({ view, mode, selected = [], onZoneTap, bandsByZone 
             const c = heatColors[band];
             return (
               <G key={z.id}>
-                <Circle cx={z.cx} cy={z.cy} r={z.r} fill="rgba(10, 25, 50, 0.6)" stroke={c.ring} strokeWidth="0.5" />
+                <Circle cx={z.cx} cy={z.cy} r={z.r} fill={colors.zoneFill} stroke={c.ring} strokeWidth="0.5" />
                 <Circle cx={z.cx} cy={z.cy} r={z.r * 0.35} fill={c.dot} />
               </G>
             );
@@ -46,15 +46,15 @@ export function BodyDiagram({ view, mode, selected = [], onZoneTap, bandsByZone 
                   cx={z.cx}
                   cy={z.cy}
                   r={z.r}
-                  fill={isSelected ? 'rgba(255, 140, 0, 0.25)' : 'rgba(10, 25, 50, 0.6)'}
-                  stroke={isSelected ? '#FF8C00' : colors.primary}
+                  fill={isSelected ? withAlpha(colors.accent, 0.25) : colors.zoneFill}
+                  stroke={isSelected ? colors.accent : colors.primary}
                   strokeWidth={isSelected ? '0.7' : '0.5'}
                 />
                 <Circle
                   cx={z.cx}
                   cy={z.cy}
                   r={z.r * 0.35}
-                  fill={isSelected ? '#FF8C00' : colors.primary}
+                  fill={isSelected ? colors.accent : colors.primary}
                 />
               </G>
             );

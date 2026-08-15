@@ -1,9 +1,9 @@
 import React from 'react';
 import Svg, { G, Path, Rect, Ellipse, Line, Circle } from 'react-native-svg';
-import { colors } from '../theme';
+import { colors, withAlpha } from '../theme';
 
 const STROKE = colors.primary;
-const FILL = 'rgba(10, 30, 60, 0.45)';
+const FILL = withAlpha(colors.primary, 0.10);
 const SW = 0.6;
 
 export function MannequinFront() {

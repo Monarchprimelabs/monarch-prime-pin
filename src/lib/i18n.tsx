@@ -34,7 +34,9 @@ const en: Record<string, string> = {
   'settings.heatmapHelp': 'How quickly heatmap colors fade as your logged records age. Each record counts for half as much after this many days.',
   'settings.heatmapDays': '{n} days',
   'settings.themeLabel': 'APPEARANCE',
-  'settings.themeHelp': 'Choose a color accent for the app. The change applies the next time you open the app.',
+  'settings.themeHelp': 'Light or dark. Fully close the app — swipe it away in the app switcher — then reopen to apply.',
+  'settings.themeDark': 'Dark',
+  'settings.themeLight': 'Light',
   'settings.languageLabel': 'LANGUAGE',
   'settings.languageHelp': 'Choose the language for the app interface.',
 
@@ -114,7 +116,7 @@ const en: Record<string, string> = {
   'legal.li4': '• The developers of this application bear no liability for misuse',
   'legal.p5': 'Misuse of research peptides may be illegal in your jurisdiction and can pose serious health risks.',
   'legal.p6': 'If you are experiencing a medical emergency, contact emergency services immediately.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.6 — Research Use Only',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Research Use Only',
 
   // OK button
   'common.ok': 'OK',
@@ -347,6 +349,9 @@ const en: Record<string, string> = {
   'share.action': 'Share',
   'share.close': 'Close',
   'share.failed': 'Sharing is not available on this device.',
+  'widget.today': 'Today',
+  'widget.daysSince': 'days since last record',
+  'widget.total': '{n} records logged',
   'share.formatStory': 'Story / Reel',
   'share.formatPost': 'Post',
   'share.formatSquare': 'Square',
@@ -659,7 +664,9 @@ const es: Record<string, string> = {
   'settings.heatmapHelp': 'Qué tan rápido se desvanecen los colores del mapa a medida que tus registros envejecen. Cada registro cuenta la mitad después de este número de días.',
   'settings.heatmapDays': '{n} días',
   'settings.themeLabel': 'APARIENCIA',
-  'settings.themeHelp': 'Elige un acento de color para la app. El cambio se aplica la próxima vez que abras la app.',
+  'settings.themeHelp': 'Claro u oscuro. Cierra la app por completo — deslízala en el selector de apps — y vuelve a abrirla para aplicar el cambio.',
+  'settings.themeDark': 'Oscuro',
+  'settings.themeLight': 'Claro',
   'settings.languageLabel': 'IDIOMA',
   'settings.languageHelp': 'Elige el idioma de la interfaz de la app.',
 
@@ -739,7 +746,7 @@ const es: Record<string, string> = {
   'legal.li4': '• Los desarrolladores de esta aplicación no asumen responsabilidad por el mal uso',
   'legal.p5': 'El mal uso de péptidos de investigación puede ser ilegal en tu jurisdicción y puede representar riesgos graves para la salud.',
   'legal.p6': 'Si tienes una emergencia médica, contacta a los servicios de emergencia de inmediato.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.6 — Solo para uso en investigación',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Solo para uso en investigación',
 
   // OK button
   'common.ok': 'OK',
@@ -972,6 +979,9 @@ const es: Record<string, string> = {
   'share.action': 'Compartir',
   'share.close': 'Cerrar',
   'share.failed': 'Compartir no está disponible en este dispositivo.',
+  'widget.today': 'Hoy',
+  'widget.daysSince': 'días desde el último registro',
+  'widget.total': '{n} registros guardados',
   'share.formatStory': 'Historia / Reel',
   'share.formatPost': 'Publicación',
   'share.formatSquare': 'Cuadrado',

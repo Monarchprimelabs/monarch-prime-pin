@@ -394,7 +394,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }} keyboardShouldPersistTaps="handled">
         <Header
           title={isEditing ? t('log.titleEdit') : t('log.titleNew')}
           subtitle={
@@ -975,7 +975,7 @@ const s = StyleSheet.create({
   submitText: { color: colors.actionText, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
 
   sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
-  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.bgSheet,
     borderTopLeftRadius: 20, borderTopRightRadius: 20,
@@ -989,7 +989,7 @@ const s = StyleSheet.create({
   sheetTitle: { color: colors.white, fontSize: 18, fontWeight: '700' },
   sheetDone: { color: colors.primary, fontSize: 16, fontWeight: '600' },
   sheetSearch: {
-    margin: 16, backgroundColor: 'rgba(20, 30, 50, 0.5)',
+    margin: 16, backgroundColor: colors.bgInput,
     borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
     color: colors.text, fontSize: 15,
