@@ -36,12 +36,12 @@ function animateListChange(): void {
 type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
-  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.teal, pro: true },
-  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.primary, pro: true },
-  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.accent, pro: true },
-  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: '#A78BFA', pro: true },
-  { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub', tint: '#38BDF8' },
-  { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub', tint: '#94A3B8' },
+  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary, pro: true },
+  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent, pro: true },
+  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary, pro: true },
+  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: colors.accent, pro: true },
+  { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub', tint: colors.primary },
+  { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub', tint: colors.accent },
 ];
 
 function isValidDate(value: string): boolean {
