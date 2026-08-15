@@ -107,7 +107,7 @@ export function ToolsScreen() {
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
-                {!!tool.pro && <Text style={s.proBadge}>PRO</Text>}
+                {!!tool.pro && !canUsePro && <Text style={s.proBadge}>PRO</Text>}
               </View>
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
             </View>
@@ -845,7 +845,7 @@ const s = StyleSheet.create({
   },
   toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
-  proBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
+  proBadge: { color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.accent, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   toolSub: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   chev: { color: colors.primary, fontSize: 25, marginLeft: 8 },
   toolHeader: { minHeight: 58, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.borderSubtle, paddingHorizontal: spacing.xl },
