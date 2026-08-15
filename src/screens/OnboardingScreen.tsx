@@ -149,6 +149,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         {([
           { id: 'en' as Language, label: 'English' },
           { id: 'es' as Language, label: 'Español' },
+          { id: 'pt' as Language, label: 'Português' },
         ]).map(option => (
           <Pressable
             key={option.id}
@@ -288,9 +289,9 @@ const s = StyleSheet.create({
   // Welcome
   welcomeRoot: { flex: 1, paddingHorizontal: spacing.xl },
   welcomeLogoWrap: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
-  langPickRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 14 },
+  langPickRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8, paddingTop: 14 },
   langPickBtn: {
-    minHeight: 34, paddingHorizontal: 16, borderRadius: 17,
+    minHeight: 34, paddingHorizontal: 13, borderRadius: 17,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
     alignItems: 'center', justifyContent: 'center',
   },

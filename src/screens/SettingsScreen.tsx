@@ -239,6 +239,7 @@ function RemindersTab() {
           {([
             { id: 'en' as Language, label: 'English' },
             { id: 'es' as Language, label: 'Español' },
+            { id: 'pt' as Language, label: 'Português' },
           ]).map(option => (
             <Pressable
               key={option.id}
@@ -506,6 +507,7 @@ const s = StyleSheet.create({
   swatchDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: colors.border },
   langBtn: {
     flex: 1,
+    paddingHorizontal: 4,
     backgroundColor: colors.bgInput,
     borderWidth: 1,
     borderColor: withAlpha(colors.primary, 0.2),

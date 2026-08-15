@@ -8,7 +8,9 @@ that ships adds its pattern to this file in the same PR that fixes it.**
 
 - [ ] `npx tsc --noEmit` clean
 - [ ] `node scripts/test-heat.js` — all assertions pass
-- [ ] i18n parity: EN and ES dictionaries have IDENTICAL key sets
+- [ ] i18n parity: EN, ES and PT dictionaries have IDENTICAL key sets
+- [ ] Interpolation placeholders ({n}, {price}, …) and \n escapes survive in
+      every translation — a dropped placeholder renders as literal braces
 - [ ] Dynamic i18n families complete: every zone id has `zone.*` + `zoneShort.*`,
       every symptom tag has `symptom.*`, all severities/periods/heat bands covered
 - [ ] No conflict markers (`<<<<<<<`), no `console.log` in src/
