@@ -8,7 +8,8 @@ import { BrandMark } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
 import { setOnboardingDone } from '../lib/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Language, useI18n } from '../lib/i18n';
+import { useI18n } from '../lib/i18n';
+import { LanguageSelect } from '../components/LanguageSelect';
 import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
 
 type MultiItem = { id: string; labelKey: string; icon: string };
@@ -142,27 +143,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
 // ── Welcome (step 0) ─────────────────────────────────────────
 function WelcomeStep({ onStart }: { onStart: () => void }) {
-  const { t, language, setLanguage } = useI18n();
+  const { t } = useI18n();
   return (
     <View style={s.welcomeRoot}>
       <View style={s.langPickRow}>
-        {([
-          { id: 'en' as Language, label: 'English' },
-          { id: 'es' as Language, label: 'Español' },
-          { id: 'pt' as Language, label: 'Português' },
-        ]).map(option => (
-          <Pressable
-            key={option.id}
-            onPress={() => setLanguage(option.id)}
-            style={[s.langPickBtn, language === option.id && s.langPickBtnActive]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: language === option.id }}
-          >
-            <Text style={[s.langPickText, language === option.id && s.langPickTextActive]}>
-              {option.label}
-            </Text>
-          </Pressable>
-        ))}
+        <LanguageSelect compact />
       </View>
       <View style={s.welcomeLogoWrap}>
         <BrandMark large />
@@ -290,14 +275,6 @@ const s = StyleSheet.create({
   welcomeRoot: { flex: 1, paddingHorizontal: spacing.xl },
   welcomeLogoWrap: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
   langPickRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8, paddingTop: 14 },
-  langPickBtn: {
-    minHeight: 34, paddingHorizontal: 13, borderRadius: 17,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  langPickBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
-  langPickText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
-  langPickTextActive: { color: colors.white },
   welcomeBody: { flex: 1 },
   welcomeEyebrow: {
     fontSize: 11, fontWeight: '700', letterSpacing: 2.5,
