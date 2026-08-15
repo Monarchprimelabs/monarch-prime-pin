@@ -11,6 +11,7 @@ import { FunnelStats, getFunnelStats, resetFunnelStats } from '../lib/funnel';
 import { exportBackup, pickBackupFile, restoreBackup } from '../lib/backup';
 import { hapticSuccess } from '../lib/haptics';
 import { KEY_APP_LOCK } from '../components/AppLockGate';
+import { LanguageSelect } from '../components/LanguageSelect';
 import { getHeatHalfLife, setHeatHalfLife, HALF_LIFE_OPTIONS, DEFAULT_HALF_LIFE_DAYS } from '../lib/heat';
 import { THEMES, ThemeId, getTheme, setThemeSetting } from '../theme';
 import { Language, useI18n } from '../lib/i18n';
@@ -235,25 +236,7 @@ function RemindersTab() {
         <Text style={s.profileHelp}>
           {t('settings.languageHelp')}
         </Text>
-        <View style={s.langRow}>
-          {([
-            { id: 'en' as Language, label: 'English' },
-            { id: 'es' as Language, label: 'Español' },
-            { id: 'pt' as Language, label: 'Português' },
-          ]).map(option => (
-            <Pressable
-              key={option.id}
-              onPress={() => setLanguage(option.id)}
-              style={[s.langBtn, language === option.id && s.langBtnActive]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: language === option.id }}
-            >
-              <Text style={[s.langBtnText, language === option.id && s.langBtnTextActive]}>
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <LanguageSelect />
       </Card>
 
       <Card>
