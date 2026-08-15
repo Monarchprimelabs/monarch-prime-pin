@@ -825,7 +825,7 @@ function confirmDelete(t: (key: string, vars?: Record<string, string | number>) 
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
-  pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 110, gap: 10 },
+  pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 124, gap: 10 },
   toolRow: {
     minHeight: 78, flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,

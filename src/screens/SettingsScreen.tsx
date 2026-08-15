@@ -53,7 +53,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'rem' && <RemindersTab />}
         {tab === 'acc' && <AccessTab onOpen={() => setUpgradeOpen(true)} />}
         {tab === 'leg' && <LegalTab />}

@@ -97,7 +97,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         <Header title="Monarch Pro" subtitle={t('upgrade.subtitle', { price })} />
         {!!onClose && (
           <View style={s.closeRow}>

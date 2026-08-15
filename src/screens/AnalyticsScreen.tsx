@@ -224,7 +224,7 @@ export function AnalyticsScreen() {
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
       <Header title={t('reports.title')} subtitle={t('reports.subtitle')} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         <Card>
           <CardLabel icon="📄">{t('reports.monthlyLabel')}</CardLabel>
           <Text style={s.reportMonth}>{monthLabel}</Text>

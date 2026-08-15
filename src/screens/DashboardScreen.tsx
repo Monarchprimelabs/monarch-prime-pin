@@ -163,7 +163,7 @@ export function DashboardScreen({ onNavigate }: Props) {
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         <Header
           title={t('dash.hello', { name: greetingName })}
           subtitle={user?.isDeveloper ? t('dash.devMode') : t('dash.welcome')}

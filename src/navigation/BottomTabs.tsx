@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, withAlpha } from '../theme';
 
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -42,27 +43,47 @@ export function BottomTabs() {
         <View style={s.tabBar}>
           {([
             { id: 'home' as const, labelKey: 'tab.home' },
-            { id: 'log' as const, labelKey: 'tab.log' },
             { id: 'history' as const, labelKey: 'tab.history' },
+            { id: 'spacer' as const, labelKey: '' },
             { id: 'analytics' as const, labelKey: 'tab.reports' },
             { id: 'settings' as const, labelKey: 'tab.tools' },
           ]).map(tab => (
-            <Pressable
-              key={tab.id}
-              onPress={() => setActive(tab.id)}
-              style={({ pressed }) => [s.tab, pressed && s.tabPressed]}
-            >
-              <View style={[s.tabIconWrap, active === tab.id && s.tabIconWrapActive]}>
-                <TabIcon id={tab.id} active={active === tab.id} />
-              </View>
-              <Text style={[s.tabLabel, active === tab.id && s.tabLabelActive]}>
-                {t(tab.labelKey)}
-              </Text>
-            </Pressable>
+            tab.id === 'spacer' ? (
+              // Leaves room for the raised log button, which is rendered
+              // outside this clipped container.
+              <View key="spacer" style={s.tab} pointerEvents="none" />
+            ) : (
+              <Pressable
+                key={tab.id}
+                onPress={() => setActive(tab.id)}
+                style={({ pressed }) => [s.tab, pressed && s.tabPressed]}
+              >
+                <View style={[s.tabIconWrap, active === tab.id && s.tabIconWrapActive]}>
+                  <TabIcon id={tab.id} active={active === tab.id} />
+                </View>
+                <Text style={[s.tabLabel, active === tab.id && s.tabLabelActive]}>
+                  {t(tab.labelKey)}
+                </Text>
+              </Pressable>
+            )
           ))}
         </View>
         </SafeAreaView>
       </View>
+
+      {/* Raised log button. Rendered as a sibling of the bar because the bar
+          clips its own blur (overflow: hidden) and would cut the top off. */}
+      <SafeAreaView edges={['bottom']} style={s.fabHost} pointerEvents="box-none">
+        <Pressable
+          onPress={() => setActive('log')}
+          style={({ pressed }) => [s.fab, pressed && s.fabPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('tab.log')}
+          accessibilityState={{ selected: active === 'log' }}
+        >
+          <Ionicons name="add" size={32} color={colors.actionText} />
+        </Pressable>
+      </SafeAreaView>
     </View>
   );
 }
@@ -148,6 +169,25 @@ const s = StyleSheet.create({
     transform: [{ scale: 0.9 }],
     opacity: 0.7,
   },
+  fabHost: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'flex-end',
+  },
+  fab: {
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+    // Lifts the button above the bar without clipping, and keeps a ring of
+    // the bar's own surface around it so it reads as seated, not floating.
+    marginBottom: 18,
+    borderWidth: 4, borderColor: colors.bg,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabPressed: { transform: [{ scale: 0.92 }], opacity: 0.9 },
   tabIconWrap: {
     paddingHorizontal: 14,
     paddingVertical: 3,

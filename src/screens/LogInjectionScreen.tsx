@@ -394,7 +394,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   return (
     <SafeAreaView style={s.app} edges={['top']}>
       <Disclaimer />
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }} keyboardShouldPersistTaps="handled">
         <Header
           title={isEditing ? t('log.titleEdit') : t('log.titleNew')}
           subtitle={

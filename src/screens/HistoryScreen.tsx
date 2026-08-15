@@ -68,7 +68,7 @@ export function HistoryScreen() {
           </Pressable>
         ))}
       </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
         {tab === 'calendar' && canUsePro && (
           <CalendarView
