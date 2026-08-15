@@ -116,7 +116,7 @@ const en: Record<string, string> = {
   'legal.li4': '• The developers of this application bear no liability for misuse',
   'legal.p5': 'Misuse of research peptides may be illegal in your jurisdiction and can pose serious health risks.',
   'legal.p6': 'If you are experiencing a medical emergency, contact emergency services immediately.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.6 — Research Use Only',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Research Use Only',
 
   // OK button
   'common.ok': 'OK',
@@ -349,6 +349,9 @@ const en: Record<string, string> = {
   'share.action': 'Share',
   'share.close': 'Close',
   'share.failed': 'Sharing is not available on this device.',
+  'widget.today': 'Today',
+  'widget.daysSince': 'days since last record',
+  'widget.total': '{n} records logged',
   'share.formatStory': 'Story / Reel',
   'share.formatPost': 'Post',
   'share.formatSquare': 'Square',
@@ -743,7 +746,7 @@ const es: Record<string, string> = {
   'legal.li4': '• Los desarrolladores de esta aplicación no asumen responsabilidad por el mal uso',
   'legal.p5': 'El mal uso de péptidos de investigación puede ser ilegal en tu jurisdicción y puede representar riesgos graves para la salud.',
   'legal.p6': 'Si tienes una emergencia médica, contacta a los servicios de emergencia de inmediato.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.6 — Solo para uso en investigación',
+  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Solo para uso en investigación',
 
   // OK button
   'common.ok': 'OK',
@@ -976,6 +979,9 @@ const es: Record<string, string> = {
   'share.action': 'Compartir',
   'share.close': 'Cerrar',
   'share.failed': 'Compartir no está disponible en este dispositivo.',
+  'widget.today': 'Hoy',
+  'widget.daysSince': 'días desde el último registro',
+  'widget.total': '{n} registros guardados',
   'share.formatStory': 'Historia / Reel',
   'share.formatPost': 'Publicación',
   'share.formatSquare': 'Cuadrado',
