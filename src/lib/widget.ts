@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { Injection } from '../data/peptides';
 import { recordTimestamp } from './heat';
+import { localDateISO, parseLocalDay } from './dates';
 
 const APP_GROUP = 'group.com.monarchprime.pin';
 const MS_PER_DAY = 86400000;
@@ -28,9 +29,28 @@ export function updateWidgetSnapshot(
   }
 
   try {
-    const timestamps = records
-      .map(recordTimestamp)
-      .sort((a, b) => b - a);
+    const timestampsUnsorted = records.map(recordTimestamp);
+    const timestamps = [...timestampsUnsorted].sort((a, b) => b - a);
+
+    // Streak as of the LAST logged day (consecutive logged days ending
+    // there). The widget applies the dashboard's grace rule itself: it
+    // shows this number while the gap since the last record is <= 1 day
+    // and zero after, so the streak breaks on time without the app open.
+    const logDays = new Set(records.map(r => r.date).filter(Boolean));
+    let latestDate: string | null = null;
+    let latestTs = -Infinity;
+    records.forEach((r, i) => {
+      const ts = timestampsUnsorted[i];
+      if (ts > latestTs) { latestTs = ts; latestDate = r.date; }
+    });
+    let streakBase = 0;
+    if (latestDate) {
+      const cursor = parseLocalDay(latestDate);
+      while (logDays.has(localDateISO(cursor))) {
+        streakBase += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    }
 
     // Epoch SECONDS (what Date(timeIntervalSince1970:) expects), newest
     // first. 30 days comfortably covers the widget's rolling 7-day count;
@@ -48,6 +68,8 @@ export function updateWidgetSnapshot(
     storage.set('widget_word_today', t('widget.today'));
     storage.set('widget_label_days', t('widget.daysSince'));
     storage.set('widget_label_last7', t('widget.last7'));
+    storage.set('widget_streak_base', String(streakBase));
+    storage.set('widget_label_streak', t('dash.dayStreak'));
     // Total only changes inside the app, so a pre-formatted line stays true.
     storage.set('widget_line_total', t('widget.total', { n: records.length }));
     ExtensionStorage.reloadWidget();
