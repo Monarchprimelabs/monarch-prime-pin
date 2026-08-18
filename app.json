@@ -3,6 +3,7 @@
     "name": "Monarch Prime Pin",
     "slug": "monarch-prime-pin",
     "version": "1.7.0",
+    "scheme": "monarchpin",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

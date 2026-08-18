@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Linking } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -21,6 +21,18 @@ export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 export function BottomTabs() {
   const { t } = useI18n();
   const [active, setActive] = React.useState<TabId>('home');
+
+  // Tapping the home-screen widget opens monarchpin://log. The listener
+  // lives inside the tab host, so the app lock gate (rendered above us)
+  // still runs first — a deep link never bypasses it.
+  React.useEffect(() => {
+    const handleUrl = (url: string | null) => {
+      if (url && url.startsWith('monarchpin://log')) setActive('log');
+    };
+    Linking.getInitialURL().then(handleUrl).catch(() => undefined);
+    const sub = Linking.addEventListener('url', event => handleUrl(event.url));
+    return () => sub.remove();
+  }, []);
   const { hasPro } = useEntitlements();
   const { user } = useAuth();
   const canUsePro = hasPro || !!user?.isDeveloper;

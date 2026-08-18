@@ -15,6 +15,8 @@ struct MonarchEntry: TimelineEntry {
   let totalLine: String
   let last7: String
   let last7Label: String
+  let streak: String
+  let streakLabel: String
 }
 
 private struct Snapshot {
@@ -24,6 +26,8 @@ private struct Snapshot {
   let daysLabel: String
   let totalLine: String
   let last7Label: String
+  let streakBase: Int
+  let streakLabel: String
 
   static func read() -> Snapshot {
     let defaults = UserDefaults(suiteName: appGroup)
@@ -39,12 +43,17 @@ private struct Snapshot {
       wordToday: defaults?.string(forKey: "widget_word_today") ?? "Today",
       daysLabel: defaults?.string(forKey: "widget_label_days") ?? "days since last record",
       totalLine: defaults?.string(forKey: "widget_line_total") ?? "",
-      last7Label: defaults?.string(forKey: "widget_label_last7") ?? "last 7 days"
+      last7Label: defaults?.string(forKey: "widget_label_last7") ?? "last 7 days",
+      streakBase: Int(defaults?.string(forKey: "widget_streak_base") ?? "") ?? 0,
+      streakLabel: defaults?.string(forKey: "widget_label_streak") ?? "Day Streak"
     )
   }
 
   func entry(at date: Date) -> MonarchEntry {
     var big = "—"
+    // Same grace rule as the dashboard: not having logged YET today keeps
+    // the streak alive; it zeroes only once a full day passes unlogged.
+    var streak = 0
     if let lastRecord {
       let cal = Calendar.current
       let days = cal.dateComponents(
@@ -53,6 +62,7 @@ private struct Snapshot {
         to: cal.startOfDay(for: date)
       ).day ?? 0
       big = days <= 0 ? wordToday : String(days)
+      streak = days <= 1 ? streakBase : 0
     }
     let windowStart = date.addingTimeInterval(-7 * 86400)
     let last7 = recent.filter { $0 >= windowStart && $0 <= date }.count
@@ -62,7 +72,9 @@ private struct Snapshot {
       daysLabel: daysLabel,
       totalLine: totalLine,
       last7: String(last7),
-      last7Label: last7Label
+      last7Label: last7Label,
+      streak: String(streak),
+      streakLabel: streakLabel
     )
   }
 }
@@ -97,6 +109,7 @@ struct MonarchWidgetView: View {
     Group {
       if family == .systemMedium { medium } else { small }
     }
+    .widgetURL(URL(string: "monarchpin://log"))
     .containerBackground(for: .widget) { bg }
   }
 
@@ -107,14 +120,14 @@ struct MonarchWidgetView: View {
       .foregroundColor(accent)
   }
 
-  private var daysColumn: some View {
+  private func statColumn(_ value: String, _ label: String, size: CGFloat = 34) -> some View {
     VStack(alignment: .leading, spacing: 3) {
-      Text(entry.big)
-        .font(.system(size: 34, weight: .heavy, design: .rounded))
+      Text(value)
+        .font(.system(size: size, weight: .heavy, design: .rounded))
         .foregroundColor(.white)
         .minimumScaleFactor(0.5)
         .lineLimit(1)
-      Text(entry.daysLabel)
+      Text(label)
         .font(.system(size: 11, weight: .semibold))
         .foregroundColor(muted)
         .lineLimit(2)
@@ -122,11 +135,18 @@ struct MonarchWidgetView: View {
     }
   }
 
+  private var divider: some View {
+    Rectangle()
+      .fill(muted.opacity(0.25))
+      .frame(width: 1, height: 40)
+      .padding(.horizontal, 10)
+  }
+
   private var small: some View {
     VStack(alignment: .leading, spacing: 3) {
       header
       Spacer(minLength: 0)
-      daysColumn
+      statColumn(entry.big, entry.daysLabel)
       Text(entry.totalLine)
         .font(.system(size: 11))
         .foregroundColor(muted)
@@ -139,28 +159,23 @@ struct MonarchWidgetView: View {
 
   private var medium: some View {
     VStack(alignment: .leading, spacing: 3) {
-      header
+      HStack {
+        header
+        Spacer()
+        Image(systemName: "plus.circle.fill")
+          .font(.system(size: 20))
+          .foregroundColor(accent)
+      }
       Spacer(minLength: 0)
       HStack(alignment: .bottom, spacing: 0) {
-        daysColumn
+        statColumn(entry.big, entry.daysLabel, size: 30)
           .frame(maxWidth: .infinity, alignment: .leading)
-        Rectangle()
-          .fill(muted.opacity(0.25))
-          .frame(width: 1, height: 44)
-          .padding(.horizontal, 14)
-        VStack(alignment: .leading, spacing: 3) {
-          Text(entry.last7)
-            .font(.system(size: 34, weight: .heavy, design: .rounded))
-            .foregroundColor(.white)
-            .minimumScaleFactor(0.5)
-            .lineLimit(1)
-          Text(entry.last7Label)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(muted)
-            .lineLimit(2)
-            .minimumScaleFactor(0.8)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        divider
+        statColumn(entry.streak, entry.streakLabel, size: 30)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        divider
+        statColumn(entry.last7, entry.last7Label, size: 30)
+          .frame(maxWidth: .infinity, alignment: .leading)
       }
       Spacer(minLength: 0)
       Text(entry.totalLine)
