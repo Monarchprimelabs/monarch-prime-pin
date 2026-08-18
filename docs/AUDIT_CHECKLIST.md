@@ -81,7 +81,25 @@ These escape every static audit. Explicitly hand them to George's QA pass:
 - [ ] Backup from a previous version imports cleanly
 - [ ] New fields survive the backup/restore round trip
 
-## 7. Theme-safety (added when light mode shipped)
+## 7. Native build / entitlements (added when the widget shipped blind)
+
+- [ ] ⚠️ **Verify plugin "magic" on the ARTIFACT, not the source.** Build 30
+      shipped with the widget missing its App Group entitlement even though
+      the plugin source contained auto-mirroring logic and the audit had
+      verified that logic existed. Reading the plugin is not evidence it
+      fired. After ANY change to `targets/`, entitlements, provisioning, or
+      the apple-targets plugin version, download the .ipa and check BOTH
+      binaries:
+      `codesign -d --entitlements :- Payload/*.app`
+      `codesign -d --entitlements :- Payload/*.app/PlugIns/*.appex`
+- [ ] The App Group is declared in THREE places that must agree:
+      app.json `ios.entitlements`, `targets/widget/expo-target.config.js`
+      (explicitly — never trust mirroring), and `src/lib/widget.ts`.
+- [ ] A fix made on the build machine that is not committed does not exist.
+      Any local patch Codex applies to get a build green must land in the
+      repo before the next build, or the next clean checkout regresses it.
+
+## 8. Theme-safety (added when light mode shipped)
 
 Light and dark are applied at launch by mutating the `colors` object before
 any screen module imports (App.tsx gates on `loadTheme()`), so StyleSheets
