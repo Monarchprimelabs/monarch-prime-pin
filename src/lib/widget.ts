@@ -1,13 +1,16 @@
 import { Platform } from 'react-native';
 import { Injection } from '../data/peptides';
-import { localDateISO, parseLocalDay } from './dates';
+import { recordTimestamp } from './heat';
 
 const APP_GROUP = 'group.com.monarchprime.pin';
 const MS_PER_DAY = 86400000;
 
-// Pushes a small, pre-localized snapshot into the shared app group for the
-// home-screen widget. No compound names ever leave the app — the widget
-// shows only counts and dates by design.
+// Pushes a snapshot into the shared app group for the home-screen widget.
+// The app writes RAW TIMESTAMPS plus pre-localized labels; the widget does
+// the date math itself at render time, so "days since" keeps counting after
+// the app is closed instead of freezing at whatever number was last shown.
+// No compound names ever leave the app — the widget shows only counts and
+// dates by design.
 //
 // The native module only exists in dev/production builds that included the
 // widget target; in Expo Go the require fails and this becomes a no-op.
@@ -25,22 +28,28 @@ export function updateWidgetSnapshot(
   }
 
   try {
-    const latest = [...records].sort(
-      (a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`),
-    )[0];
+    const timestamps = records
+      .map(recordTimestamp)
+      .sort((a, b) => b - a);
 
-    let big = '—';
-    if (latest) {
-      const today = parseLocalDay(localDateISO()).getTime();
-      const last = parseLocalDay(latest.date).getTime();
-      const daysSince = Math.max(0, Math.round((today - last) / MS_PER_DAY));
-      big = daysSince === 0 ? t('widget.today') : String(daysSince);
-    }
+    // Epoch SECONDS (what Date(timeIntervalSince1970:) expects), newest
+    // first. 30 days comfortably covers the widget's rolling 7-day count;
+    // the cap keeps the string tiny for even the heaviest logger.
+    const cutoff = Date.now() - 30 * MS_PER_DAY;
+    const recent = timestamps
+      .filter(ts => ts >= cutoff)
+      .slice(0, 200)
+      .map(ts => String(Math.floor(ts / 1000)))
+      .join(',');
 
     const storage = new ExtensionStorage(APP_GROUP);
-    storage.set('widget_big', big);
-    storage.set('widget_line1', t('widget.daysSince'));
-    storage.set('widget_line2', t('widget.total', { n: records.length }));
+    storage.set('widget_last_ts', timestamps.length ? String(Math.floor(timestamps[0] / 1000)) : '');
+    storage.set('widget_recent_ts', recent);
+    storage.set('widget_word_today', t('widget.today'));
+    storage.set('widget_label_days', t('widget.daysSince'));
+    storage.set('widget_label_last7', t('widget.last7'));
+    // Total only changes inside the app, so a pre-formatted line stays true.
+    storage.set('widget_line_total', t('widget.total', { n: records.length }));
     ExtensionStorage.reloadWidget();
   } catch {
     // Widget updates are strictly best-effort.
