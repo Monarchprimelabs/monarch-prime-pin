@@ -77,3 +77,34 @@ export function updateWidgetSnapshot(
     // Widget updates are strictly best-effort.
   }
 }
+
+// Temporary field diagnostic for the widget data pipe: reports whether the
+// native module is linked, whether a probe value written through it can be
+// read straight back from the shared app group, and what the widget's own
+// keys currently hold. Surfaced from the Tools screen; remove once the
+// widget is confirmed working in production.
+export function widgetDiagnostic(): string {
+  if (Platform.OS !== 'ios') return 'iOS only';
+  const lines: string[] = [];
+  const native = (globalThis as any).expo?.modules?.ExtensionStorage;
+  lines.push('native module: ' + (native ? 'present' : 'MISSING'));
+  let ExtensionStorage: any;
+  try {
+    ExtensionStorage = require('@bacons/apple-targets').ExtensionStorage;
+  } catch (error) {
+    lines.push('require failed: ' + String(error));
+    return lines.join('\n');
+  }
+  try {
+    const storage = new ExtensionStorage(APP_GROUP);
+    const probe = 'diag-' + Date.now();
+    storage.set('widget_diag', probe);
+    const readBack = storage.get('widget_diag');
+    lines.push('write+readback: ' + (readBack === probe ? 'OK' : 'FAILED got ' + JSON.stringify(readBack ?? null)));
+    lines.push('widget_last_ts: ' + JSON.stringify(storage.get('widget_last_ts') ?? null));
+    lines.push('widget_line_total: ' + JSON.stringify(storage.get('widget_line_total') ?? null));
+  } catch (error) {
+    lines.push('error: ' + String(error));
+  }
+  return lines.join('\n');
+}

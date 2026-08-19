@@ -11,11 +11,12 @@ import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
 import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
-  getInventory, getRecordTemplates, getSchedules,
+  getInjections, getInventory, getRecordTemplates, getSchedules,
   InventoryItem, RecordTemplate, saveInventoryItem, saveRecordTemplate,
   saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
+import { updateWidgetSnapshot, widgetDiagnostic } from '../lib/widget';
 import { UpgradeScreen } from './UpgradeScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
@@ -114,6 +115,19 @@ export function ToolsScreen() {
             <Text style={s.chev}>›</Text>
           </Pressable>
         ))}
+        <Pressable
+          onPress={async () => {
+            // Force a fresh write exactly like the dashboard does, then
+            // probe the pipe, so one tap tests write and read together.
+            const records = await getInjections();
+            updateWidgetSnapshot(records, t);
+            Alert.alert(t('tools.widgetDiag'), widgetDiagnostic());
+          }}
+          style={({ pressed }) => [s.diagRow, pressed && { opacity: 0.6 }]}
+          accessibilityRole="button"
+        >
+          <Text style={s.diagText}>{t('tools.widgetDiag')}</Text>
+        </Pressable>
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => setActive(null)}><SafeAreaProvider>
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
@@ -824,6 +838,8 @@ function confirmDelete(t: (key: string, vars?: Record<string, string | number>) 
 }
 
 const s = StyleSheet.create({
+  diagRow: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  diagText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   app: { flex: 1, backgroundColor: colors.bg },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 124, gap: 10 },
   toolRow: {
