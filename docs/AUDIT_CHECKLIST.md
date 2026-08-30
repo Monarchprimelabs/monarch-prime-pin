@@ -81,7 +81,9 @@ These escape every static audit. Explicitly hand them to George's QA pass:
 - [ ] Backup from a previous version imports cleanly
 - [ ] New fields survive the backup/restore round trip
 
-## 7. Native build / entitlements (added when the widget shipped blind)
+## 7. Native build / entitlements (added when the widget shipped blind;
+##    the widget itself was removed in 1.7.0 — these rules apply whenever
+##    any app extension target is (re)introduced)
 
 - [ ] ⚠️ **Verify plugin "magic" on the ARTIFACT, not the source.** Build 30
       shipped with the widget missing its App Group entitlement even though
