@@ -1,0 +1,62 @@
+# Releasing Monarch Prime Pin
+
+Builds run on **Expo's servers**, not on any Mac. A Mac is only ever needed
+for the one-time interactive Apple credential setup (already done — the
+distribution certificate and provisioning profiles live on EAS).
+
+## Normal release (no computer required)
+
+The repo is connected to EAS via the Expo GitHub App, so a build can be
+started from a phone browser.
+
+1. Merge everything to `main` and note the commit hash.
+2. Open the project's **Builds** page on expo.dev.
+3. **Create a build** → branch `main`, platform **iOS**, profile
+   **`ios-production`**.
+4. Confirm the build header shows the commit you expect before walking away.
+5. When it finishes, use **Submit to App Store** on the build page.
+
+### Alternative: trigger from a pull request
+
+With the GitHub App connected, applying a label of the form
+`eas-build-[platform]:[profile]` to a PR starts a build of that PR — e.g.
+`eas-build-ios:ios-production`. Useful when the build needs to be kicked
+off from somewhere without the expo.dev UI handy.
+
+### Alternative: CLI
+
+From any machine with the repo checked out and an authenticated EAS CLI:
+
+```
+npx eas-cli build --platform ios --profile ios-production
+npx eas-cli submit --platform ios --profile ios-production --latest
+```
+
+## Version numbers
+
+`eas.json` sets `appVersionSource: remote` with `autoIncrement`, so the
+**build number is assigned by EAS** and must never be hand-edited. Only the
+user-facing version (`expo.version` in `app.json`) is edited by hand.
+
+## Before spending a build
+
+Run the mechanical gates locally:
+
+```
+npx tsc --noEmit
+node scripts/test-heat.js     # expect "29 passed, 0 failed"
+```
+
+Then walk `docs/AUDIT_CHECKLIST.md`. Section 7 matters specifically when any
+native/extension target is involved: verify entitlements on the **built
+artifact**, never by reading plugin source.
+
+## History worth remembering
+
+The home-screen widget was removed in 1.7.0 after three builds could not get
+it reading shared app-group data on device, despite entitlements, profiles,
+and native module linking all verifying clean. If it is ever revisited, do it
+with Xcode on a Mac for real on-device debugging rather than blind builds.
+The orphaned `com.monarchprime.pin.widget` identifier, its profiles, and the
+`group.com.monarchprime.pin` app group still exist in the Apple Developer
+account and can be reused.
