@@ -1,0 +1,24 @@
+# One-button iOS release: builds with the ios-production profile (the one
+# that enables in-app purchases) and submits the result to App Store
+# Connect. Run it from the Workflows page on expo.dev — no terminal, no Mac.
+#
+# This exists because the expo.dev build page has no "submit" button; it
+# only prints the `eas submit` CLI command, which is useless without a
+# computer. A workflow is the supported way to submit from the web UI.
+name: Release iOS
+
+jobs:
+  build:
+    name: Build (ios-production)
+    type: build
+    params:
+      platform: ios
+      profile: ios-production
+
+  submit:
+    name: Submit to App Store Connect
+    needs: [build]
+    type: submit
+    params:
+      build_id: ${{ needs.build.outputs.build_id }}
+      profile: ios-production
