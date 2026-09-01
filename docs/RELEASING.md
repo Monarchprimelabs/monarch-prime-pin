@@ -6,15 +6,26 @@ distribution certificate and provisioning profiles live on EAS).
 
 ## Normal release (no computer required)
 
-The repo is connected to EAS via the Expo GitHub App, so a build can be
-started from a phone browser.
+Use the **Release iOS** workflow (`.eas/workflows/release-ios.yml`). On
+expo.dev, open the project's **Workflows** page and run it. It builds with
+the `ios-production` profile and submits the result to App Store Connect as
+one unit.
 
-1. Merge everything to `main` and note the commit hash.
-2. Open the project's **Builds** page on expo.dev.
-3. **Create a build** → branch `main`, platform **iOS**, profile
-   **`ios-production`**.
-4. Confirm the build header shows the commit you expect before walking away.
-5. When it finishes, use **Submit to App Store** on the build page.
+**The expo.dev Builds page has no submit button** — its "Submit to an app
+store" dialog only prints the `eas submit` CLI command, which is useless
+without a computer. That is why the workflow exists; do not plan a release
+around submitting from the build page.
+
+### Build only, from the Builds page
+
+**Create a build** → branch `main`, platform **iOS**, profile
+**`ios-production`**. Confirm the commit in the header before walking away.
+Note this leaves the build unsubmitted.
+
+> **The profile matters.** `ios-production` sets
+> `EXPO_PUBLIC_MONETIZATION_ENABLED=true`; the plain `production` profile
+> does not, and a build made with it ships with in-app purchases disabled —
+> nobody can buy Pro. Always confirm the profile reads `ios-production`.
 
 ### Alternative: trigger from a pull request
 
