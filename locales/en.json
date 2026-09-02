@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries.",
+    "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your research log entries.",
+    "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library for your research records."
+  }
+}

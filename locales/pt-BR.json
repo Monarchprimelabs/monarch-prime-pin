@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "NSCameraUsageDescription": "O Monarch Prime Pin usa sua câmera para capturar fotos de progresso para seus registros de pesquisa.",
+    "NSPhotoLibraryUsageDescription": "O Monarch Prime Pin usa sua fototeca para anexar fotos de progresso aos seus registros de pesquisa.",
+    "NSPhotoLibraryAddUsageDescription": "O Monarch Prime Pin salva fotos de progresso na sua fototeca para seus registros de pesquisa."
+  }
+}

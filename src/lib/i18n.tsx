@@ -1916,7 +1916,7 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(() => detectDeviceLanguage());
 
   useEffect(() => {
     AsyncStorage.getItem(KEY_LANGUAGE)
