@@ -37,7 +37,10 @@ Everything you enter is stored locally on your device by the app itself:
   setting, the date of your last backup, the last values typed into the
   concentration worksheet, and the local record of a Lifetime Pro unlock;
 - small local counters the app uses to decide when to show Apple's rating
-  prompt (see "Purchases and Apple services" below).
+  prompt (see "Purchases and Apple services" below), a marker that the free
+  tier has been introduced on this install, and local-only counts of how
+  often the Lifetime Pro screen was viewed, tapped, or purchased (shown only
+  on a developer diagnostics card; never transmitted).
 
 None of this is transmitted to us, because there is no server that could
 receive it. If you delete the app, this data is deleted with it, which is
@@ -122,8 +125,10 @@ cloud service, that copy is then governed by that service's privacy policy.
   bottom) cancels any scheduled reminders and removes the local profile,
   research log entries, schedules, inventory, templates, and onboarding
   status from this device. It does not remove your preferences (language,
-  theme, app lock, heatmap setting), the Pro unlock marker described above,
-  or the last-backup date, and photo files already attached to entries may
+  theme, app lock, heatmap setting), your onboarding answers, the last values
+  typed into the concentration worksheet, the rating-prompt and Pro-screen
+  counters, the free-tier marker, the Pro unlock marker described above, or
+  the last-backup date, and photo files already attached to entries may
   remain in the app's private storage until the app is uninstalled.
 - **Uninstalling the app** removes everything it stored, including photos.
 - Backup files, exports, and shared reports that you saved elsewhere are

@@ -132,3 +132,11 @@ pushing, then attach the localized build to it and submit both together.
   value `detectDeviceLanguage()` reads first. If not, a user who sets a
   per-app language still gets the device-wide language until they use the
   in-app picker.
+
+## Before submitting: a permission string to reconsider
+
+`NSPhotoLibraryAddUsageDescription` ("saves progress photos to your photo
+library") is declared in `app.json` and translated in `locales/*.json`, but the
+app never writes to the photo library (no media-library or save-to-library call
+exists in `src/`). App Review compares permission text with behavior; consider
+removing that key and its three locale strings before the next submission.
