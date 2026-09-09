@@ -118,6 +118,14 @@ capture the right palette with no per-render cost. That only holds if:
 - [ ] **Data-semantic colors stay fixed**: `severity` and `heatColors` must
       read identically in both themes.
 - [ ] **StatusBar style comes from `colors.statusBar`**, never hardcoded.
+- [ ] ⚠️ **Native UI must follow the in-app theme.** UI the app does not draw —
+      alert dialogs, the keyboard, action sheets — takes the OS appearance, not
+      the palette. `app.json` must keep `userInterfaceStyle: "automatic"` and
+      `applyTheme()` must call `Appearance.setColorScheme(theme)`; forcing
+      `"dark"` in app.json makes every alert dark inside light mode.
+- [ ] The splash background (`app.json` splash.backgroundColor) is fixed dark
+      and shows before the theme applies, so light-mode users see a brief dark
+      splash. Accepted cosmetic tradeoff — revisit only with a light asset.
 - [ ] Render-level (device only): every screen in BOTH themes — check the
       research banner, the body map, disabled/placeholder text, and the
       blurred tab bar.

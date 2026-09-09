@@ -1,3 +1,4 @@
+import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /** Convert '#RRGGBB' to an rgba() string. */
@@ -155,7 +156,18 @@ export const heatColors = {
 };
 
 export function applyTheme(id: ThemeId): void {
-  Object.assign(colors, (THEMES[id] ?? THEMES.dark).palette);
+  const resolved: ThemeId = THEMES[id] ? id : 'dark';
+  Object.assign(colors, THEMES[resolved].palette);
+  // Match the OS appearance to the chosen theme so UI we don't draw —
+  // alert dialogs, the keyboard, action sheets — isn't dark while the app
+  // is light. app.json sets userInterfaceStyle "automatic" so this call is
+  // what decides; without it iOS would follow the device setting, which has
+  // nothing to do with the user's choice here.
+  try {
+    Appearance.setColorScheme(resolved);
+  } catch {
+    // Older runtimes lack setColorScheme; the in-app palette still applies.
+  }
 }
 
 export async function getTheme(): Promise<ThemeId> {
