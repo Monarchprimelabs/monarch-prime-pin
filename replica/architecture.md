@@ -96,7 +96,6 @@ If George later turns on Supabase sync, the four new fields on `Injection` need 
 | `vials/math.remaining` | mass minus every log drawn from the vial | vial, injections | mcg or IU left | F05 |
 | `vials/math.projectRunOut` | walks future occurrences of every protocol on the vial in time order | vial, protocols, injections | run-out date, first at-risk dose | F05 |
 | `vials/alerts.sync` | local notifications 7 days before run-out and on the at-risk dose | vials, projections | | F05 |
-| `sites.suggestNext` | coolest zone on the existing heat map | injections | zone id | F06 (suggestion only, the user picks) |
 
 Background work: none on a server. `reminders.sync` and `vials/alerts.sync` run on app start, on return to foreground, and after any protocol, vial, log or skip change.
 
@@ -125,7 +124,7 @@ Background work: none on a server. `reminders.sync` and `vials/alerts.sync` run 
 | 1b | S13 Protocols list, S14 Protocol builder (in Tools; frequency picker, unit picker, times, cycle, start date, notes) | `storage` protocols + revisions | builder, units, frequencies, several protocols, start/notes/reminder times, cycles, change plan without rewriting history |
 | 1c | none (reminder settings live in S14) | `reminders.sync`, foreground hook in `AppRoot` | dose reminders |
 | 1d | S08 Today, at the top of Dashboard: today's dose cards (due / done / late / skipped) | `status` | Today view |
-| 1e | S09 quick-log sheet: compound, amount and time prefilled, site preselected from `suggestNext`, one Save. Tapping a reminder opens it | `saveInjection` + occurrence link, idempotency | one-tap log, rotation suggestion |
+| 1e | S09 quick-log sheet: compound, amount and time prefilled, site picked on the body map, one Save. Tapping a reminder opens it | `saveInjection` + occurrence link, idempotency | one-tap log |
 | 1f | S11 week strip above the History calendar; planned vs done dots; "log late" and "skip" on a past occurrence; edit keeps the link | `status` | week strip + calendar, edit/backdate (already yes, keep it working) |
 
 The slice takes must-haves from 4 to 14 of 18. Still open after it: vial inventory with concentration (milestone 2), the calculator's syringe-size input, two-step account deletion, and Apple/Google sign-in (milestone 3).
@@ -141,8 +140,15 @@ The slice takes must-haves from 4 to 14 of 18. Still open after it: vial invento
 
 **5. Fixes from `/replica-entrepreneur`**, once it has run.
 
-## Decisions for George before building
+## Decisions (George, 2026-10-10)
 
-1. **Gating.** Schedule and Inventory are Pro today. Keep protocols and vials Pro, or make Today and reminders free and keep the 5-log limit as the only paywall? The plan works either way. The default is to keep them Pro, matching today.
-2. **Old Schedule tool.** The default is to leave existing entries and the tool as they are and add Protocols beside it. The alternative is a one-time "convert to protocol" button.
-3. **Jest.** Adds `jest`, `jest-expo` and `@types/jest` as devDependencies and an `npm test` script. Nothing ships in the app bundle.
+1. **Gating:** protocols, Today and vials stay Pro, matching Schedule and Inventory today. The 5-free-logs limit is unchanged.
+2. **Old Schedule tool:** left as it is, with Protocols added beside it.
+3. **Jest:** approved as a dev-only dependency.
+
+## Compliance changes found while building
+
+`docs/AUDIT_CHECKLIST.md` §4 bans advising copy ("due", "overdue", "rest this area") and says rotation numbers only ever come from the user. So:
+- statuses read Planned / Logged / Skipped / Not logged
+- `sites.suggestNext` is dropped. The quick log shows the existing heat map and the user picks the site. The "rotation suggestion" half of that row stays open on purpose.
+- reminder notifications never name the compound

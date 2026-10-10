@@ -1,0 +1,52 @@
+{
+  "_about": "MPP's own light palette (src/theme/index.ts), only the roles the new components use. surface is the white card. New components: orange text uses accentLight (accent-text), filled buttons use primaryDark (action-fill), muted text sits on cards only. The existing white-on-primary button (3.68:1 in dark) and orange-on-white (3.18:1 in light) are pre-existing MPP pairs and are left alone.",
+  "color": {
+    "bg": "#E9EEF4",
+    "surface": "#FFFFFF",
+    "text": "#123157",
+    "text-muted": "#5C7189",
+    "primary": "#1565C0",
+    "accent": "#D9770A",
+    "teal": "#2E7D32",
+    "red": "#C62828",
+    "action": "#1565C0",
+    "action-text": "#FFFFFF",
+    "accent-text": "#B35F06",
+    "action-fill": "#1565C0"
+  },
+  "pairs": [
+    [
+      "text",
+      "surface"
+    ],
+    [
+      "text-muted",
+      "surface"
+    ],
+    [
+      "primary",
+      "surface"
+    ],
+    [
+      "teal",
+      "surface"
+    ],
+    [
+      "red",
+      "surface"
+    ],
+    [
+      "primary",
+      "surface",
+      "ui"
+    ],
+    [
+      "accent-text",
+      "surface"
+    ],
+    [
+      "action-text",
+      "action-fill"
+    ]
+  ]
+}
