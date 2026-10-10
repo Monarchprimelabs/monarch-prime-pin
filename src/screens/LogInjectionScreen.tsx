@@ -12,7 +12,8 @@ import { colors, spacing, radius, severity as sevColors, withAlpha } from '../th
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS, TIME_PERIODS, TimePeriod, formatClockTime } from '../data/peptides';
 import { getInjections, getInventory, getProtocols, getRecordTemplates, getVials, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
 import type { Vial } from '../lib/vials/types';
-import { getInjectionSiteIds } from '../lib/sites';
+import { getInjectionSiteIds, lastLoggedBySite } from '../lib/sites';
+import { daysBetween } from '../lib/schedule/days';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -103,9 +104,12 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [vials, setVials] = useState<Vial[]>([]);
   const [vialId, setVialId] = useState<string | undefined>(initialInjection?.vialId);
   const [vialTouched, setVialTouched] = useState(!!initialInjection);
+  const [history, setHistory] = useState<Injection[]>([]);
+  useEffect(() => { getInjections().then(setHistory).catch(() => undefined); }, []);
 
   const isEditing = !!initialInjection;
   const logDate = initialInjection?.date ?? initialDate ?? localDateISO();
+  const lastBySite = lastLoggedBySite(history, logDate, initialInjection?.id);
   const canUsePro = hasPro || !!user?.isDeveloper;
   const freeTrialActive = monetizationEnabled && !canUsePro && !isEditing;
   const freeLogsRemaining = freeLogCount === null
@@ -664,6 +668,23 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
           <BodyDiagram view={view} mode="select" selected={selected} onZoneTap={toggle} />
           <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
           {selected.length > 0 && (
+            <View style={s.lastUsedBox}>
+              {selected.map(id => {
+                const last = lastBySite[id];
+                const days = last ? daysBetween(last.date, logDate) : null;
+                return (
+                  <Text key={id} style={s.lastUsedText}>
+                    {t('zone.' + id)}: {last === undefined
+                      ? t('log.lastNever')
+                      : days === 0
+                        ? t('log.lastSameDay')
+                        : days === 1 ? t('log.lastOneDay') : t('log.lastDays', { n: days ?? 0 })}
+                  </Text>
+                );
+              })}
+            </View>
+          )}
+          {selected.length > 0 && (
             <View style={s.chips}>
               {selected.map(id => {
                 const z = ALL_ZONES.find(x => x.id === id);
@@ -996,6 +1017,8 @@ const s = StyleSheet.create({
   },
   unitBtn: { paddingHorizontal: 14, justifyContent: 'center', borderRadius: 9 },
   doseUnits: { marginTop: 10 },
+  lastUsedBox: { marginTop: 10, gap: 3 },
+  lastUsedText: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   doseUnitBtn: { flex: 1, minHeight: 40, alignItems: 'center' },
   unitBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   unitBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },

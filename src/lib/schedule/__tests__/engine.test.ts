@@ -1,7 +1,7 @@
 import { addDays, localInstant, weekdayOf } from '../days';
 import { endProtocol, isPlannedOn, occurrenceKey, occurrencesBetween, reviseProtocol } from '../engine';
 import { planReminders } from '../reminderPlan';
-import { withStatus, unplannedOn } from '../status';
+import { summarizeThrough, withStatus, unplannedOn } from '../status';
 import { Frequency, Protocol, ProtocolRevision } from '../types';
 
 const NOW = '2026-01-01T00:00:00.000Z';
@@ -142,6 +142,12 @@ describe('status', () => {
       { id: 'second', date: '2026-03-02', time: '08:00', occurrenceKey: occ[0].key },
     ];
     expect(withStatus(occ.slice(0, 1), records, [], today)[0].record?.id).toBe('first');
+  });
+  test('week summary counts days up to today only', () => {
+    const records = [{ id: 'a', date: '2026-03-02', time: '08:05', occurrenceKey: occ[0].key }];
+    const views = withStatus(occ, records, [{ occurrenceKey: occ[1].key, skippedAt: NOW }], today);
+    // Mar 2 logged, Mar 3 skipped, Mar 4 (today) planned; Mar 5 is later and left out.
+    expect(summarizeThrough(views, today)).toEqual({ planned: 3, logged: 1, skipped: 1 });
   });
   test('logs not on the plan are listed separately', () => {
     const records = [

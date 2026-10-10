@@ -34,3 +34,19 @@ export function withStatus<R extends LoggedRecord>(
 export function unplannedOn<R extends LoggedRecord>(records: R[], date: string, plannedKeys: Set<string>): R[] {
   return records.filter(record => record.date === date && !(record.occurrenceKey && plannedKeys.has(record.occurrenceKey)));
 }
+
+export type PlanSummary = { planned: number; logged: number; skipped: number };
+
+/**
+ * Planned doses on days up to and including today, and how many have a
+ * record or a skip. Later days are left out so the numbers never count
+ * doses that haven't come up yet.
+ */
+export function summarizeThrough(views: OccurrenceView[], today: string): PlanSummary {
+  const counted = views.filter(v => v.date <= today);
+  return {
+    planned: counted.length,
+    logged: counted.filter(v => v.status === 'logged').length,
+    skipped: counted.filter(v => v.status === 'skipped').length,
+  };
+}

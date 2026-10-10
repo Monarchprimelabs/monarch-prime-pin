@@ -785,6 +785,14 @@ const en: Record<string, string> = {
   'tools.gauge.syringeLabel': "SYRINGE SIZE",
   'tools.gauge.syringeAuto': "Fit",
   'tools.gauge.overSyringe': "Reads past {scale} units — more than one full {ml} mL syringe at this concentration.",
+  // Adherence and site history (facts only)
+  'proto.weekSoFar': "This week through today: {logged} of {planned} planned logged",
+  'proto.weekPast': "That week: {logged} of {planned} planned logged",
+  'proto.weekSkipped': " · {n} skipped",
+  'log.lastNever': "no earlier record",
+  'log.lastSameDay': "also logged that day",
+  'log.lastOneDay': "last logged 1 day before",
+  'log.lastDays': "last logged {n} days before",
 };
 
 const es: Record<string, string> = {
@@ -1562,6 +1570,14 @@ const es: Record<string, string> = {
   'tools.gauge.syringeLabel': "TAMAÑO DE JERINGA",
   'tools.gauge.syringeAuto': "Ajustar",
   'tools.gauge.overSyringe': "Pasa de {scale} unidades: más de una jeringa completa de {ml} mL con esta concentración.",
+  // Adherence and site history (facts only)
+  'proto.weekSoFar': "Esta semana hasta hoy: {logged} de {planned} planificadas registradas",
+  'proto.weekPast': "Esa semana: {logged} de {planned} planificadas registradas",
+  'proto.weekSkipped': " · {n} omitidas",
+  'log.lastNever': "sin registro anterior",
+  'log.lastSameDay': "también registrado ese día",
+  'log.lastOneDay': "último registro 1 día antes",
+  'log.lastDays': "último registro {n} días antes",
 };
 
 const pt: Record<string, string> = {
@@ -2336,6 +2352,14 @@ const pt: Record<string, string> = {
   'tools.gauge.syringeLabel': "TAMANHO DA SERINGA",
   'tools.gauge.syringeAuto': "Ajustar",
   'tools.gauge.overSyringe': "Passa de {scale} unidades: mais de uma seringa cheia de {ml} mL nesta concentração.",
+  // Adherence and site history (facts only)
+  'proto.weekSoFar': "Esta semana até hoje: {logged} de {planned} planejadas registradas",
+  'proto.weekPast': "Naquela semana: {logged} de {planned} planejadas registradas",
+  'proto.weekSkipped': " · {n} puladas",
+  'log.lastNever': "sem registro anterior",
+  'log.lastSameDay': "também registrado nesse dia",
+  'log.lastOneDay': "último registro 1 dia antes",
+  'log.lastDays': "último registro {n} dias antes",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };

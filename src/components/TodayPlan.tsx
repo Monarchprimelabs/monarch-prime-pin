@@ -9,7 +9,7 @@ import { getDoseSkips, getProtocols, removeDoseSkip, saveDoseSkip } from '../lib
 import { syncProtocolReminders } from '../lib/protocolReminders';
 import { addDays, weekdayOf } from '../lib/schedule/days';
 import { occurrencesBetween } from '../lib/schedule/engine';
-import { OccurrenceView, unplannedOn, withStatus } from '../lib/schedule/status';
+import { OccurrenceView, summarizeThrough, unplannedOn, withStatus } from '../lib/schedule/status';
 import { DoseSkip, Protocol } from '../lib/schedule/types';
 import type { PlannedDose } from '../screens/LogInjectionScreen';
 import { weekdayName, weekdayOrder } from '../screens/ProtocolsScreen';
@@ -146,6 +146,19 @@ export function TodayPlan({ injections, refreshToken, onLog, onOpenRecord, onSet
         </Pressable>
       </View>
 
+      {(() => {
+        // Days up to today only; a week entirely ahead has nothing to count.
+        const summary = summarizeThrough(weekViews, today);
+        if (summary.planned === 0) return null;
+        const isThisWeek = weekDays[0] <= today && today <= weekDays[6];
+        return (
+          <Text style={s.summary}>
+            {t(isThisWeek ? 'proto.weekSoFar' : 'proto.weekPast', { logged: summary.logged, planned: summary.planned })}
+            {summary.skipped > 0 ? t('proto.weekSkipped', { n: summary.skipped }) : ''}
+          </Text>
+        );
+      })()}
+
       {dayViews.length === 0 && extras.length === 0 && (
         <Text style={s.emptyText}>{t('proto.nothingPlanned')}</Text>
       )}
@@ -234,6 +247,7 @@ function pillTextStyle(status: OccurrenceView['status']) {
 const s = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   manage: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  summary: { color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 },
   emptyText: { color: colors.textMuted, fontSize: 13, lineHeight: 19, paddingVertical: 10 },
   setupBtn: { minHeight: 44, borderRadius: radius.md, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   setupBtnText: { color: colors.actionText, fontSize: 14, fontWeight: '700' },
