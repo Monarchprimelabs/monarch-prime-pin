@@ -56,7 +56,15 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Monarch Prime Pin reads your body weight and body fat percentage to show them next to your records and in Reports. The data stays on your phone.",
+          "NSHealthUpdateUsageDescription": "Monarch Prime Pin only reads from Apple Health and never writes to it.",
+          "background": false
+        }
+      ]
     ],
     "extra": {
       "eas": {

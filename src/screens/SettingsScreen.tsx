@@ -18,6 +18,7 @@ import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { SUPABASE_CONFIGURED } from '../lib/supabase';
+import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '../lib/health';
 import { UpgradeScreen } from './UpgradeScreen';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
@@ -75,6 +76,23 @@ function RemindersTab() {
   const [funnel, setFunnel] = useState<FunnelStats | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [appLockEnabled, setAppLockEnabled] = useState(false);
+  const [healthOn, setHealthOn] = useState(false);
+  const showHealth = healthSupported();
+  useEffect(() => { getHealthEnabled().then(setHealthOn).catch(() => undefined); }, []);
+  const toggleHealth = async (next: boolean) => {
+    try {
+      if (next) {
+        const ok = await enableHealth();
+        setHealthOn(ok);
+        if (ok) Alert.alert(t('health.onTitle'), t('health.onBody'));
+      } else {
+        await disableHealth();
+        setHealthOn(false);
+      }
+    } catch (error: any) {
+      Alert.alert(t('health.failedTitle'), error?.message || t('common.tryAgain'));
+    }
+  };
   const [heatHalfLife, setHeatHalfLifeState] = useState(DEFAULT_HALF_LIFE_DAYS);
   const [theme, setThemeState] = useState<ThemeId>('dark');
 
@@ -366,6 +384,24 @@ function RemindersTab() {
           {t('settings.localDataBody')}
         </Text>
       </Card>
+
+      {showHealth && (
+        <Card>
+          <CardLabel icon="❤">{t('health.label')}</CardLabel>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.localDataText}>{t('health.body')}</Text>
+            </View>
+            <Switch
+              value={healthOn}
+              onValueChange={toggleHealth}
+              trackColor={{ false: 'rgba(120,130,150,0.4)', true: colors.primary }}
+              thumbColor={colors.white}
+              accessibilityLabel={t('health.label')}
+            />
+          </View>
+        </Card>
+      )}
 
       <Card>
         <CardLabel icon="🔒">{t('settings.appLockLabel')}</CardLabel>

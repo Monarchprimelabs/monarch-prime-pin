@@ -799,6 +799,16 @@ const en: Record<string, string> = {
   'settings.backupPhotosCappedBody': "The backup holds your {kept} newest photos. {skipped} older photos were left out to keep the file a size a phone can open.",
   // Greeting without a name
   'dash.helloNoName': "Hello",
+  // Apple Health (read-only)
+  'health.label': "APPLE HEALTH",
+  'health.body': "Read your weight and body fat from Apple Health to show them in Reports and offer them when you log. Read-only: Monarch never writes to Apple Health, and the data stays on this phone.",
+  'health.onTitle': "Apple Health on",
+  'health.onBody': "If Reports shows no Apple Health weight, check Settings > Health > Data Access & Devices > Monarch Prime Pin. iOS does not tell apps whether read access was allowed.",
+  'health.failedTitle': "Couldn't connect to Apple Health",
+  'health.sourceHealth': "Weights from Apple Health",
+  'health.sourceLog': "Weights from your log entries",
+  'health.bodyFatLatest': "Body fat: {v}% (Apple Health, {date})",
+  'health.useWeight': "Use Apple Health: {w} lbs ({date})",
 };
 
 const es: Record<string, string> = {
@@ -1590,6 +1600,16 @@ const es: Record<string, string> = {
   'settings.backupPhotosCappedBody': "El respaldo incluye tus {kept} fotos más recientes. {skipped} fotos más antiguas quedaron fuera para que un teléfono pueda abrir el archivo.",
   // Greeting without a name
   'dash.helloNoName': "Hola",
+  // Apple Health (read-only)
+  'health.label': "APPLE SALUD",
+  'health.body': "Lee tu peso y grasa corporal de Apple Salud para mostrarlos en Reportes y ofrecerlos al registrar. Solo lectura: Monarch nunca escribe en Apple Salud y los datos se quedan en este teléfono.",
+  'health.onTitle': "Apple Salud activado",
+  'health.onBody': "Si Reportes no muestra peso de Apple Salud, revisa Ajustes > Salud > Acceso a datos y dispositivos > Monarch Prime Pin. iOS no les dice a las apps si se permitió la lectura.",
+  'health.failedTitle': "No se pudo conectar con Apple Salud",
+  'health.sourceHealth': "Pesos de Apple Salud",
+  'health.sourceLog': "Pesos de tus registros",
+  'health.bodyFatLatest': "Grasa corporal: {v}% (Apple Salud, {date})",
+  'health.useWeight': "Usar Apple Salud: {w} lbs ({date})",
 };
 
 const pt: Record<string, string> = {
@@ -2378,6 +2398,16 @@ const pt: Record<string, string> = {
   'settings.backupPhotosCappedBody': "O backup inclui suas {kept} fotos mais recentes. {skipped} fotos mais antigas ficaram de fora para que um aparelho consiga abrir o arquivo.",
   // Greeting without a name
   'dash.helloNoName': "Olá",
+  // Apple Health (read-only)
+  'health.label': "APPLE SAÚDE",
+  'health.body': "Leia seu peso e gordura corporal do Apple Saúde para mostrá-los nos Relatórios e oferecê-los ao registrar. Somente leitura: o Monarch nunca grava no Apple Saúde e os dados ficam neste aparelho.",
+  'health.onTitle': "Apple Saúde ativado",
+  'health.onBody': "Se os Relatórios não mostrarem peso do Apple Saúde, confira Ajustes > Saúde > Acesso a Dados e Dispositivos > Monarch Prime Pin. O iOS não informa aos apps se a leitura foi permitida.",
+  'health.failedTitle': "Não foi possível conectar ao Apple Saúde",
+  'health.sourceHealth': "Pesos do Apple Saúde",
+  'health.sourceLog': "Pesos dos seus registros",
+  'health.bodyFatLatest': "Gordura corporal: {v}% (Apple Saúde, {date})",
+  'health.useWeight': "Usar Apple Saúde: {w} lbs ({date})",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };

@@ -93,8 +93,20 @@ Tick each box. If something fails, note the step number and take a screenshot.
 - [ ] 10.6 The restore confirm dialog lists the photo count.
 - [ ] 10.7 GitHub: the CI check on the PR is green.
 
-## 11. Looks
+## 11. Personal-log wording and Apple Health (PR "repositioning-apple-health")
 
-- [ ] 11.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
-- [ ] 11.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
-- [ ] 11.3 The research banner sits below the status bar on the new modals.
+- [ ] 11.1 No screen says "research use only" or "not for human consumption": banner, sign-in, onboarding, Legal tab, PDF report, share card. The one exception is the Legal tab's sentence about products sold as "for research use only".
+- [ ] 11.2 Settings > Legal reads as a personal log, 18+, not medical advice, with the emergency line.
+- [ ] 11.3 With no name set, Home says "Hello" (not "Hello, Researcher").
+- [ ] 11.4 Settings shows an **Apple Health** card on iPhone. Turning it on shows the iOS Health sheet listing **Weight** and **Body Fat Percentage** under read only, with nothing under write.
+- [ ] 11.5 With weight in Apple Health: Reports > Weight trend uses it and says "Weights from Apple Health". Body fat shows its latest value and date.
+- [ ] 11.6 The log screen offers "Use Apple Health: 181.4 lbs (Oct 9)". Tapping it fills the weight. When backdating, it uses the latest weight on or before that day.
+- [ ] 11.7 Deny access in the Health sheet. Nothing crashes; Reports falls back to log weights.
+- [ ] 11.8 Turn the card off. Reports goes back to "Weights from your log entries".
+- [ ] 11.9 Build check (AUDIT_CHECKLIST §7): the .ipa's entitlements include `com.apple.developer.healthkit`.
+
+## 12. Looks
+
+- [ ] 12.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
+- [ ] 12.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
+- [ ] 12.3 The top banner sits below the status bar on the new modals.
