@@ -130,15 +130,19 @@ function RemindersTab() {
       t('settings.backupWarnBody'),
       [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('settings.backupWarnGo'), onPress: runBackupExport },
+        { text: t('settings.backupWithPhotos'), onPress: () => runBackupExport(true) },
+        { text: t('settings.backupNoPhotos'), onPress: () => runBackupExport(false) },
       ],
     );
   };
 
-  const runBackupExport = async () => {
+  const runBackupExport = async (includePhotos: boolean) => {
     setBackupBusy(true);
     try {
-      await exportBackup();
+      const counts = await exportBackup({ includePhotos });
+      if (counts.photosSkipped > 0) {
+        Alert.alert(t('settings.backupPhotosCappedTitle'), t('settings.backupPhotosCappedBody', { kept: counts.photos, skipped: counts.photosSkipped }));
+      }
     } catch (error: any) {
       Alert.alert(t('settings.backupFailedTitle'), error?.message || t('common.tryAgain'));
     } finally {
@@ -162,6 +166,7 @@ function RemindersTab() {
           inv: counts.inventory,
           tpl: counts.templates,
           pro: counts.protocols,
+          pho: counts.photos,
         }),
         [
           { text: t('common.cancel'), style: 'cancel' },

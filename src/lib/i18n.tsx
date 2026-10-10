@@ -68,7 +68,7 @@ const en: Record<string, string> = {
 
   // Backup card
   'settings.backupLabel': 'DATA BACKUP',
-  'settings.backupBody': 'Export all records, schedules, inventory, and templates as a single backup file you control — for safekeeping or moving to a new phone. Photos, reminders, and Pro unlock status are not included; restore Pro with Restore Prior Purchase and re-create reminders after importing.',
+  'settings.backupBody': "Export all records, protocols, vials, schedules, inventory and templates as one backup file you control, for safekeeping or moving to a new phone. Photos can be included. Pro unlock status is not included: restore it with Restore Prior Purchase. Protocol reminders are rebuilt after importing.",
   'settings.backupExport': 'Export Backup File',
   'settings.backupWarnTitle': 'Before you export',
   'settings.backupWarnBody': 'The backup file is readable by anyone who opens it — it is not password-protected. Keep it somewhere private, and avoid sending it over email or shared drives.',
@@ -76,7 +76,7 @@ const en: Record<string, string> = {
   'settings.backupImport': 'Import Backup File',
   'settings.backupFailedTitle': 'Backup failed',
   'settings.restoreConfirmTitle': 'Restore this backup?',
-  'settings.restoreConfirmBody': 'Backup from {date}:\n{inj} injection records\n{sch} schedule entries\n{inv} inventory items\n{tpl} templates\n{pro} protocols\n\nThis replaces ALL current records, schedules, inventory, and templates on this device. Photos and reminders are not included.',
+  'settings.restoreConfirmBody': "Backup from {date}:\n{inj} injection records\n{sch} schedule entries\n{inv} inventory items\n{tpl} templates\n{pro} protocols\n{pho} photos\n\nThis replaces ALL current records, protocols, vials, schedules, inventory, and templates on this device. Photos come back only if the backup includes them; protocol reminders are rebuilt.",
   'settings.restoreReplace': 'Replace Data',
   'settings.restoreDoneTitle': 'Backup restored',
   'settings.restoreDoneBody': 'Your data has been restored. Screens refresh the next time you open them.',
@@ -793,6 +793,11 @@ const en: Record<string, string> = {
   'log.lastSameDay': "also logged that day",
   'log.lastOneDay': "last logged 1 day before",
   'log.lastDays': "last logged {n} days before",
+  // Photo backup
+  'settings.backupWithPhotos': "Export with Photos",
+  'settings.backupNoPhotos': "Export without Photos",
+  'settings.backupPhotosCappedTitle': "Some photos left out",
+  'settings.backupPhotosCappedBody': "The backup holds your {kept} newest photos. {skipped} older photos were left out to keep the file a size a phone can open.",
 };
 
 const es: Record<string, string> = {
@@ -853,7 +858,7 @@ const es: Record<string, string> = {
 
   // Backup card
   'settings.backupLabel': 'RESPALDO DE DATOS',
-  'settings.backupBody': 'Exporta todos los registros, horarios, inventario y plantillas como un solo archivo de respaldo que tú controlas — para resguardo o para cambiar de teléfono. Las fotos, los recordatorios y el estado de Pro no se incluyen; restaura Pro con «Restaurar compra previa» y vuelve a crear los recordatorios después de importar.',
+  'settings.backupBody': "Exporta todos los registros, protocolos, viales, horarios, inventario y plantillas en un solo archivo de respaldo que tú controlas, para guardarlo o pasarte a un teléfono nuevo. Puedes incluir las fotos. El estado Pro no se incluye: recupéralo con Restaurar compra anterior. Los recordatorios de protocolos se vuelven a crear al importar.",
   'settings.backupExport': 'Exportar respaldo',
   'settings.backupWarnTitle': 'Antes de exportar',
   'settings.backupWarnBody': 'Cualquier persona que abra el archivo de respaldo puede leerlo — no está protegido con contraseña. Guárdalo en un lugar privado y evita enviarlo por correo o unidades compartidas.',
@@ -861,7 +866,7 @@ const es: Record<string, string> = {
   'settings.backupImport': 'Importar respaldo',
   'settings.backupFailedTitle': 'Falló el respaldo',
   'settings.restoreConfirmTitle': '¿Restaurar este respaldo?',
-  'settings.restoreConfirmBody': 'Respaldo del {date}:\n{inj} registros de inyección\n{sch} entradas de horario\n{inv} artículos de inventario\n{tpl} plantillas\n{pro} protocolos\n\nEsto reemplaza TODOS los registros, horarios, inventario y plantillas actuales en este dispositivo. Las fotos y los recordatorios no se incluyen.',
+  'settings.restoreConfirmBody': "Respaldo del {date}:\n{inj} registros de inyección\n{sch} entradas de horario\n{inv} artículos de inventario\n{tpl} plantillas\n{pro} protocolos\n{pho} fotos\n\nEsto reemplaza TODOS los registros, protocolos, viales, horarios, inventario y plantillas actuales en este dispositivo. Las fotos vuelven solo si el respaldo las incluye; los recordatorios de protocolos se vuelven a crear.",
   'settings.restoreReplace': 'Reemplazar datos',
   'settings.restoreDoneTitle': 'Respaldo restaurado',
   'settings.restoreDoneBody': 'Tus datos fueron restaurados. Las pantallas se actualizan la próxima vez que las abras.',
@@ -1578,6 +1583,11 @@ const es: Record<string, string> = {
   'log.lastSameDay': "también registrado ese día",
   'log.lastOneDay': "último registro 1 día antes",
   'log.lastDays': "último registro {n} días antes",
+  // Photo backup
+  'settings.backupWithPhotos': "Exportar con fotos",
+  'settings.backupNoPhotos': "Exportar sin fotos",
+  'settings.backupPhotosCappedTitle': "Algunas fotos quedaron fuera",
+  'settings.backupPhotosCappedBody': "El respaldo incluye tus {kept} fotos más recientes. {skipped} fotos más antiguas quedaron fuera para que un teléfono pueda abrir el archivo.",
 };
 
 const pt: Record<string, string> = {
@@ -1638,7 +1648,7 @@ const pt: Record<string, string> = {
 
   // Backup card
   'settings.backupLabel': 'BACKUP DE DADOS',
-  'settings.backupBody': 'Exporte todos os registros, agendamentos, estoque e modelos como um único arquivo de backup sob seu controle — para guardar ou levar para um novo celular. Fotos, lembretes e o status do Pro não são incluídos; restaure o Pro com «Restaurar compra anterior» e recrie os lembretes após importar.',
+  'settings.backupBody': "Exporte todos os registros, protocolos, frascos, agenda, estoque e modelos em um único arquivo de backup que você controla, para guardar ou trocar de aparelho. As fotos podem ser incluídas. O status Pro não é incluído: recupere-o com Restaurar compra anterior. Os lembretes de protocolo são recriados após a importação.",
   'settings.backupExport': 'Exportar arquivo de backup',
   'settings.backupWarnTitle': 'Antes de exportar',
   'settings.backupWarnBody': 'Qualquer pessoa que abrir o arquivo de backup consegue lê-lo — ele não é protegido por senha. Guarde-o em um lugar privado e evite enviá-lo por e-mail ou em pastas compartilhadas.',
@@ -1646,7 +1656,7 @@ const pt: Record<string, string> = {
   'settings.backupImport': 'Importar arquivo de backup',
   'settings.backupFailedTitle': 'Falha no backup',
   'settings.restoreConfirmTitle': 'Restaurar este backup?',
-  'settings.restoreConfirmBody': 'Backup de {date}:\n{inj} registros de aplicação\n{sch} itens de agenda\n{inv} itens de estoque\n{tpl} modelos\n{pro} protocolos\n\nIsto substitui TODOS os registros, agendamentos, estoque e modelos atuais deste aparelho. Fotos e lembretes não estão incluídos.',
+  'settings.restoreConfirmBody': "Backup de {date}:\n{inj} registros de aplicação\n{sch} itens de agenda\n{inv} itens de estoque\n{tpl} modelos\n{pro} protocolos\n{pho} fotos\n\nIsto substitui TODOS os registros, protocolos, frascos, agendamentos, estoque e modelos atuais deste aparelho. As fotos voltam só se o backup as incluir; os lembretes de protocolo são recriados.",
   'settings.restoreReplace': 'Substituir dados',
   'settings.restoreDoneTitle': 'Backup restaurado',
   'settings.restoreDoneBody': 'Seus dados foram restaurados. As telas são atualizadas na próxima vez que você abri-las.',
@@ -2360,6 +2370,11 @@ const pt: Record<string, string> = {
   'log.lastSameDay': "também registrado nesse dia",
   'log.lastOneDay': "último registro 1 dia antes",
   'log.lastDays': "último registro {n} dias antes",
+  // Photo backup
+  'settings.backupWithPhotos': "Exportar com fotos",
+  'settings.backupNoPhotos': "Exportar sem fotos",
+  'settings.backupPhotosCappedTitle': "Algumas fotos ficaram de fora",
+  'settings.backupPhotosCappedBody': "O backup inclui suas {kept} fotos mais recentes. {skipped} fotos mais antigas ficaram de fora para que um aparelho consiga abrir o arquivo.",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };

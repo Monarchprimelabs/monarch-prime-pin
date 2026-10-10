@@ -83,8 +83,18 @@ Tick each box. If something fails, note the step number and take a screenshot.
 - [ ] 9.6 Calculator: pick 0.3 mL and enter an amount that reads over 30 units. The bar caps at 30 and an orange note says it's more than one full 0.3 mL syringe. "Fit" behaves as before.
 - [ ] 9.7 The amount field on the calculator shows "Amount you entered", not an example number.
 
-## 10. Looks
+## 10. Adherence, site history, photos and CI
 
-- [ ] 10.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
-- [ ] 10.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
-- [ ] 10.3 The research banner sits below the status bar on the new modals.
+- [ ] 10.1 Today's plan shows "This week through today: X of Y planned logged" (plus skipped). Paging to a past week says "That week". A week entirely ahead shows no line.
+- [ ] 10.2 On the log screen, picking a site shows "Left Abdomen: last logged N days before", "also logged that day" or "no earlier record". Nothing ranks or suggests a site.
+- [ ] 10.3 **Photos after update**: install this build over one that already has photos. Every old photo still shows in History > Photos and in record details.
+- [ ] 10.4 Add a photo to a new record, force-quit the app and reopen. The photo is still there.
+- [ ] 10.5 Settings > Export Backup offers "Export with Photos" and "Export without Photos". With photos, delete all data and restore: photos come back. Without photos, they don't, and nothing crashes.
+- [ ] 10.6 The restore confirm dialog lists the photo count.
+- [ ] 10.7 GitHub: the CI check on the PR is green.
+
+## 11. Looks
+
+- [ ] 11.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
+- [ ] 11.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
+- [ ] 11.3 The research banner sits below the status bar on the new modals.

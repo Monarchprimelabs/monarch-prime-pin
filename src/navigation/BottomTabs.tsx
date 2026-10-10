@@ -16,6 +16,7 @@ import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
+import { adoptLegacyPhotos } from '../lib/storage';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
@@ -31,6 +32,7 @@ export function BottomTabs() {
   // comes forward, which also re-anchors them after a time zone change.
   React.useEffect(() => {
     syncProtocolReminders().catch(() => undefined);
+    adoptLegacyPhotos().catch(() => undefined);
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') syncProtocolReminders().catch(() => undefined);
     });

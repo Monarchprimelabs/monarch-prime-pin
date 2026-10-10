@@ -18,6 +18,7 @@ import { withStatus } from '../lib/schedule/status';
 import { removeDoseSkip, saveDoseSkip } from '../lib/storage';
 import { syncProtocolReminders } from '../lib/protocolReminders';
 import { localDateISO } from '../lib/dates';
+import { photoDisplayUri } from '../lib/photos';
 
 const PRO_TABS = new Set(['calendar', 'photos']);
 
@@ -200,7 +201,7 @@ function RecordDetail({
         {!!record.photoUri && (
           <View style={s.detailSection}>
             <Text style={s.detailLabel}>{t('log.photo')}</Text>
-            <Image source={{ uri: record.photoUri }} style={s.detailPhoto} />
+            <Image source={{ uri: photoDisplayUri(record.photoUri) }} style={s.detailPhoto} />
           </View>
         )}
         <Pressable onPress={onDelete} style={s.detailDelete} accessibilityRole="button" accessibilityLabel="Delete record">
@@ -492,7 +493,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
               accessibilityRole="button"
               accessibilityLabel={compareMode ? `Select photo from ${formatDate(p.date, dateLocale)} for comparison` : `Open photo record from ${formatDate(p.date, dateLocale)}`}
             >
-              <Image source={{ uri: p.photoUri }} style={s.photoThumbImg} />
+              <Image source={{ uri: photoDisplayUri(p.photoUri) }} style={s.photoThumbImg} />
               <Text style={s.photoThumbDate}>{p.date}</Text>
               {compareMode && selectedIndex >= 0 && (
                 <View style={s.compareBadge}><Text style={s.compareBadgeText}>{selectedIndex + 1}</Text></View>
@@ -520,7 +521,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
                 .sort((a, b) => a.date.localeCompare(b.date))
                 .map(record => (
                   <View key={record.id} style={s.comparePane}>
-                    <Image source={{ uri: record.photoUri }} style={s.compareImg} resizeMode="cover" />
+                    <Image source={{ uri: photoDisplayUri(record.photoUri) }} style={s.compareImg} resizeMode="cover" />
                     <Text style={s.compareDate}>{formatDate(record.date, dateLocale)}</Text>
                     <Text style={s.compareMeta}>{record.peptide}</Text>
                   </View>

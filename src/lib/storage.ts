@@ -3,6 +3,7 @@ import { supabase, SUPABASE_CONFIGURED } from './supabase';
 import { Injection } from '../data/peptides';
 import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
+import { adoptLegacyPhoto, PHOTO_SCHEME } from './photos';
 
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
@@ -233,6 +234,31 @@ export async function saveRecordTemplate(template: Omit<RecordTemplate, 'id'>): 
 }
 export async function deleteRecordTemplate(id: string): Promise<void> {
   await setLocalList(KEY_TEMPLATES, (await getRecordTemplates()).filter(item => item.id !== id));
+}
+
+// Older builds stored the image picker's absolute file:// path. Move those
+// photos into Documents/photos once (photos.native.ts explains why).
+// Local records only; a photo that can no longer be found is left as is.
+export async function adoptLegacyPhotos(): Promise<number> {
+  if (SUPABASE_CONFIGURED && supabase) {
+    const user = await getUser();
+    if (user && !user.isGuest && !user.isDeveloper) return 0;
+  }
+  const list = safeParse<Injection[]>(await AsyncStorage.getItem(KEY_INJECTIONS), []);
+  let moved = 0;
+  const updated = list.map(record => {
+    if (!record.photoUri || record.photoUri.startsWith(PHOTO_SCHEME) || !record.photoUri.startsWith('file:')) return record;
+    try {
+      const kept = adoptLegacyPhoto(record.photoUri);
+      if (!kept || kept === record.photoUri) return record;
+      moved += 1;
+      return { ...record, photoUri: kept };
+    } catch {
+      return record;
+    }
+  });
+  if (moved > 0) await AsyncStorage.setItem(KEY_INJECTIONS, JSON.stringify(updated));
+  return moved;
 }
 
 // ----- PROTOCOLS (dose plans) -----

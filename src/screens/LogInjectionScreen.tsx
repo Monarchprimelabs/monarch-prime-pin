@@ -14,6 +14,7 @@ import { getInjections, getInventory, getProtocols, getRecordTemplates, getVials
 import type { Vial } from '../lib/vials/types';
 import { getInjectionSiteIds, lastLoggedBySite } from '../lib/sites';
 import { daysBetween } from '../lib/schedule/days';
+import { keepPhoto, photoDisplayUri } from '../lib/photos';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -306,9 +307,14 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
     try {
       let uploadedPhotoUri = initialInjection?.photoUri;
       if (photoUri) {
-        uploadedPhotoUri = photoUri === initialInjection?.photoUri
-          ? photoUri
-          : await uploadPhoto(photoUri);
+        if (photoUri === initialInjection?.photoUri) {
+          uploadedPhotoUri = photoUri;
+        } else {
+          // Keep a copy in Documents first; the picker's file is in Caches.
+          const kept = await keepPhoto(photoUri);
+          const uploaded = await uploadPhoto(photoDisplayUri(kept) ?? photoUri);
+          uploadedPhotoUri = /^https?:/i.test(uploaded) ? uploaded : kept;
+        }
       } else {
         uploadedPhotoUri = undefined;
       }
@@ -744,7 +750,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
           <Pressable style={s.photoArea} onPress={pickPhoto}>
             {photoUri ? (
               <>
-                <Image source={{ uri: photoUri }} style={s.photoImg} />
+                <Image source={{ uri: photoDisplayUri(photoUri) }} style={s.photoImg} />
                 <Pressable
                   onPress={() => setPhotoUri(null)}
                   style={s.photoRemove}
