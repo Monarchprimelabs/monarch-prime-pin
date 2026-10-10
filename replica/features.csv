@@ -1,0 +1,57 @@
+feature,area,priority,original,clone,notes
+Sign in with Apple or Google,account,must,yes,no,Sign-in comes after the onboarding quiz
+Account and data deletion in Settings,account,must,yes,no,Two-step delete; App Review expects it for apps with sign-up
+Onboarding quiz (goals; experience; age; sex; height; weight),onboarding,should,yes,no,One question per screen; feeds the profile
+Paywall at end of onboarding,monetization,should,yes,no,"Hard paywall, monthly + yearly. MPP decision: lifetime vs subscription"
+Subscription price testing,monetization,could,yes,no,"Live price points: monthly $9.99-$14.99, quarterly $39.99, yearly $19.99-$59.99"
+Friend referral discounts,monetization,could,yes,no,v1.4.2
+Protocol builder from library or custom compound,protocols,must,yes,no,
+Dose units mcg / mg / IU / mL,protocols,must,yes,no,
+Frequencies: daily / every other day / twice weekly / 5-on-2-off / specific days / custom,protocols,must,yes,no,
+Several active protocols at once,protocols,must,yes,no,
+Start date + notes + per-protocol reminder times,protocols,must,yes,no,
+Cycles with on/off boundaries,protocols,should,yes,no,
+Change the plan without rewriting logged history,protocols,must,yes,no,Their guides keep planned entries and logged doses separate
+Pen dosing,protocols,should,yes,no,v1.4.7
+Advanced protocol scheduling,protocols,could,yes,no,v1.4.7; details not public
+Blends tracked across protocols and vials,protocols,could,yes,no,v1.4.6
+Today view of doses due,logging,must,yes,no,Screenshot caption 1
+One-tap dose log (time; amount + unit; site),logging,must,yes,no,
+Edit or backdate past doses,logging,must,yes,no,v1.5.0
+Week strip + month calendar (planned vs completed; site; time),calendar,must,yes,no,
+Streaks,calendar,should,yes,no,
+Stats view,calendar,should,yes,no,Screenshot caption 3
+Dose reminders (push notifications),reminders,must,yes,no,
+Vial inventory (fill size; concentration; expiry),inventory,must,yes,no,v1.4.1
+Projected run-out date per vial,inventory,should,yes,no,
+Low-supply alert about 7 days out + empty alert,inventory,should,yes,no,
+Wide range of vial sizes and dose amounts,inventory,should,yes,no,v1.4.3
+Reconstitution calculator (vial size; diluent; desired amount; syringe size),calculator,must,yes,no,Unit math on numbers the user enters. No suggested doses (App Store guideline 1.4.2)
+Syringe diagram with live plunger + over-capacity warning,calculator,should,yes,no,
+Save a calculation to a protocol or vial,calculator,should,yes,no,
+Body map site picker,sites,must,yes,no,More sites added in v1.5.9
+Recent-site heat map + rotation suggestion,sites,should,yes,no,
+Custom compounds,library,must,yes,no,
+Compound library (search; profile pages),library,should,yes,no,Structure only. Write MPP's own entries with no dosing ranges
+Curated stacks that prefill a protocol,library,could,yes,no,No default doses (App Review risk)
+Their compound profiles and stack recipes,library,could,yes,skip,Their content; write your own or leave it out
+Weight and body-composition tracking with charts,progress,should,yes,no,Body fat; lean mass; waist
+Mood tracking,progress,could,yes,no,
+Apple Health import,progress,should,yes,no,HealthKit entitlement + fresh EAS build; Health Connect on Android
+Progress photos (compare; time-lapse),progress,could,yes,no,They strip EXIF before upload
+Estimated on-board level curve,progress,could,yes,no,Label it as an estimate from half-life
+AI advisor chat (short educational answers),ai,should,yes,no,Refuses doses and titration; needs a connection
+AI answers use the user's own stack,ai,could,yes,no,
+Community Q&A (pseudonym; votes; reactions; report; block),community,could,yes,no,Report + block from day one
+Their community and its members,community,could,yes,skip,Their network; cannot be cloned
+Food tracker (meals; macros; food library),nutrition,could,yes,no,v1.5.8; off the core loop
+Works offline (protocols; calculator; calendar; library),platform,must,yes,no,Their AI needs a connection
+Dark mode,platform,should,yes,no,v1.3.6
+Android app,platform,could,yes,no,MPP's repo has an Android config and EAS profile; confirm whether it ships on Play
+In-app feedback portal,platform,could,yes,no,v1.3.9
+Export health observations,privacy,could,yes,no,Their only self-serve export
+Export full dose history to CSV,privacy,should,no,no,PeptidePal does not offer it; MPP built it (needs an EAS build). Mark yes after the audit
+Lifetime Pro purchase,monetization,could,no,no,PeptidePal is subscription-only; MPP sells a $9.99 lifetime Pro
+No ad tracking,privacy,could,no,no,PeptidePal's privacy label lists data used to track you
+PeptidePal name; logo; colors; copy,brand,could,yes,skip,Never cloned
+Their testimonials and user-count or research-stat claims,marketing,could,yes,skip,Their marketing; no fake proof
