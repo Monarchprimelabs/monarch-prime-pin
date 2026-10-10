@@ -116,3 +116,39 @@ The first three screenshots carry the listing, because they are all most people 
 - **Sizes:** App Store Connect asks for the 6.9-inch iPhone set (1320 × 2868) and scales it for smaller phones. Check the upload page, because the required sizes change. The app is iPhone-only (`supportsTablet: false`), so no iPad set.
 - **Light or dark:** pick one for all nine so they look like a set. Dark matches the app icon.
 - **Screenshot 7 needs Apple Health** (PR #24). If that release ships without it, swap the smaller line for "Weekly summaries, site usage and weight trend".
+
+### Spanish (México / Latin America)
+
+Wording matches the app's Spanish text: protocolo, vial, Apple Salud, "registro".
+
+| # | Headline | Smaller line |
+| --- | --- | --- |
+| 1 | Tu plan, cada día | Ve lo planificado, registrado y omitido esta semana |
+| 2 | Regístralo en un par de toques | Compuesto, cantidad y hora ya vienen llenos |
+| 3 | Sabe dónde aplicaste la última vez | Tus sitios recientes de un vistazo, y cuándo usaste cada uno |
+| 4 | Cualquier horario que sigas | Un día sí y uno no, 5 sí / 2 no, días específicos, ciclos |
+| 5 | Recordatorios a tus horas | Privados: nunca muestran lo que usas |
+| 6 | Sabe cuándo se acaba un vial | Lo que queda y hasta cuándo cubre tu plan |
+| 7 | Tu historial, claro | Resúmenes, uso de sitios y peso de Apple Salud |
+| 8 | Se queda en tu teléfono | Sin cuenta. Sin nube. Sin rastreo publicitario. Exporta cuando quieras. |
+| 9 | Paga una vez. Sin suscripción. | Empieza gratis con 5 registros. Pro es un pago único. |
+
+### Portuguese (Brazil)
+
+Wording matches the app's Portuguese text: protocolo, frasco, Apple Saúde, "registro".
+
+| # | Headline | Smaller line |
+| --- | --- | --- |
+| 1 | Seu plano, todo dia | Veja o que foi planejado, registrado e pulado nesta semana |
+| 2 | Registre em poucos toques | Composto, quantidade e horário já vêm preenchidos |
+| 3 | Saiba onde você aplicou por último | Seus locais recentes num relance, e quando usou cada um |
+| 4 | Qualquer agenda que você siga | Dia sim, dia não, 5 sim / 2 não, dias específicos, ciclos |
+| 5 | Lembretes nos seus horários | Privados: nunca mostram o que você usa |
+| 6 | Saiba quando um frasco está acabando | O que resta e até quando ele cobre seu plano |
+| 7 | Seu histórico, claro | Resumos, uso de locais e peso do Apple Saúde |
+| 8 | Fica no seu celular | Sem conta. Sem nuvem. Sem rastreamento de anúncios. Exporte quando quiser. |
+| 9 | Pague uma vez. Sem assinatura. | Comece grátis com 5 registros. O Pro é uma compra única. |
+
+Spanish and Portuguese run 20–30% longer than English. Check that line 3 and line 8 fit on two lines at the caption size you use; if not, the smaller line can drop its last clause ("…de un vistazo" / "…num relance", "Exporta cuando quieras" / "Exporte quando quiser").
+
+Screenshots for these locales should come from the app in that language (Settings > Language), so the screen matches the caption.
