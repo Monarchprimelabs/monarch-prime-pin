@@ -58,7 +58,7 @@ const en: Record<string, string> = {
 
   // Local data card
   'settings.localDataLabel': 'LOCAL DATA',
-  'settings.localDataBody': 'Your research logs and organization-tool entries are stored locally on this device. Deleting your account removes the local profile, schedules, inventory, templates, and locally stored log data from this device.',
+  'settings.localDataBody': "Everything you log stays on this phone. There is no Monarch account and no cloud copy, so use Backup below to keep a copy or move to a new phone.",
 
   // App lock card
   'settings.appLockLabel': 'PRIVACY & APP LOCK',
@@ -88,9 +88,9 @@ const en: Record<string, string> = {
   'settings.signOut': 'Sign Out',
   'settings.signOutConfirmTitle': 'Sign out?',
   'settings.signOutConfirmBody': 'You will need to sign back in to access this app.',
-  'settings.deleteAccount': 'Delete Account & Local Data',
-  'settings.deleteConfirmTitle': 'Delete account and local data?',
-  'settings.deleteConfirmBody': 'This will remove your local account profile and all logs stored on this device. This action cannot be undone.',
+  'settings.deleteAccount': "Delete All Data on This Phone",
+  'settings.deleteConfirmTitle': "Delete all data on this phone?",
+  'settings.deleteConfirmBody': "This removes your profile, records, protocols, vials, schedules, inventory, templates and reminders from this phone. Your Pro purchase is kept.",
 
   // Access tab
   'access.label': 'YOUR ACCESS',
@@ -533,7 +533,7 @@ const en: Record<string, string> = {
   // Tools — worksheet: U-100 scale visual
   'tools.gauge.label': 'U-100 SCALE VISUAL',
   'tools.gauge.amountLabel': 'AMOUNT TO LOCATE ON THE SCALE',
-  'tools.gauge.amountPh': 'e.g. 1',
+  'tools.gauge.amountPh': "Amount you entered",
   'tools.gauge.unitsBig': '{n} units',
   'tools.gauge.mlLine': '{v} mL of solution',
   'tools.gauge.scaleCaption': 'Shown on a 0–{scale} unit scale',
@@ -771,6 +771,20 @@ const en: Record<string, string> = {
   'vial.alertWeekBody': "At your plan, one of your vials covers about a week more. Open Monarch to see which.",
   'vial.alertShortTitle': "Vial almost used up",
   'vial.alertShortBody': "At your plan, one of your vials doesn't cover tomorrow's entry. Open Monarch to see which.",
+  // Local profile and delete
+  'welcome.title': "Your records stay on this phone",
+  'welcome.body': "Monarch Prime Pin has no account and no cloud. Nothing you log leaves this phone unless you export or back it up yourself.",
+  'welcome.namePh': "Your first name (optional)",
+  'welcome.start': "Get Started",
+  'welcome.note': "The name is only used for your greeting. Back up from Settings to keep a copy.",
+  'settings.deleteContinue': "Continue",
+  'settings.deleteFinalTitle': "This cannot be undone",
+  'settings.deleteFinalBody': "Unless you have a backup file, deleted data cannot be recovered.",
+  'settings.deleteFinalGo': "Delete Everything",
+  // Calculator syringe size
+  'tools.gauge.syringeLabel': "SYRINGE SIZE",
+  'tools.gauge.syringeAuto': "Fit",
+  'tools.gauge.overSyringe': "Reads past {scale} units — more than one full {ml} mL syringe at this concentration.",
 };
 
 const es: Record<string, string> = {
@@ -821,7 +835,7 @@ const es: Record<string, string> = {
 
   // Local data card
   'settings.localDataLabel': 'DATOS LOCALES',
-  'settings.localDataBody': 'Tus registros de investigación y tus datos de organización se guardan localmente en este dispositivo. Eliminar tu cuenta borra el perfil local, los horarios, el inventario, las plantillas y los registros guardados en este dispositivo.',
+  'settings.localDataBody': "Todo lo que registras se queda en este teléfono. No hay cuenta de Monarch ni copia en la nube, así que usa el Respaldo de abajo para guardar una copia o pasarte a un teléfono nuevo.",
 
   // App lock card
   'settings.appLockLabel': 'PRIVACIDAD Y BLOQUEO',
@@ -851,9 +865,9 @@ const es: Record<string, string> = {
   'settings.signOut': 'Cerrar sesión',
   'settings.signOutConfirmTitle': '¿Cerrar sesión?',
   'settings.signOutConfirmBody': 'Tendrás que iniciar sesión de nuevo para usar la app.',
-  'settings.deleteAccount': 'Eliminar cuenta y datos locales',
-  'settings.deleteConfirmTitle': '¿Eliminar cuenta y datos locales?',
-  'settings.deleteConfirmBody': 'Esto eliminará tu perfil local y todos los registros guardados en este dispositivo. Esta acción no se puede deshacer.',
+  'settings.deleteAccount': "Borrar todos los datos de este teléfono",
+  'settings.deleteConfirmTitle': "¿Borrar todos los datos de este teléfono?",
+  'settings.deleteConfirmBody': "Esto elimina de este teléfono tu perfil, registros, protocolos, viales, horarios, inventario, plantillas y recordatorios. Tu compra Pro se conserva.",
 
   // Access tab
   'access.label': 'TU ACCESO',
@@ -1296,7 +1310,7 @@ const es: Record<string, string> = {
   // Tools — worksheet: U-100 scale visual
   'tools.gauge.label': 'VISUAL DE LA ESCALA U-100',
   'tools.gauge.amountLabel': 'CANTIDAD A UBICAR EN LA ESCALA',
-  'tools.gauge.amountPh': 'p. ej. 1',
+  'tools.gauge.amountPh': "Cantidad que ingresas",
   'tools.gauge.unitsBig': '{n} unidades',
   'tools.gauge.mlLine': '{v} mL de solución',
   'tools.gauge.scaleCaption': 'Mostrado en una escala de 0 a {scale} unidades',
@@ -1534,6 +1548,20 @@ const es: Record<string, string> = {
   'vial.alertWeekBody': "Según tu plan, uno de tus viales cubre cerca de una semana más. Abre Monarch para ver cuál.",
   'vial.alertShortTitle': "Vial casi agotado",
   'vial.alertShortBody': "Según tu plan, uno de tus viales no cubre la entrada de mañana. Abre Monarch para ver cuál.",
+  // Local profile and delete
+  'welcome.title': "Tus registros se quedan en este teléfono",
+  'welcome.body': "Monarch Prime Pin no tiene cuenta ni nube. Nada de lo que registras sale de este teléfono a menos que tú lo exportes o respaldes.",
+  'welcome.namePh': "Tu nombre (opcional)",
+  'welcome.start': "Comenzar",
+  'welcome.note': "El nombre solo se usa para tu saludo. Respalda desde Ajustes para guardar una copia.",
+  'settings.deleteContinue': "Continuar",
+  'settings.deleteFinalTitle': "Esto no se puede deshacer",
+  'settings.deleteFinalBody': "Si no tienes un archivo de respaldo, los datos borrados no se pueden recuperar.",
+  'settings.deleteFinalGo': "Borrar todo",
+  // Calculator syringe size
+  'tools.gauge.syringeLabel': "TAMAÑO DE JERINGA",
+  'tools.gauge.syringeAuto': "Ajustar",
+  'tools.gauge.overSyringe': "Pasa de {scale} unidades: más de una jeringa completa de {ml} mL con esta concentración.",
 };
 
 const pt: Record<string, string> = {
@@ -1584,7 +1612,7 @@ const pt: Record<string, string> = {
 
   // Local data card
   'settings.localDataLabel': 'DADOS LOCAIS',
-  'settings.localDataBody': 'Seus registros de pesquisa e itens das ferramentas de organização ficam salvos localmente neste aparelho. Excluir sua conta remove deste aparelho o perfil local, a agenda, o estoque, os modelos e os registros salvos localmente.',
+  'settings.localDataBody': "Tudo o que você registra fica neste aparelho. Não há conta do Monarch nem cópia na nuvem, então use o Backup abaixo para guardar uma cópia ou trocar de aparelho.",
 
   // App lock card
   'settings.appLockLabel': 'PRIVACIDADE E BLOQUEIO',
@@ -1614,9 +1642,9 @@ const pt: Record<string, string> = {
   'settings.signOut': 'Sair',
   'settings.signOutConfirmTitle': 'Sair da conta?',
   'settings.signOutConfirmBody': 'Você precisará entrar novamente para acessar este app.',
-  'settings.deleteAccount': 'Excluir conta e dados locais',
-  'settings.deleteConfirmTitle': 'Excluir conta e dados locais?',
-  'settings.deleteConfirmBody': 'Isto remove o perfil da sua conta local e todos os registros salvos neste aparelho. Esta ação não pode ser desfeita.',
+  'settings.deleteAccount': "Apagar todos os dados deste aparelho",
+  'settings.deleteConfirmTitle': "Apagar todos os dados deste aparelho?",
+  'settings.deleteConfirmBody': "Isto remove deste aparelho seu perfil, registros, protocolos, frascos, agenda, estoque, modelos e lembretes. Sua compra Pro é mantida.",
 
   // Access tab
   'access.label': 'SEU ACESSO',
@@ -2056,7 +2084,7 @@ const pt: Record<string, string> = {
   // Tools — worksheet: U-100 scale visual
   'tools.gauge.label': 'VISUAL DA ESCALA U-100',
   'tools.gauge.amountLabel': 'QUANTIDADE A LOCALIZAR NA ESCALA',
-  'tools.gauge.amountPh': 'ex.: 1',
+  'tools.gauge.amountPh': "Quantidade que você informa",
   'tools.gauge.unitsBig': '{n} unidades',
   'tools.gauge.mlLine': '{v} mL de solução',
   'tools.gauge.scaleCaption': 'Exibido em uma escala de 0 a {scale} unidades',
@@ -2294,6 +2322,20 @@ const pt: Record<string, string> = {
   'vial.alertWeekBody': "No seu plano, um dos seus frascos cobre cerca de mais uma semana. Abra o Monarch para ver qual.",
   'vial.alertShortTitle': "Frasco quase no fim",
   'vial.alertShortBody': "No seu plano, um dos seus frascos não cobre a entrada de amanhã. Abra o Monarch para ver qual.",
+  // Local profile and delete
+  'welcome.title': "Seus registros ficam neste aparelho",
+  'welcome.body': "O Monarch Prime Pin não tem conta nem nuvem. Nada do que você registra sai deste aparelho, a menos que você mesmo exporte ou faça backup.",
+  'welcome.namePh': "Seu primeiro nome (opcional)",
+  'welcome.start': "Começar",
+  'welcome.note': "O nome só é usado na saudação. Faça backup nos Ajustes para guardar uma cópia.",
+  'settings.deleteContinue': "Continuar",
+  'settings.deleteFinalTitle': "Isto não pode ser desfeito",
+  'settings.deleteFinalBody': "Sem um arquivo de backup, os dados apagados não podem ser recuperados.",
+  'settings.deleteFinalGo': "Apagar tudo",
+  // Calculator syringe size
+  'tools.gauge.syringeLabel': "TAMANHO DA SERINGA",
+  'tools.gauge.syringeAuto': "Ajustar",
+  'tools.gauge.overSyringe': "Passa de {scale} unidades: mais de uma seringa cheia de {ml} mL nesta concentração.",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };
