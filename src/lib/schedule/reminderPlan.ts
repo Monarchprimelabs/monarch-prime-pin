@@ -4,9 +4,11 @@ import { DoseSkip, Occurrence, Protocol } from './types';
 
 // iOS keeps at most 64 pending local notifications per app. Protocol
 // reminders use a rolling window well under that, refreshed on every app
-// open and every plan, log or skip change.
+// open and every plan, log or skip change. Budget: 40 protocol reminders +
+// 8 vial alerts + 1 renewal note, leaving 15 for the Schedule tool's entries.
 export const REMINDER_WINDOW_DAYS = 14;
-export const REMINDER_CAP = 48;
+export const REMINDER_CAP = 40;
+export const VIAL_ALERT_CAP = 8;
 
 export type PlannedReminder = { id: string; occurrenceKey: string; fireAt: Date };
 

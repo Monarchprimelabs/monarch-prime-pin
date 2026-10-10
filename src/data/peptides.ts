@@ -171,6 +171,8 @@ export type Injection = {
   /** Set when the record fulfils a planned dose (src/lib/schedule). */
   protocolId?: string;
   occurrenceKey?: string;
+  /** The vial this dose was drawn from (src/lib/vials). */
+  vialId?: string;
   /** Minutes east of UTC on the device when the record was saved. */
   tzOffsetMin?: number;
 };

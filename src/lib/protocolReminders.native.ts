@@ -5,12 +5,13 @@ import { formatClockTime } from '../data/peptides';
 import { translateNow } from './i18n';
 import { addDays, localDay } from './schedule/days';
 import { occurrencesBetween } from './schedule/engine';
-import { planReminders, REMINDER_WINDOW_DAYS } from './schedule/reminderPlan';
-import { getDoseSkips, getInjections, getProtocols, KEY_REMINDER_IDS } from './storage';
+import { planReminders, REMINDER_WINDOW_DAYS, VIAL_ALERT_CAP } from './schedule/reminderPlan';
+import { planVialAlerts } from './vials/alerts';
+import { getDoseSkips, getInjections, getProtocols, getVials, KEY_REMINDER_IDS } from './storage';
 
-// Protocol reminders: a rolling window of one-off local notifications,
-// rebuilt from the plan on app open and after every plan, log or skip
-// change. Fixed identifiers make a rebuild idempotent. Text never names the
+// Protocol reminders and vial alerts: a rolling window of one-off local
+// notifications, rebuilt from the plan on app open and after every plan,
+// vial, log or skip change. Fixed identifiers make a rebuild idempotent. Text never names the
 // compound (lock screens are visible to others).
 
 const CHANNEL_ID = 'protocol-reminders';
@@ -38,16 +39,17 @@ async function readIds(): Promise<string[]> {
 }
 
 async function runSync({ askPermission }: { askPermission?: boolean }): Promise<ReminderSyncResult> {
-  const [protocols, injections, skips] = await Promise.all([getProtocols(), getInjections(), getDoseSkips()]);
+  const [protocols, injections, skips, vials] = await Promise.all([getProtocols(), getInjections(), getDoseSkips(), getVials()]);
   const now = new Date();
   const logged = new Set(injections.map(r => r.occurrenceKey).filter((k): k is string => !!k));
   const { reminders, truncated } = planReminders(protocols, logged, skips, now);
+  const vialAlerts = planVialAlerts(vials, protocols, injections, skips, now).slice(0, VIAL_ALERT_CAP);
 
   for (const id of await readIds()) {
     await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
   }
   await AsyncStorage.setItem(KEY_REMINDER_IDS, '[]');
-  if (reminders.length === 0) return { scheduled: 0, permission: 'not-needed' };
+  if (reminders.length === 0 && vialAlerts.length === 0) return { scheduled: 0, permission: 'not-needed' };
 
   let permission = await Notifications.getPermissionsAsync();
   if (!permission.granted && askPermission && permission.canAskAgain) {
@@ -78,15 +80,28 @@ async function runSync({ askPermission }: { askPermission?: boolean }): Promise<
     ids.push(reminder.id);
   }
 
+  for (const alert of vialAlerts) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: alert.id,
+      content: {
+        title: translateNow(alert.kind === 'week' ? 'vial.alertWeekTitle' : 'vial.alertShortTitle'),
+        body: translateNow(alert.kind === 'week' ? 'vial.alertWeekBody' : 'vial.alertShortBody'),
+        data: { vialId: alert.vialId },
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: alert.fireAt, channelId },
+    });
+    ids.push(alert.id);
+  }
+
   // If the plan keeps going past the window, leave one note at its end so
   // reminders don't stop silently when the app goes unopened for two weeks.
   const last = reminders[reminders.length - 1];
   const today = localDay(now);
-  const continues = truncated || occurrencesBetween(
+  const continues = !!last && (truncated || occurrencesBetween(
     protocols.filter(p => p.status === 'active'),
     addDays(today, REMINDER_WINDOW_DAYS),
     addDays(today, REMINDER_WINDOW_DAYS + 60),
-  ).some(o => o.reminders);
+  ).some(o => o.reminders));
   if (continues) {
     await Notifications.scheduleNotificationAsync({
       identifier: RENEW_ID,
@@ -97,7 +112,7 @@ async function runSync({ askPermission }: { askPermission?: boolean }): Promise<
   }
 
   await AsyncStorage.setItem(KEY_REMINDER_IDS, JSON.stringify(ids));
-  return { scheduled: reminders.length, permission: 'granted' };
+  return { scheduled: reminders.length + vialAlerts.length, permission: 'granted' };
 }
 
 /** Calls back with the occurrence key when the user taps a protocol reminder. */
