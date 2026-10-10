@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, SUPABASE_CONFIGURED } from './supabase';
 import { Injection } from '../data/peptides';
+import type { DoseSkip, Protocol } from './schedule/types';
 
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
@@ -8,6 +9,9 @@ const KEY_ONBOARDING = '@mpp/onboarding_done';
 const KEY_SCHEDULES = '@mpp/schedules';
 const KEY_INVENTORY = '@mpp/inventory';
 const KEY_TEMPLATES = '@mpp/templates';
+const KEY_PROTOCOLS = '@mpp/protocols';
+const KEY_DOSE_SKIPS = '@mpp/dose_skips';
+export const KEY_REMINDER_IDS = '@mpp/reminder_map';
 
 export type ScheduleRepeat = 'once' | 'daily' | 'weekly';
 
@@ -229,6 +233,36 @@ export async function deleteRecordTemplate(id: string): Promise<void> {
   await setLocalList(KEY_TEMPLATES, (await getRecordTemplates()).filter(item => item.id !== id));
 }
 
+// ----- PROTOCOLS (dose plans) -----
+// Local-only, like schedules and inventory. Plan edits append revisions
+// (schedule/engine.reviseProtocol); records are never touched by them.
+export const getProtocols = () => getLocalList<Protocol>(KEY_PROTOCOLS);
+export async function saveProtocol(protocol: Protocol): Promise<Protocol> {
+  const current = await getProtocols();
+  const exists = current.some(value => value.id === protocol.id);
+  await setLocalList(KEY_PROTOCOLS, exists
+    ? current.map(value => value.id === protocol.id ? protocol : value)
+    : [protocol, ...current]);
+  return protocol;
+}
+export async function deleteProtocol(id: string): Promise<void> {
+  await setLocalList(KEY_PROTOCOLS, (await getProtocols()).filter(item => item.id !== id));
+  await setLocalList(KEY_DOSE_SKIPS, (await getDoseSkips()).filter(skip => !skip.occurrenceKey.startsWith(`${id}|`)));
+}
+export const newProtocolId = makeId;
+
+// Skips live apart from records so they never count as a saved log, a
+// free-tier log, or a CSV row.
+export const getDoseSkips = () => getLocalList<DoseSkip>(KEY_DOSE_SKIPS);
+export async function saveDoseSkip(occurrenceKey: string): Promise<void> {
+  const current = await getDoseSkips();
+  if (current.some(skip => skip.occurrenceKey === occurrenceKey)) return;
+  await setLocalList(KEY_DOSE_SKIPS, [{ occurrenceKey, skippedAt: new Date().toISOString() }, ...current]);
+}
+export async function removeDoseSkip(occurrenceKey: string): Promise<void> {
+  await setLocalList(KEY_DOSE_SKIPS, (await getDoseSkips()).filter(skip => skip.occurrenceKey !== occurrenceKey));
+}
+
 // ----- PHOTO UPLOAD -----
 // In offline mode the local URI from expo-image-picker is fine —
 // it persists across app launches because it's in app sandbox storage.
@@ -272,21 +306,28 @@ export async function clearLocalData(): Promise<void> {
     KEY_SCHEDULES,
     KEY_INVENTORY,
     KEY_TEMPLATES,
+    KEY_PROTOCOLS,
+    KEY_DOSE_SKIPS,
+    KEY_REMINDER_IDS,
   ]);
 }
 
-// Used by backup restore. Overwrites the four data collections in one shot;
+// Used by backup restore. Overwrites the data collections in one shot;
 // account, onboarding, and entitlement state are intentionally untouched.
 export async function replaceAllData(data: {
   injections: Injection[];
   schedules: ScheduleEntry[];
   inventory: InventoryItem[];
   templates: RecordTemplate[];
+  protocols: Protocol[];
+  doseSkips: DoseSkip[];
 }): Promise<void> {
   await AsyncStorage.multiSet([
     [KEY_INJECTIONS, JSON.stringify(data.injections)],
     [KEY_SCHEDULES, JSON.stringify(data.schedules)],
     [KEY_INVENTORY, JSON.stringify(data.inventory)],
     [KEY_TEMPLATES, JSON.stringify(data.templates)],
+    [KEY_PROTOCOLS, JSON.stringify(data.protocols)],
+    [KEY_DOSE_SKIPS, JSON.stringify(data.doseSkips)],
   ]);
 }

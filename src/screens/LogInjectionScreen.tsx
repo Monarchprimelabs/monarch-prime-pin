@@ -19,6 +19,21 @@ import { notifySuccessfulSave } from '../lib/reviewPrompt';
 import { hapticSuccess, hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
 import { localDateISO } from '../lib/dates';
+import { DOSE_UNITS, DoseUnit } from '../lib/schedule/types';
+import { syncProtocolReminders } from '../lib/protocolReminders';
+
+/** A planned dose from a protocol, logged from Today or a reminder. */
+export type PlannedDose = {
+  protocolId: string;
+  occurrenceKey: string;
+  compound: string;
+  amount: string;
+  unit: DoseUnit;
+  date: string;
+  time: string;
+};
+
+const isMassUnit = (unit: DoseUnit) => unit === 'mcg' || unit === 'mg';
 
 type LogInjectionScreenProps = {
   onDone: () => void;
@@ -26,6 +41,8 @@ type LogInjectionScreenProps = {
   initialInjection?: Injection;
   /** Seed compound/dose/sites/weight from an existing record while still creating a NEW record. */
   prefillFrom?: Injection;
+  /** Fill compound, amount, unit and day from a planned dose and link the record to it. */
+  planned?: PlannedDose;
   onCancel?: () => void;
 };
 
@@ -34,14 +51,19 @@ type TimeChoice =
   | { kind: 'period'; period: TimePeriod }
   | { kind: 'custom' };
 
-export function LogInjectionScreen({ onDone, initialDate, initialInjection, prefillFrom, onCancel }: LogInjectionScreenProps) {
+export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initialInjection, prefillFrom, planned, onCancel }: LogInjectionScreenProps) {
   const { hasPro, monetizationEnabled } = useEntitlements();
   const { user } = useAuth();
   const { t, dateLocale } = useI18n();
   const seedRecord = initialInjection ?? prefillFrom ?? null;
-  const initialPeptide = seedRecord
-    ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === seedRecord.peptide)
-      ?? { id: 'existing-custom', name: seedRecord.peptide, defaultUnit: seedRecord.unit }
+  const today = localDateISO();
+  // A planned dose from an earlier day is logged on that day.
+  const initialDate = initialDateProp ?? (planned && planned.date !== today ? planned.date : undefined);
+  const seedName = planned?.compound ?? seedRecord?.peptide;
+  const seedUnit: DoseUnit = planned?.unit ?? seedRecord?.unit ?? 'mcg';
+  const initialPeptide = seedName
+    ? [...PEPTIDES.singles, ...PEPTIDES.blends].find(p => p.name === seedName)
+      ?? { id: 'existing-custom', name: seedName, defaultUnit: seedUnit }
     : null;
   const initialSites = seedRecord ? getInjectionSiteIds(seedRecord) : [];
 
@@ -49,8 +71,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   const [picker, setPicker] = useState(false);
   const [templatePicker, setTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<RecordTemplate[]>([]);
-  const [dose, setDose] = useState(seedRecord?.dose ?? '');
-  const [unit, setUnit] = useState<'mcg' | 'mg'>(seedRecord?.unit ?? 'mcg');
+  const [dose, setDose] = useState(planned?.amount ?? seedRecord?.dose ?? '');
+  const [unit, setUnit] = useState<DoseUnit>(seedUnit);
   const [view, setView] = useState<'front' | 'back'>('front');
   const [selected, setSelected] = useState<string[]>(initialSites);
   const [sev, setSev] = useState<Severity>(initialInjection?.sev ?? 'none');
@@ -65,9 +87,11 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
       ? initialInjection.timePeriod
         ? { kind: 'period', period: initialInjection.timePeriod }
         : { kind: 'custom' }
-      : { kind: 'now' },
+      : planned && planned.date !== today
+        ? { kind: 'custom' }
+        : { kind: 'now' },
   );
-  const seedTime = initialInjection?.time ?? new Date().toTimeString().slice(0, 5);
+  const seedTime = initialInjection?.time ?? (planned && planned.date !== today ? planned.time : new Date().toTimeString().slice(0, 5));
   const seedHour = Number(seedTime.slice(0, 2));
   const [customHour, setCustomHour] = useState(String(seedHour % 12 === 0 ? 12 : seedHour % 12));
   const [customMinute, setCustomMinute] = useState(seedTime.slice(3, 5));
@@ -104,7 +128,7 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
   const toggleSymptom = (tag: string) =>
     setSymptoms(p => (p.includes(tag) ? p.filter(x => x !== tag) : [...p, tag]));
 
-  const handleUnitChange = (u: 'mcg' | 'mg') => {
+  const handleUnitChange = (u: DoseUnit) => {
     setUnit(u);
     setDose('');
   };
@@ -219,6 +243,21 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
       return;
     }
 
+    // One planned dose takes one record: a double tap or a second device
+    // session must not log it twice.
+    if (planned && !isEditing) {
+      try {
+        const existing = await getInjections();
+        if (existing.some(record => record.occurrenceKey === planned.occurrenceKey)) {
+          Alert.alert(t('proto.alreadyLoggedTitle'), t('proto.alreadyLoggedBody'));
+          onDone();
+          return;
+        }
+      } catch {
+        // Fall through; the save below still works.
+      }
+    }
+
     let freeTrialSaveNumber: number | null = null;
     if (freeTrialActive) {
       try {
@@ -259,13 +298,19 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
         weight: weight ? Number(weight) : 0,
         notes: notes || undefined,
         photoUri: uploadedPhotoUri,
+        protocolId: planned?.protocolId ?? initialInjection?.protocolId,
+        occurrenceKey: planned?.occurrenceKey ?? initialInjection?.occurrenceKey,
+        tzOffsetMin: initialInjection ? initialInjection.tzOffsetMin : -new Date().getTimezoneOffset(),
       };
 
       if (initialInjection) {
-        await updateInjection({ ...record, id: initialInjection.id });
+        // Spread the original first so fields this form doesn't edit survive.
+        await updateInjection({ ...initialInjection, ...record, id: initialInjection.id });
       } else {
         await saveInjection(record);
       }
+      // A logged planned dose drops its pending reminder.
+      if (record.occurrenceKey) syncProtocolReminders().catch(() => undefined);
 
       const freeLogsLeftAfterSave = freeTrialSaveNumber ? FREE_INJECTION_LIMIT - freeTrialSaveNumber : 0;
       const savedMessage = isEditing
@@ -309,7 +354,8 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
             finishSave();
             return;
           }
-          if (match.containerMassMcg && match.containerMassMcg > 0) {
+          // IU and mL don't convert to mass; those logs use the per-save prompt.
+          if (match.containerMassMcg && match.containerMassMcg > 0 && isMassUnit(unit)) {
             const containerMcg = match.containerMassMcg;
             const doseMcg = (Number(String(dose).replace(',', '.')) || 0) * (unit === 'mg' ? 1000 : 1);
             const used = (match.usedMcg ?? 0) + doseMcg;
@@ -464,17 +510,20 @@ export function LogInjectionScreen({ onDone, initialDate, initialInjection, pref
               keyboardType="numeric"
               style={s.doseInput}
             />
-            <View style={s.unitToggle}>
-              {(['mcg', 'mg'] as const).map(u => (
-                <Pressable
-                  key={u}
-                  onPress={() => handleUnitChange(u)}
-                  style={[s.unitBtn, unit === u && s.unitBtnActive]}
-                >
-                  <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>{u}</Text>
-                </Pressable>
-              ))}
-            </View>
+          </View>
+          {/* Four units don't fit beside the field, so they get their own row. */}
+          <View style={[s.unitToggle, s.doseUnits]}>
+            {DOSE_UNITS.map(u => (
+              <Pressable
+                key={u}
+                onPress={() => handleUnitChange(u)}
+                style={[s.unitBtn, s.doseUnitBtn, unit === u && s.unitBtnActive]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: unit === u }}
+              >
+                <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>{u}</Text>
+              </Pressable>
+            ))}
           </View>
         </Card>
 
@@ -881,7 +930,7 @@ const s = StyleSheet.create({
 
   doseRow: { flexDirection: 'row', gap: 10, alignItems: 'stretch' },
   doseInput: {
-    flex: 1, backgroundColor: colors.bgInput,
+    flex: 1, minWidth: 0, backgroundColor: colors.bgInput,
     borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
     borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 14,
     color: colors.text, fontSize: 22, fontWeight: '600',
@@ -892,6 +941,8 @@ const s = StyleSheet.create({
     borderRadius: radius.md, padding: 3,
   },
   unitBtn: { paddingHorizontal: 14, justifyContent: 'center', borderRadius: 9 },
+  doseUnits: { marginTop: 10 },
+  doseUnitBtn: { flex: 1, minHeight: 40, alignItems: 'center' },
   unitBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
   unitBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   unitBtnTextActive: { color: colors.white },

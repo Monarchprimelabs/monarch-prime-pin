@@ -5,9 +5,11 @@ import { readAsStringAsync } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Injection } from '../data/peptides';
 import {
-  getInjections, getInventory, getRecordTemplates, getSchedules,
+  getDoseSkips, getInjections, getInventory, getProtocols, getRecordTemplates, getSchedules,
   InventoryItem, RecordTemplate, replaceAllData, ScheduleEntry,
 } from './storage';
+import type { DoseSkip, Protocol } from './schedule/types';
+import { syncProtocolReminders } from './protocolReminders';
 
 // Full local-data backup and restore, free for all users — data portability
 // is never paywalled. Deliberately excludes the Pro entitlement (purchases
@@ -16,7 +18,9 @@ import {
 
 const BACKUP_APP_ID = 'monarch-prime-pin';
 export const KEY_LAST_BACKUP_AT = '@mpp/last_backup_at';
-const BACKUP_VERSION = 1;
+// v2 adds protocols and dose skips. v1 files still restore (with none).
+const BACKUP_VERSION = 2;
+const READABLE_VERSIONS = [1, 2];
 
 export type BackupPayload = {
   app: string;
@@ -26,6 +30,8 @@ export type BackupPayload = {
   schedules: ScheduleEntry[];
   inventory: InventoryItem[];
   templates: RecordTemplate[];
+  protocols: Protocol[];
+  doseSkips: DoseSkip[];
 };
 
 export type BackupCounts = {
@@ -33,11 +39,12 @@ export type BackupCounts = {
   schedules: number;
   inventory: number;
   templates: number;
+  protocols: number;
 };
 
 export async function exportBackup(): Promise<BackupCounts> {
-  const [injections, schedules, inventory, templates] = await Promise.all([
-    getInjections(), getSchedules(), getInventory(), getRecordTemplates(),
+  const [injections, schedules, inventory, templates, protocols, doseSkips] = await Promise.all([
+    getInjections(), getSchedules(), getInventory(), getRecordTemplates(), getProtocols(), getDoseSkips(),
   ]);
 
   const payload: BackupPayload = {
@@ -48,6 +55,8 @@ export async function exportBackup(): Promise<BackupCounts> {
     schedules,
     inventory,
     templates,
+    protocols,
+    doseSkips,
   };
 
   const stamp = payload.exportedAt.slice(0, 10);
@@ -74,6 +83,7 @@ export async function exportBackup(): Promise<BackupCounts> {
     schedules: schedules.length,
     inventory: inventory.length,
     templates: templates.length,
+    protocols: protocols.length,
   };
 }
 
@@ -92,7 +102,7 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
   } catch {
     throw new Error('That file could not be read as a backup.');
   }
-  if (parsed?.app !== BACKUP_APP_ID || parsed?.backupVersion !== BACKUP_VERSION) {
+  if (parsed?.app !== BACKUP_APP_ID || !READABLE_VERSIONS.includes(parsed?.backupVersion)) {
     throw new Error('This file is not a Monarch Prime Pin backup.');
   }
 
@@ -105,6 +115,8 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
     schedules: asArray<ScheduleEntry>(parsed.schedules),
     inventory: asArray<InventoryItem>(parsed.inventory),
     templates: asArray<RecordTemplate>(parsed.templates),
+    protocols: asArray<Protocol>(parsed.protocols),
+    doseSkips: asArray<DoseSkip>(parsed.doseSkips),
   };
 
   return {
@@ -114,6 +126,7 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
       schedules: payload.schedules.length,
       inventory: payload.inventory.length,
       templates: payload.templates.length,
+      protocols: payload.protocols.length,
     },
   };
 }
@@ -126,5 +139,9 @@ export async function restoreBackup(payload: BackupPayload): Promise<void> {
     schedules: payload.schedules.map(entry => ({ ...entry, notificationId: undefined, reminderEnabled: false })),
     inventory: payload.inventory,
     templates: payload.templates,
+    protocols: payload.protocols,
+    doseSkips: payload.doseSkips,
   });
+  // Protocol reminders are rebuilt from the restored plans on this device.
+  await syncProtocolReminders().catch(() => undefined);
 }

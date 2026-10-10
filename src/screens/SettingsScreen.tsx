@@ -160,6 +160,7 @@ function RemindersTab() {
           sch: counts.schedules,
           inv: counts.inventory,
           tpl: counts.templates,
+          pro: counts.protocols,
         }),
         [
           { text: t('common.cancel'), style: 'cancel' },
