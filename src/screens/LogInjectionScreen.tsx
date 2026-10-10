@@ -107,6 +107,10 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [vialId, setVialId] = useState<string | undefined>(initialInjection?.vialId);
   const [vialTouched, setVialTouched] = useState(!!initialInjection);
   const [history, setHistory] = useState<Injection[]>([]);
+  // Record templates are retired for new users (protocols prefill instead);
+  // the button stays for anyone who saved templates before.
+  const [hasTemplates, setHasTemplates] = useState(false);
+  useEffect(() => { getRecordTemplates().then(list => setHasTemplates(list.length > 0)).catch(() => undefined); }, []);
   useEffect(() => { getInjections().then(setHistory).catch(() => undefined); }, []);
   const [healthWeights, setHealthWeights] = useState<HealthPoint[]>([]);
   useEffect(() => { readHealthWeights(400).then(setHealthWeights).catch(() => undefined); }, []);
@@ -530,14 +534,14 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             </Text>
             <Text style={s.chev}>›</Text>
           </Pressable>
-          <Pressable
+          {hasTemplates && <Pressable
             style={s.templateBtn}
             onPress={freeTrialActive ? () => setUpgradeOpen(true) : openTemplates}
             accessibilityRole="button"
             accessibilityLabel="Use a saved record template"
           >
             <Text style={s.templateBtnText}>{freeTrialActive ? t('log.unlockTemplates') : t('log.useTemplate')}</Text>
-          </Pressable>
+          </Pressable>}
         </View>
 
         {/* Dose */}
@@ -862,7 +866,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   );
 }
 
-function PeptidePickerSheet({
+export function PeptidePickerSheet({
   onClose, onSelect,
 }: { onClose: () => void; onSelect: (p: Peptide) => void }) {
   const { t } = useI18n();

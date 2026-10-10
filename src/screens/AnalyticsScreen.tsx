@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Alert, Pressable, Share, View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Line, Circle as SvgCircle, Polyline, Text as SvgText } from 'react-native-svg';
+import Svg, { Line, Circle as SvgCircle, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
@@ -13,7 +13,7 @@ import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS,
 import { heatColors } from '../theme';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import { useI18n } from '../lib/i18n';
-import { HealthPoint, readHealthBodyFat, readHealthWeights } from '../lib/health';
+import { HealthPoint, readHealthBodyFat, readHealthSteps, readHealthWeights } from '../lib/health';
 
 export function AnalyticsScreen() {
   const { t, dateLocale } = useI18n();
@@ -23,9 +23,11 @@ export function AnalyticsScreen() {
   // trend when it has any; body fat is shown as its latest value only.
   const [healthWeights, setHealthWeights] = useState<HealthPoint[]>([]);
   const [healthBodyFat, setHealthBodyFat] = useState<HealthPoint | null>(null);
+  const [healthSteps, setHealthSteps] = useState<HealthPoint[]>([]);
   useEffect(() => {
     readHealthWeights().then(setHealthWeights).catch(() => undefined);
     readHealthBodyFat().then(points => setHealthBodyFat(points[points.length - 1] ?? null)).catch(() => undefined);
+    readHealthSteps(30).then(setHealthSteps).catch(() => undefined);
   }, []);
 
   // Compute weekly buckets (last 8 weeks)
@@ -323,6 +325,52 @@ export function AnalyticsScreen() {
             </Text>
           )}
         </Card>
+
+        {healthSteps.length > 0 && (() => {
+          // Last 14 days as bars, today on the right; days without data stay empty.
+          const byDate = new Map(healthSteps.map(point => [point.date, point.value]));
+          const days = Array.from({ length: 14 }, (_, i) => {
+            const d = new Date(); d.setDate(d.getDate() - (13 - i));
+            return localDateISO(d);
+          });
+          const values = days.map(day => byDate.get(day) ?? 0);
+          const max = Math.max(...values, 1);
+          const today = byDate.get(localDateISO()) ?? 0;
+          const recent = healthSteps.slice(-7);
+          const avg7 = recent.length ? Math.round(recent.reduce((sum, p) => sum + p.value, 0) / recent.length) : 0;
+          const avg30 = Math.round(healthSteps.reduce((sum, p) => sum + p.value, 0) / healthSteps.length);
+          const fmt = (n: number) => n.toLocaleString(dateLocale);
+          return (
+            <Card>
+              <CardLabel icon="👟">{t('health.stepsLabel')}</CardLabel>
+              <View style={s.weightSummaryRow}>
+                <Text style={s.weightLatest}>{fmt(today)}</Text>
+                <Text style={s.weightDelta}>{t('health.stepsToday')}</Text>
+              </View>
+              <Svg viewBox="0 0 200 50" width="100%" height={70}>
+                {values.map((value, index) => {
+                  const h = Math.max(value > 0 ? 1.5 : 0, (value / max) * 42);
+                  return (
+                    <Rect
+                      key={days[index]}
+                      x={4 + index * 14}
+                      y={46 - h}
+                      width={9}
+                      height={h}
+                      rx={2}
+                      fill={index === 13 ? colors.accentLight : colors.primary}
+                      opacity={value > 0 ? 1 : 0.2}
+                    />
+                  );
+                })}
+              </Svg>
+              <Text style={s.weightRangeNote}>
+                {t('health.stepsAverages', { a7: fmt(avg7), a30: fmt(avg30) })}
+              </Text>
+              <Text style={s.weightRangeNote}>{t('health.stepsSource')}</Text>
+            </Card>
+          );
+        })()}
 
         <Card>
           <CardLabel icon="💊">{t('reports.topPeptides')}</CardLabel>

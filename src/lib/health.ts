@@ -20,3 +20,6 @@ export async function readHealthWeights(_days = 365): Promise<HealthPoint[]> {
 export async function readHealthBodyFat(_days = 365): Promise<HealthPoint[]> {
   return [];
 }
+export async function readHealthSteps(_days = 30): Promise<HealthPoint[]> {
+  return [];
+}

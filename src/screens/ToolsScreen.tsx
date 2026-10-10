@@ -37,6 +37,8 @@ function animateListChange(): void {
 
 type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
+const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
+
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
   { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent, pro: true },
   { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary, pro: true },
@@ -68,6 +70,16 @@ export function ToolsScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
   const canUsePro = hasPro || !!user?.isDeveloper;
+  // Protocols and Vials replace Schedule, Inventory and Templates. The old
+  // tools stay reachable only for people who already have entries in them,
+  // so nothing anyone saved disappears.
+  const [legacyCounts, setLegacyCounts] = useState<Record<string, number>>({});
+  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates()])
+    .then(([schedules, inventory, templates]) => setLegacyCounts({ schedule: schedules.length, inventory: inventory.length, templates: templates.length }))
+    .catch(() => undefined);
+  useEffect(() => { loadLegacyCounts(); }, []);
+  const currentTools = TOOLS.filter(tool => !LEGACY_TOOLS.includes(tool.id));
+  const legacyTools = TOOLS.filter(tool => LEGACY_TOOLS.includes(tool.id) && (legacyCounts[tool.id] ?? 0) > 0);
 
   const runExport = async () => {
     if (exporting) return;
@@ -97,7 +109,12 @@ export function ToolsScreen() {
       <Disclaimer />
       <Header title={t('tools.title')} subtitle={t('tools.subtitle')} />
       <ScrollView contentContainerStyle={s.pageContent}>
-        {TOOLS.map(tool => (
+        {[...currentTools, ...(legacyTools.length ? ['legacy-header' as const] : []), ...legacyTools].map(tool => tool === 'legacy-header' ? (
+          <View key="legacy-header" style={s.legacyHeader}>
+            <Text style={s.legacyTitle}>{t('tools.legacyTitle')}</Text>
+            <Text style={s.legacySub}>{t('tools.legacySub')}</Text>
+          </View>
+        ) : (
           <Pressable
             key={tool.id}
             style={({ pressed }) => [s.toolRow, pressed && s.toolRowPressed]}
@@ -119,7 +136,7 @@ export function ToolsScreen() {
           </Pressable>
         ))}
       </ScrollView>
-      <Modal visible={active !== null} animationType="slide" onRequestClose={() => setActive(null)}><SafeAreaProvider>
+      <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
         {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
         {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
@@ -851,6 +868,9 @@ function confirmDelete(t: (key: string, vars?: Record<string, string | number>) 
 }
 
 const s = StyleSheet.create({
+  legacyHeader: { marginTop: 14, marginBottom: 2, paddingHorizontal: 4 },
+  legacyTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
+  legacySub: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 3 },
   app: { flex: 1, backgroundColor: colors.bg },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 124, gap: 10 },
   toolRow: {

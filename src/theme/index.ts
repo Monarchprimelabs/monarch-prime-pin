@@ -133,6 +133,12 @@ export const SHARE_PALETTE = {
   faint: DARK.textFaint,
   primary: BRAND.blue,
   accent: BRAND.orange,
+  // Premium share card (2026-10): navy ground, amber-to-orange hero, light
+  // blue streak ring. Fixed, like everything else in this palette.
+  navyTop: '#0E2448',
+  navyBottom: '#04070E',
+  amber: '#FFC37A',
+  ringLight: '#7CC4FF',
 };
 
 // Data-semantic: severity never follows the theme's accent.
