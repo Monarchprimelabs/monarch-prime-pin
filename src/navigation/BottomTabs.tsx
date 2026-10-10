@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, AppState } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -15,6 +15,7 @@ import { UpgradeScreen } from '../screens/UpgradeScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
+import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
@@ -24,11 +25,32 @@ export function BottomTabs() {
   const { hasPro } = useEntitlements();
   const { user } = useAuth();
   const canUsePro = hasPro || !!user?.isDeveloper;
+  const [pendingOccurrence, setPendingOccurrence] = React.useState<string | null>(null);
+
+  // Protocol reminders are a rolling window: rebuild it whenever the app
+  // comes forward, which also re-anchors them after a time zone change.
+  React.useEffect(() => {
+    syncProtocolReminders().catch(() => undefined);
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') syncProtocolReminders().catch(() => undefined);
+    });
+    const stopTaps = onProtocolReminderTap(key => {
+      setActive('home');
+      setPendingOccurrence(key);
+    });
+    return () => { sub.remove(); stopTaps(); };
+  }, []);
 
   return (
     <View style={s.app}>
       <View style={{ flex: 1 }}>
-        {active === 'home' && <DashboardScreen onNavigate={(t) => setActive(t as TabId)} />}
+        {active === 'home' && (
+          <DashboardScreen
+            onNavigate={(t) => setActive(t as TabId)}
+            pendingOccurrenceKey={pendingOccurrence}
+            onPendingHandled={() => setPendingOccurrence(null)}
+          />
+        )}
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
         {active === 'analytics' && (canUsePro ? <AnalyticsScreen /> : <UpgradeScreen />)}
