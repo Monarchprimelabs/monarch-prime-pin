@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Alert, View, Text, ScrollView, StyleSheet, Pressable, Modal, PanResponder, useWindowDimensions } from 'react-native';
+import { Alert, View, Text, ScrollView, StyleSheet, Pressable, Modal, useWindowDimensions, AppState } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import * as Sharing from 'expo-sharing';
@@ -54,7 +54,6 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [view, setView] = useState<'front' | 'back'>('front');
   const [injections, setInjections] = useState<Injection[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
-  const [reminderDismissed, setReminderDismissed] = useState(false);
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [plannedLog, setPlannedLog] = useState<PlannedDose | null>(null);
@@ -74,7 +73,6 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
   const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
   const [heatWindow, setHeatWindow] = useState<number | undefined>(undefined); // days; undefined = All
-  const [scrubDaysAgo, setScrubDaysAgo] = useState(0);
 
   const refresh = () => {
     getHeatHalfLife().then(setHalfLife);
@@ -84,6 +82,12 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
     AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
   };
   useEffect(() => { refresh(); }, []);
+  // Coming back to the app (often the next day) reloads records and
+  // re-renders, so the heat map reflects today's decay, not the last load's.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
+    return () => sub.remove();
+  }, []);
 
   // Gentle backup nudge once there is meaningful data and the last export
   // is missing or older than 30 days. undefined = still loading, no nudge.
@@ -156,15 +160,9 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   // Heat depends on the calendar day, not the render — dayKey keeps the memo
   // stable within a day and rolls it over at local midnight.
   const dayKey = new Date().toDateString();
-  const siteBands = useMemo(() => {
-    const nowMs = Date.now() - scrubDaysAgo * 86400000;
-    return bandsByZone(heatEntries, nowMs, halfLife, heatWindow);
+  const siteBands = useMemo(() => bandsByZone(heatEntries, Date.now(), halfLife, heatWindow),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [heatEntries, halfLife, heatWindow, scrubDaysAgo, dayKey]);
-  const scrubDate = useMemo(() => {
-    const d = new Date(Date.now() - scrubDaysAgo * 86400000);
-    return d.toLocaleDateString(dateLocale);
-  }, [scrubDaysAgo, dayKey, dateLocale]);
+    [heatEntries, halfLife, heatWindow, dayKey]);
   const nextSchedule = useMemo(() => schedules
     .filter(item => !item.completedAt && new Date(`${item.date}T${item.time}:00`).getTime() >= Date.now())
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
@@ -241,24 +239,6 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
           </Pressable>
         )}
 
-        {!reminderDismissed && lastInj && (
-          <View style={s.reminderCard}>
-            <Pressable onPress={() => setReminderDismissed(true)} style={s.reminderClose}>
-              <Text style={s.reminderCloseText}>×</Text>
-            </Pressable>
-            <View style={s.reminderHeader}>
-              <Text style={{ fontSize: 14 }}>⏰</Text>
-              <Text style={s.reminderTitle}>{t('dash.logReview')}</Text>
-            </View>
-            <Text style={s.reminderCompound}>{lastInj.peptide}</Text>
-            <Text style={s.reminderMeta}>{t('dash.lastLogged', { date: lastInj.date })}</Text>
-            <Text style={s.reminderMeta}>{t('dash.lastSite', { site: lastInjSites })}</Text>
-            <View style={s.reminderNext}>
-              <Text style={s.reminderNextText}>{t('dash.reviewPrev')}</Text>
-            </View>
-          </View>
-        )}
-
         {canUsePro && nextSchedule && (
           <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
             <View style={{ flex: 1 }}>
@@ -314,12 +294,6 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
             ))}
           </View>
           <Text style={s.legendCaption}>{t('dash.legendCaption')}</Text>
-          <ScrubBar daysAgo={scrubDaysAgo} maxDays={90} onChange={setScrubDaysAgo} />
-          <Text style={s.scrubLabel}>
-            {scrubDaysAgo === 0
-              ? t('dash.scrubToday')
-              : t('dash.scrubDaysAgo', { n: scrubDaysAgo, date: scrubDate })}
-          </Text>
         </Card>
 
         {lastInj && (
@@ -493,45 +467,6 @@ function StatCard({ icon, color, value, label }: {
   );
 }
 
-// Dependency-free history scrub: drag to move "now" back up to maxDays.
-// Left edge = maxDays ago, right edge = today. Values quantize to whole days
-// so heat memos only recompute when the day under the thumb changes.
-function ScrubBar({ daysAgo, maxDays, onChange }: { daysAgo: number; maxDays: number; onChange: (days: number) => void }) {
-  const widthRef = useRef(0);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-
-  const handleX = (x: number) => {
-    const width = widthRef.current;
-    if (width <= 0) return;
-    const fraction = Math.max(0, Math.min(1, x / width));
-    onChangeRef.current(Math.round((1 - fraction) * maxDays));
-  };
-
-  const responder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: evt => handleX(evt.nativeEvent.locationX),
-      onPanResponderMove: evt => handleX(evt.nativeEvent.locationX),
-    }),
-  ).current;
-
-  const fraction = 1 - daysAgo / maxDays;
-  return (
-    <View
-      style={s.scrubTrackWrap}
-      onLayout={event => { widthRef.current = event.nativeEvent.layout.width; }}
-      {...responder.panHandlers}
-    >
-      <View style={s.scrubTrack}>
-        <View style={[s.scrubFill, { width: `${fraction * 100}%` }]} />
-      </View>
-      <View style={[s.scrubThumb, { left: `${fraction * 100}%` }]} />
-    </View>
-  );
-}
-
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={s.legendItem}>
@@ -565,22 +500,6 @@ const s = StyleSheet.create({
   statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
-  reminderCard: {
-    marginHorizontal: spacing.xl, marginBottom: 14,
-    backgroundColor: 'rgba(255, 140, 0, 0.08)',
-    borderWidth: 1, borderColor: 'rgba(255, 140, 0, 0.3)',
-    borderRadius: radius.lg, padding: 16, paddingTop: 14,
-  },
-  reminderClose: { position: 'absolute', right: 12, top: 10, zIndex: 2 },
-  reminderCloseText: { color: colors.textMuted, fontSize: 24, lineHeight: 24 },
-  reminderHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  reminderTitle: { color: colors.accent, fontSize: 13, fontWeight: '700', letterSpacing: 1.2 },
-  reminderCompound: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 4 },
-  reminderMeta: { color: colors.text, fontSize: 13, marginBottom: 2 },
-  reminderNext: {
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.hairline,
-  },
-  reminderNextText: { color: colors.textMuted, fontSize: 13 },
   scheduleCard: {
     marginHorizontal: spacing.xl, marginBottom: 14, padding: 16,
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -653,18 +572,6 @@ const s = StyleSheet.create({
   windowBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
   windowBtnText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   windowBtnTextActive: { color: colors.white },
-  scrubTrackWrap: { marginTop: 14, paddingVertical: 10, justifyContent: 'center' },
-  scrubTrack: {
-    height: 4, borderRadius: 2, backgroundColor: withAlpha(colors.primary, 0.15),
-    overflow: 'hidden',
-  },
-  scrubFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },
-  scrubThumb: {
-    position: 'absolute', top: 3, width: 18, height: 18, marginLeft: -9,
-    borderRadius: 9, backgroundColor: colors.white,
-    borderWidth: 2, borderColor: colors.primary,
-  },
-  scrubLabel: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 2 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { color: colors.textMuted, fontSize: 11 },
