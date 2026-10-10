@@ -5,26 +5,26 @@ Onboarding quiz (goals; experience; age; sex; height; weight),onboarding,should,
 Paywall at end of onboarding,monetization,should,yes,partial,"Hard paywall, monthly + yearly. MPP decision: lifetime vs subscription. MPP audit: soft paywall after 5 free logs (FREE_INJECTION_LIMIT), not at end of onboarding. Lifetime, not subscription"
 Subscription price testing,monetization,could,yes,no,"Live price points: monthly $9.99-$14.99, quarterly $39.99, yearly $19.99-$59.99. MPP audit: single $9.99 lifetime price"
 Friend referral discounts,monetization,could,yes,no,v1.4.2
-Protocol builder from library or custom compound,protocols,must,yes,no,MPP audit: no protocol entity. Tools > Schedule saves free-text title + date + time entries not linked to a compound or dose
-Dose units mcg / mg / IU / mL,protocols,must,yes,partial,MPP audit: mcg and mg only (Injection.unit). No IU or mL
-Frequencies: daily / every other day / twice weekly / 5-on-2-off / specific days / custom,protocols,must,yes,partial,MPP audit: schedule entries repeat once / daily / weekly only (ScheduleRepeat)
-Several active protocols at once,protocols,must,yes,partial,MPP audit: many schedule entries can coexist but none carries a compound or dose
-Start date + notes + per-protocol reminder times,protocols,must,yes,partial,MPP audit: schedule entry has date; one time; notes; one local reminder
-Cycles with on/off boundaries,protocols,should,yes,no,
-Change the plan without rewriting logged history,protocols,must,yes,partial,Their guides keep planned entries and logged doses separate. MPP audit: logs are stored apart from schedule entries so edits never touch them; but there is no plan-to-log link to protect yet
+Protocol builder from library or custom compound,protocols,must,yes,yes,MPP audit: no protocol entity. Tools > Schedule saves free-text title + date + time entries not linked to a compound or dose. Built: Tools > Protocols (Pro). Picker suggestions or any custom name
+Dose units mcg / mg / IU / mL,protocols,must,yes,yes,MPP audit: mcg and mg only (Injection.unit). No IU or mL. Built: all four on protocols and the log screen. IU and mL are kept out of mass charts
+Frequencies: daily / every other day / twice weekly / 5-on-2-off / specific days / custom,protocols,must,yes,yes,MPP audit: schedule entries repeat once / daily / weekly only (ScheduleRepeat). Built: daily; every other day; twice a week; days on/off; specific days; every N days (src/lib/schedule)
+Several active protocols at once,protocols,must,yes,yes,MPP audit: many schedule entries can coexist but none carries a compound or dose. Built: any number; Today interleaves them by time
+Start date + notes + per-protocol reminder times,protocols,must,yes,yes,MPP audit: schedule entry has date; one time; notes; one local reminder. Built: start date; notes; up to 4 times a day; reminders on/off per protocol
+Cycles with on/off boundaries,protocols,should,yes,yes,Built: optional cycle (days on / days off) on top of any frequency
+Change the plan without rewriting logged history,protocols,must,yes,yes,Their guides keep planned entries and logged doses separate. MPP audit: logs are stored apart from schedule entries so edits never touch them; but there is no plan-to-log link to protect yet. Built: append-only revisions from today; tested
 Pen dosing,protocols,should,yes,no,v1.4.7
 Advanced protocol scheduling,protocols,could,yes,no,v1.4.7; details not public
-Blends tracked across protocols and vials,protocols,could,yes,partial,v1.4.6. MPP audit: 11 blends in the compound picker as single names; inventory is not blend-aware
-Today view of doses due,logging,must,yes,partial,Screenshot caption 1. MPP audit: Dashboard shows the next scheduled entry and Log Again; no list of today's due doses
-One-tap dose log (time; amount + unit; site),logging,must,yes,partial,MPP audit: log screen defaults time to Now and Log Again prefills from the last record; still needs compound + dose + site taps; not launched from a reminder
-Edit or backdate past doses,logging,must,yes,yes,v1.5.0. MPP audit: edit from History detail; log for a past date from the calendar day view
-Week strip + month calendar (planned vs completed; site; time),calendar,must,yes,partial,MPP audit: month calendar with day detail of logged records (HistoryScreen). No week strip; no planned entries
+Blends tracked across protocols and vials,protocols,could,yes,partial,"v1.4.6. MPP audit: 11 blends in the compound picker as single names; inventory is not blend-aware. Blend vials are tracked as one total, as the user enters it; no per-component split"
+Today view of doses due,logging,must,yes,yes,Screenshot caption 1. MPP audit: Dashboard shows the next scheduled entry and Log Again; no list of today's due doses. Built: Today's plan on Home with a week strip (copy says Planned/Logged/Skipped/Not logged per MPP compliance)
+One-tap dose log (time; amount + unit; site),logging,must,yes,yes,"MPP audit: log screen defaults time to Now and Log Again prefills from the last record; still needs compound + dose + site taps; not launched from a reminder. Built: Log on a planned dose (or tapping its reminder) opens the log prefilled; only the site is left, then Save"
+Edit or backdate past doses,logging,must,yes,yes,v1.5.0. MPP audit: edit from History detail; log for a past date from the calendar day view. Also: Log or Skip a past planned dose from the week strip or History calendar; edits keep plan links
+Week strip + month calendar (planned vs completed; site; time),calendar,must,yes,yes,MPP audit: month calendar with day detail of logged records (HistoryScreen). No week strip; no planned entries. Built: week strip on Home; planned rings on the History calendar
 Streaks,calendar,should,yes,yes,MPP audit: day streak + longest streak on Dashboard
 Stats view,calendar,should,yes,yes,Screenshot caption 3. MPP audit: Dashboard stat cards plus Reports tab (Pro): weekly/monthly; top compounds; site usage; weight; symptoms; PDF
-Dose reminders (push notifications),reminders,must,yes,partial,MPP audit: local notifications for manual schedule entries (once/daily/weekly). Not generated from a dose plan
-Vial inventory (fill size; concentration; expiry),inventory,must,yes,partial,v1.4.1. MPP audit: inventory items with quantity; unit; per-container mass; received and expiry dates; low-stock level. No diluent or concentration
-Projected run-out date per vial,inventory,should,yes,no,MPP audit: logs accumulate usedMcg against a container but nothing projects forward
-Low-supply alert about 7 days out + empty alert,inventory,should,yes,partial,MPP audit: Low stock badge at a user threshold in the inventory list; no push
+Dose reminders (push notifications),reminders,must,yes,yes,"MPP audit: local notifications for manual schedule entries (once/daily/weekly). Not generated from a dose plan. Built: local notifications in a rolling 14-day window, rebuilt on every app open. Verify on a device"
+Vial inventory (fill size; concentration; expiry),inventory,must,yes,yes,v1.4.1. MPP audit: inventory items with quantity; unit; per-container mass; received and expiry dates; low-stock level. No diluent or concentration. Built: Tools > Vials: total; liquid; concentration; opened; expiry; from-inventory link
+Projected run-out date per vial,inventory,should,yes,yes,MPP audit: logs accumulate usedMcg against a container but nothing projects forward. Built: projects across every protocol on the vial; tested
+Low-supply alert about 7 days out + empty alert,inventory,should,yes,yes,MPP audit: Low stock badge at a user threshold in the inventory list; no push. Built: alert a week before and the day before the first uncovered dose; LOW/EXPIRED/empty states
 Wide range of vial sizes and dose amounts,inventory,should,yes,yes,v1.4.3. MPP audit: free decimal entry everywhere
 Reconstitution calculator (vial size; diluent; desired amount; syringe size),calculator,must,yes,partial,Unit math on numbers the user enters. No suggested doses (App Store guideline 1.4.2). MPP audit: Tools > worksheet takes total mass; liquid volume; desired amount -> mg/mL; mcg/mL; U-100 units. No syringe-size input (scale auto-picks 30/50/100). Pro
 Syringe diagram with live plunger + over-capacity warning,calculator,should,yes,partial,MPP audit: horizontal unit gauge (deliberately not a syringe drawing) with over-100-unit warning

@@ -140,6 +140,10 @@ The slice takes must-haves from 4 to 14 of 18. Still open after it: vial invento
 
 **5. Fixes from `/replica-entrepreneur`**, once it has run.
 
+## Status (2026-10-10)
+
+Built on this branch: milestone 1 (the slice) and milestone 2 (vials). Parity is 67.6, up from 45.1, with must-haves at 15 of 18. `npm test` runs 42 engine and vial tests under three time zones. Device checks are in `replica/TESTFLIGHT_CHECKLIST.md`. Still open: milestone 3 (syringe size, two-step delete, Apple sign-in) and everything after it.
+
 ## Decisions (George, 2026-10-10)
 
 1. **Gating:** protocols, Today and vials stay Pro, matching Schedule and Inventory today. The 5-free-logs limit is unchanged.

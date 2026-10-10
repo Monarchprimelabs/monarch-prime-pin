@@ -6,7 +6,8 @@
 2. Run `npm install` or `npm ci`.
 3. Run `npx expo-doctor`.
 4. Run `npx tsc --noEmit`.
-5. Smoke test sign-in, offline logging, history, analytics, settings, and any affected IAP or notification paths.
+5. Run `npm test` (scheduling engine and vial math, under three time zones) and `node scripts/test-heat.js`.
+6. Smoke test sign-in, offline logging, history, analytics, settings, and any affected IAP or notification paths. For protocols, reminders and vials, run `replica/TESTFLIGHT_CHECKLIST.md` on a device.
 
 ## Before Tagging a Stable Baseline
 
