@@ -13,7 +13,7 @@ import { useI18n } from '../lib/i18n';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import { deleteProtocol, getProtocols, getVials, newProtocolId, saveProtocol } from '../lib/storage';
 import type { Vial } from '../lib/vials/types';
-import { syncProtocolReminders } from '../lib/protocolReminders';
+import { sendTestReminder, syncProtocolReminders } from '../lib/protocolReminders';
 import { endProtocol, revisionOn, reviseProtocol } from '../lib/schedule/engine';
 import { addDays } from '../lib/schedule/days';
 import {
@@ -177,6 +177,19 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
           <Pressable style={s.primaryBtn} onPress={() => setEditing('new')} accessibilityRole="button">
             <Text style={s.primaryBtnText}>{t('proto.new')}</Text>
+          </Pressable>
+          <Pressable
+            style={s.testBtn}
+            accessibilityRole="button"
+            onPress={async () => {
+              const result = await sendTestReminder().catch(() => 'denied' as const);
+              Alert.alert(
+                result === 'sent' ? t('proto.testSentTitle') : t('proto.testDeniedTitle'),
+                result === 'sent' ? t('proto.testSentBody') : t('proto.permissionDenied'),
+              );
+            }}
+          >
+            <Text style={s.testBtnText}>{t('proto.testReminder')}</Text>
           </Pressable>
         </View>
         <Card>
@@ -567,6 +580,8 @@ function NumberRow({ label, value, setValue }: { label: string; value: string; s
 }
 
 const s = { ...kit, ...StyleSheet.create({
+  testBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
+  testBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 },
   dayBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgPill },
   dayBtnActive: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },

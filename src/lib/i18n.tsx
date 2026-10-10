@@ -803,6 +803,11 @@ const en: Record<string, string> = {
   'health.sourceLog': "Weights from your log entries",
   'health.bodyFatLatest': "Body fat: {v}% (Apple Health, {date})",
   'health.useWeight': "Use Apple Health: {w} lbs ({date})",
+  // Test reminder
+  'proto.testReminder': "Send a Test Reminder",
+  'proto.testSentTitle': "Test reminder on its way",
+  'proto.testSentBody': "It arrives in about 5 seconds. Lock your phone or go to the Home Screen to see it like a real reminder.",
+  'proto.testDeniedTitle': "Notifications are off",
 };
 
 const es: Record<string, string> = {
@@ -1598,6 +1603,11 @@ const es: Record<string, string> = {
   'health.sourceLog': "Pesos de tus registros",
   'health.bodyFatLatest': "Grasa corporal: {v}% (Apple Salud, {date})",
   'health.useWeight': "Usar Apple Salud: {w} lbs ({date})",
+  // Test reminder
+  'proto.testReminder': "Enviar un recordatorio de prueba",
+  'proto.testSentTitle': "Recordatorio de prueba en camino",
+  'proto.testSentBody': "Llega en unos 5 segundos. Bloquea tu teléfono o ve a la pantalla de inicio para verlo como uno real.",
+  'proto.testDeniedTitle': "Las notificaciones están desactivadas",
 };
 
 const pt: Record<string, string> = {
@@ -2390,6 +2400,11 @@ const pt: Record<string, string> = {
   'health.sourceLog': "Pesos dos seus registros",
   'health.bodyFatLatest': "Gordura corporal: {v}% (Apple Saúde, {date})",
   'health.useWeight': "Usar Apple Saúde: {w} lbs ({date})",
+  // Test reminder
+  'proto.testReminder': "Enviar um lembrete de teste",
+  'proto.testSentTitle': "Lembrete de teste a caminho",
+  'proto.testSentBody': "Ele chega em cerca de 5 segundos. Bloqueie o celular ou vá para a Tela de Início para vê-lo como um lembrete real.",
+  'proto.testDeniedTitle': "As notificações estão desligadas",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };

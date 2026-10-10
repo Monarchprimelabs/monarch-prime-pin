@@ -9,3 +9,7 @@ export async function syncProtocolReminders(_options: { askPermission?: boolean 
 export function onProtocolReminderTap(_handler: (occurrenceKey: string) => void): () => void {
   return () => undefined;
 }
+
+export async function sendTestReminder(_seconds = 5): Promise<'sent' | 'denied'> {
+  return 'denied';
+}
