@@ -73,8 +73,18 @@ Tick each box. If something fails, note the step number and take a screenshot.
 - [ ] 8.2 Restoring a backup made on the App Store version (v1) still works.
 - [ ] 8.3 Delete account clears protocols and vials, and no reminders arrive afterwards.
 
-## 9. Looks
+## 9. Welcome, delete, export and calculator
 
-- [ ] 9.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
-- [ ] 9.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
-- [ ] 9.3 The research banner sits below the status bar on the new modals.
+- [ ] 9.1 Fresh install (delete the app first): the first screen says records stay on this phone and asks only for an optional first name. There are no email or password fields.
+- [ ] 9.2 Updating over the App Store version: you stay signed in, nothing is asked again, and all records are there.
+- [ ] 9.3 Settings has no Sign Out button (the developer bypass still has one).
+- [ ] 9.4 Delete All Data asks twice. After it, the welcome screen shows, records are gone, and Pro is still unlocked.
+- [ ] 9.5 Tools > Export: open the CSV in Numbers. The first 11 columns are the same as before. New columns: status, protocol, planned_date, planned_time, vial. Skipped planned doses appear as "skipped" rows.
+- [ ] 9.6 Calculator: pick 0.3 mL and enter an amount that reads over 30 units. The bar caps at 30 and an orange note says it's more than one full 0.3 mL syringe. "Fit" behaves as before.
+- [ ] 9.7 The amount field on the calculator shows "Amount you entered", not an example number.
+
+## 10. Looks
+
+- [ ] 10.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
+- [ ] 10.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
+- [ ] 10.3 The research banner sits below the status bar on the new modals.

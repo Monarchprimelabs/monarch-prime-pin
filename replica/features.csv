@@ -1,6 +1,6 @@
 feature,area,priority,original,clone,notes
-Sign in with Apple or Google,account,must,yes,no,"Sign-in comes after the onboarding quiz. MPP audit: email/password (Supabase, optional) and guest mode only. src/lib/auth.tsx"
-Account and data deletion in Settings,account,must,yes,partial,Two-step delete; App Review expects it for apps with sign-up. MPP audit: one-step confirm clears device data and reminders then signs out (SettingsScreen confirmDeleteAccount). Does not delete the Supabase account or cloud rows when sync is on
+Sign in with Apple or Google,account,must,yes,skip,"Sign-in comes after the onboarding quiz. MPP audit: email/password (Supabase, optional) and guest mode only. src/lib/auth.tsx. George 2026-10-10: MPP has no accounts by design (no cloud). The first screen now says so and asks only for a name"
+Account and data deletion in Settings,account,must,yes,yes,Two-step delete; App Review expects it for apps with sign-up. MPP audit: one-step confirm clears device data and reminders then signs out (SettingsScreen confirmDeleteAccount). Does not delete the Supabase account or cloud rows when sync is on. Built: two-step Delete All Data on This Phone; keeps the Pro purchase. No server account exists to delete
 Onboarding quiz (goals; experience; age; sex; height; weight),onboarding,should,yes,partial,"One question per screen; feeds the profile. MPP audit: 2-step quiz (goal; what to track). No profile fields, by design"
 Paywall at end of onboarding,monetization,should,yes,partial,"Hard paywall, monthly + yearly. MPP decision: lifetime vs subscription. MPP audit: soft paywall after 5 free logs (FREE_INJECTION_LIMIT), not at end of onboarding. Lifetime, not subscription"
 Subscription price testing,monetization,could,yes,no,"Live price points: monthly $9.99-$14.99, quarterly $39.99, yearly $19.99-$59.99. MPP audit: single $9.99 lifetime price"
@@ -26,7 +26,7 @@ Vial inventory (fill size; concentration; expiry),inventory,must,yes,yes,v1.4.1.
 Projected run-out date per vial,inventory,should,yes,yes,MPP audit: logs accumulate usedMcg against a container but nothing projects forward. Built: projects across every protocol on the vial; tested
 Low-supply alert about 7 days out + empty alert,inventory,should,yes,yes,MPP audit: Low stock badge at a user threshold in the inventory list; no push. Built: alert a week before and the day before the first uncovered dose; LOW/EXPIRED/empty states
 Wide range of vial sizes and dose amounts,inventory,should,yes,yes,v1.4.3. MPP audit: free decimal entry everywhere
-Reconstitution calculator (vial size; diluent; desired amount; syringe size),calculator,must,yes,partial,Unit math on numbers the user enters. No suggested doses (App Store guideline 1.4.2). MPP audit: Tools > worksheet takes total mass; liquid volume; desired amount -> mg/mL; mcg/mL; U-100 units. No syringe-size input (scale auto-picks 30/50/100). Pro
+Reconstitution calculator (vial size; diluent; desired amount; syringe size),calculator,must,yes,yes,"Unit math on numbers the user enters. No suggested doses (App Store guideline 1.4.2). MPP audit: Tools > worksheet takes total mass; liquid volume; desired amount -> mg/mL; mcg/mL; U-100 units. No syringe-size input (scale auto-picks 30/50/100). Pro. Built: syringe size (Fit / 0.3 / 0.5 / 1 mL) fixes the scale, with an over-capacity note. The amount placeholder no longer shows an example number"
 Syringe diagram with live plunger + over-capacity warning,calculator,should,yes,partial,MPP audit: horizontal unit gauge (deliberately not a syringe drawing) with over-100-unit warning
 Save a calculation to a protocol or vial,calculator,should,yes,no,MPP audit: copy summary to clipboard only
 Body map site picker,sites,must,yes,yes,More sites added in v1.5.9. MPP audit: front/back BodyDiagram with multi-site select
@@ -40,8 +40,8 @@ Mood tracking,progress,could,yes,no,"MPP audit: side-effect severity and symptom
 Apple Health import,progress,should,yes,no,HealthKit entitlement + fresh EAS build; Health Connect on Android
 Progress photos (compare; time-lapse),progress,could,yes,partial,They strip EXIF before upload. MPP audit: photo per log; History Photos tab; compare two. No time-lapse
 Estimated on-board level curve,progress,could,yes,no,Label it as an estimate from half-life
-AI advisor chat (short educational answers),ai,should,yes,no,Refuses doses and titration; needs a connection. MPP audit: no AI tab exists in the code
-AI answers use the user's own stack,ai,could,yes,no,
+AI advisor chat (short educational answers),ai,should,yes,skip,Refuses doses and titration; needs a connection. MPP audit: no AI tab exists in the code. George 2026-10-10: no paid AI
+AI answers use the user's own stack,ai,could,yes,skip,George 2026-10-10: no paid AI
 Community Q&A (pseudonym; votes; reactions; report; block),community,could,yes,no,Report + block from day one
 Their community and its members,community,could,yes,skip,Their network; cannot be cloned
 Food tracker (meals; macros; food library),nutrition,could,yes,no,v1.5.8; off the core loop
@@ -50,7 +50,7 @@ Dark mode,platform,should,yes,yes,v1.3.6. MPP audit: dark and light themes; nati
 Android app,platform,could,yes,partial,MPP's repo has an Android config and EAS profile; confirm whether it ships on Play. MPP audit: Android config and EAS profile exist; Play release not confirmed
 In-app feedback portal,platform,could,yes,no,v1.3.9
 Export health observations,privacy,could,yes,partial,Their only self-serve export. MPP audit: weight is a column in the dose CSV; also full JSON backup/restore
-Export full dose history to CSV,privacy,should,no,yes,PeptidePal does not offer it; MPP built it (needs an EAS build). Mark yes after the audit. MPP audit: Tools > Export; free for everyone (exportData.ts)
+Export full dose history to CSV,privacy,should,no,yes,PeptidePal does not offer it; MPP built it (needs an EAS build). Mark yes after the audit. MPP audit: Tools > Export; free for everyone (exportData.ts). Now also exports status; protocol; planned date and time; vial; and skipped planned doses as rows
 Lifetime Pro purchase,monetization,could,no,yes,PeptidePal is subscription-only; MPP sells a $9.99 lifetime Pro. MPP audit: $9.99 lifetime via react-native-iap; restore supported
 No ad tracking,privacy,could,no,yes,PeptidePal's privacy label lists data used to track you. MPP audit: no analytics or attribution SDK in package.json; funnel counters are local-only
 PeptidePal name; logo; colors; copy,brand,could,yes,skip,Never cloned
