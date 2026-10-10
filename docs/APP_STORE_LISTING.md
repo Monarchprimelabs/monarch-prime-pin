@@ -87,3 +87,32 @@ Monarch Prime Pin is a personal log for adults. It does not give medical advice,
 See docs/APP_STORE_CONNECT_CHANGES.md: 18+ age rating, screenshots without the old banner, privacy label, privacy-policy line for Apple Health, review notes.
 
 Google Play text is in replica/launch/listing.json, for if the Android app ships (not confirmed).
+
+## Screenshot captions
+
+The first three screenshots carry the listing, because they are all most people see in search. Each caption is a short headline and an optional smaller line, written to sit above a real screen from this build. Use the order below.
+
+| # | Screen to capture | Headline | Smaller line |
+| --- | --- | --- | --- |
+| 1 | Home: Today's plan, week strip, two planned cards (one Logged, one Planned) | Your plan, every day | See what's planned, logged and skipped this week |
+| 2 | Log screen opened from a planned entry, site picked, "last logged" line visible | Log it in a couple of taps | Compound, amount and time are already filled in |
+| 3 | Home: site heat map, front view, a few bands lit | Know where you went last | Recent sites at a glance, and when each was last used |
+| 4 | Protocol builder: Days on / off picked, cycle on, summary line showing | Any schedule you follow | Every other day, 5 on / 2 off, specific days, cycles |
+| 5 | Lock screen with a "Protocol reminder" notification | Reminders at your times | Private: they never show what you take |
+| 6 | Vials: one vial card with the remaining bar and "covers entries through" | Know when a vial runs low | What's left, and how far it covers your plan |
+| 7 | Reports: weekly summary and weight trend "from Apple Health" | Your history, clearly | Summaries, site usage and weight from Apple Health |
+| 8 | Settings: data card ("Everything you log stays on this phone") with Export and Backup | Stays on your phone | No account. No cloud. No ad tracking. Export anytime. |
+| 9 | Upgrade screen | Pay once. No subscription. | Start free with 5 logs. Pro is a one-time purchase. |
+
+### Rules for the screenshots
+
+- **No old banner.** Capture from the PR #24 build, so the banner reads "PERSONAL LOG — Not medical advice". Leave it visible; it helps in review.
+- **Sample data:** use a test install with made-up records. Amounts in screenshots can read as dose advice (guideline 1.4.2), so:
+  - keep amounts small and varied rather than showing one "standard" number many times
+  - leave the concentration worksheet out of the screenshots entirely
+  - never put an amount in a caption
+- **No brand-name drugs** (Ozempic, Mounjaro and so on) on screen or in captions. Use peptide names from the built-in list, or a custom name.
+- **No faces or real people**, and no other app's name, icon or look.
+- **Sizes:** App Store Connect asks for the 6.9-inch iPhone set (1320 × 2868) and scales it for smaller phones. Check the upload page, because the required sizes change. The app is iPhone-only (`supportsTablet: false`), so no iPad set.
+- **Light or dark:** pick one for all nine so they look like a set. Dark matches the app icon.
+- **Screenshot 7 needs Apple Health** (PR #24). If that release ships without it, swap the smaller line for "Weekly summaries, site usage and weight trend".
