@@ -152,3 +152,160 @@ Wording matches the app's Portuguese text: protocolo, frasco, Apple Saúde, "reg
 Spanish and Portuguese run 20–30% longer than English. Check that line 3 and line 8 fit on two lines at the caption size you use; if not, the smaller line can drop its last clause ("…de un vistazo" / "…num relance", "Exporta cuando quieras" / "Exporte quando quiser").
 
 Screenshots for these locales should come from the app in that language (Settings > Language), so the screen matches the caption.
+
+## Spanish (México) and Portuguese (Brazil) listings
+Add these as localizations in App Store Connect (App Information > Localizable Information, then each version page). Both passed `listing.py` with 0 errors. Its one warning ("wasted: n" / "o") is a false positive: the checker splits words on accented letters, so "aplicación" reads as "aplicaci" + "n".
+Choices made:
+- **Spanish** uses Mexican and Latin American usage, matching the app's `es-MX` dates and its Spanish text. "Aplicación" in the subtitle means the injection, as it does in the app.
+- **Portuguese** is Brazilian, matching `pt-BR`. "Aplicação" is used the same way, and "frasco" for vial, as in the app.
+- **Keywords** leave out dose words ("dosis", "dose") on purpose, per guideline 1.4.2, and skip words already in the name and subtitle.
+
+### Spanish (México)
+
+**Name** (17 characters)
+```
+Monarch Prime Pin
+```
+
+**Subtitle** (30 characters)
+```
+Registro privado de aplicación
+```
+
+**Promotional text** (150 characters)
+```
+Nuevo: planes con recordatorios, vista de hoy, control de viales y peso de Apple Salud. Tus registros se quedan en tu teléfono, sin cuenta ni rastreo.
+```
+
+**Keywords** (100 characters)
+```
+péptido,inyección,jeringa,recordatorio,horario,vial,rotación,diario,mapa,cuerpo,glp-1,peso,historial
+```
+
+**Description** (2136 characters)
+```
+Monarch Prime Pin es un registro privado de las aplicaciones que planificas y haces. Configura un plan una vez, recibe un recordatorio a la hora que elegiste, regístralo en un par de toques y ve dónde aplicaste la última vez.
+
+Todo se queda en tu teléfono. No hay cuenta que crear, ni copia en la nube, ni rastreo publicitario.
+
+PLAN Y RECORDATORIOS
+• Protocolos diarios, un día sí y uno no, dos veces por semana, días sí y días no, días específicos o cada N días, con ciclos opcionales
+• Hasta cuatro horas al día, con recordatorios a las horas que elijas
+• El plan de hoy muestra lo planificado, lo registrado y lo omitido, con una tira semanal y tu avance
+• Edita un plan sin cambiar tus registros anteriores
+
+REGISTRO
+• Registra una entrada planificada en un par de toques: compuesto, cantidad y hora ya vienen llenos
+• mcg, mg, UI o mL
+• Registra días pasados o edita cualquier registro
+• Notas de efectos secundarios, intensidad, peso y fotos de progreso
+
+SITIOS DE APLICACIÓN
+• Mapa corporal de frente y espalda
+• Mapa de calor de los sitios que usaste recientemente
+• Ve cuándo registraste cada sitio por última vez antes de elegirlo
+
+VIALES
+• Lleva la cuenta de lo que queda en cada vial con las dosis que registras
+• Ve hasta cuándo cubre tu plan un vial, con un aviso una semana antes de que se acabe
+
+REPORTES Y HERRAMIENTAS
+• Resúmenes semanales y mensuales, uso de sitios y tendencia de peso
+• Hoja de concentración con tamaños de jeringa: conversión de unidades con los números que ingresas
+• Apple Salud opcional: lee tu peso y grasa corporal (solo lectura)
+• Exporta todos tus registros a CSV o respalda todo (fotos incluidas) en un archivo que tú guardas
+
+PRECIO
+Empieza gratis con 5 registros guardados. Monarch Pro es un pago único que desbloquea registros ilimitados, protocolos y recordatorios, viales, reportes, la hoja de concentración, el calendario y la galería de fotos. Sin suscripción.
+
+Monarch Prime Pin es un registro personal para adultos. No da consejo médico y nunca sugiere ni calcula una dosis: cada cantidad la pones tú. Habla con un profesional de la salud autorizado sobre cualquier cosa que uses.
+```
+
+**What's New** (606 characters)
+```
+• Protocolos: planifica días y horas, con recordatorios
+• Plan de hoy: registra u omite entradas planificadas y ve tu semana
+• Viales: lo que queda y hasta cuándo cubre tu plan
+• Ve cuándo registraste cada sitio por última vez
+• Peso y grasa corporal de Apple Salud, opcional (solo lectura)
+• Las fotos ahora se conservan con las actualizaciones y los respaldos pueden incluirlas
+• La exportación CSV incluye planes, viales y entradas omitidas
+• Tamaños de jeringa en la hoja de concentración
+• Texto más claro: un registro personal, no consejo médico
+• Sin cuenta: tus registros se quedan en este teléfono
+```
+
+### Portuguese (Brazil)
+
+**Name** (17 characters)
+```
+Monarch Prime Pin
+```
+
+**Subtitle** (29 characters)
+```
+Registro privado de aplicação
+```
+
+**Promotional text** (152 characters)
+```
+Novo: planos com lembretes, visão de hoje, controle de frascos e peso do Apple Saúde. Seus registros ficam no seu celular, sem conta e sem rastreamento.
+```
+
+**Keywords** (94 characters)
+```
+peptídeo,injeção,lembrete,agenda,frasco,rodízio,diário,mapa,corpo,glp-1,peso,histórico,seringa
+```
+
+**Description** (2151 characters)
+```
+O Monarch Prime Pin é um registro privado das aplicações que você planeja e faz. Configure um plano uma vez, receba um lembrete no horário que escolheu, registre em poucos toques e veja onde aplicou por último.
+
+Tudo fica no seu celular. Não há conta para criar, nem cópia na nuvem, nem rastreamento de anúncios.
+
+PLANO E LEMBRETES
+• Protocolos diários, dia sim e dia não, duas vezes por semana, dias sim e dias não, dias específicos ou a cada N dias, com ciclos opcionais
+• Até quatro horários por dia, com lembretes nos horários que você definir
+• O plano de hoje mostra o que foi planejado, registrado e pulado, com uma faixa da semana e seu progresso
+• Edite um plano sem mudar seus registros anteriores
+
+REGISTRO
+• Registre uma entrada planejada em poucos toques: composto, quantidade e horário já vêm preenchidos
+• mcg, mg, UI ou mL
+• Registre dias passados ou edite qualquer registro
+• Notas de efeitos colaterais, intensidade, peso e fotos de progresso
+
+LOCAIS DE APLICAÇÃO
+• Mapa do corpo de frente e de costas
+• Mapa de calor dos locais usados recentemente
+• Veja quando cada local foi registrado por último antes de escolher
+
+FRASCOS
+• Acompanhe o que resta em cada frasco a partir das doses registradas
+• Veja até quando um frasco cobre seu plano, com um aviso uma semana antes de acabar
+
+RELATÓRIOS E FERRAMENTAS
+• Resumos semanais e mensais, uso de locais e tendência de peso
+• Planilha de concentração com tamanhos de seringa: conversão de unidades com os números que você informa
+• Apple Saúde opcional: leia seu peso e gordura corporal (somente leitura)
+• Exporte todos os registros em CSV ou faça backup de tudo (com fotos) em um arquivo que você guarda
+
+PREÇO
+Comece grátis com 5 registros salvos. O Monarch Pro é uma compra única que libera registros ilimitados, protocolos e lembretes, frascos, relatórios, a planilha de concentração, o calendário e a galeria de fotos. Sem assinatura.
+
+O Monarch Prime Pin é um registro pessoal para adultos. Ele não oferece aconselhamento médico e nunca sugere nem calcula uma dose: cada quantidade vem de você. Converse com um profissional de saúde habilitado sobre qualquer coisa que você use.
+```
+
+**What's New** (600 characters)
+```
+• Protocolos: planeje dias e horários, com lembretes
+• Plano de hoje: registre ou pule entradas planejadas e veja sua semana
+• Frascos: o que resta e até quando cobre seu plano
+• Veja quando cada local foi registrado por último
+• Peso e gordura corporal do Apple Saúde, opcional (somente leitura)
+• As fotos agora são mantidas nas atualizações e os backups podem incluí-las
+• A exportação CSV inclui planos, frascos e entradas puladas
+• Tamanhos de seringa na planilha de concentração
+• Texto mais claro: um registro pessoal, não aconselhamento médico
+• Sem conta: seus registros ficam neste aparelho
+```
