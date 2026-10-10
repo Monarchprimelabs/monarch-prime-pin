@@ -49,13 +49,27 @@ npx eas-cli submit --platform ios --profile ios-production --latest
 **build number is assigned by EAS** and must never be hand-edited. Only the
 user-facing version (`expo.version` in `app.json`) is edited by hand.
 
+**One build, one upload.** Each build can go to App Store Connect exactly
+once. `eas build --auto-submit` and the Release iOS workflow already upload
+it, so never follow either with `eas submit` for the same build. Version
+1.8.0 build 36 was uploaded twice this way (October 2026): Apple kept the
+first upload and emailed ITMS-90189 "Redundant Binary Upload" for the
+second. That email is harmless, but it means a submit step ran one time too
+many. Before submitting by hand, check App Store Connect → TestFlight: if
+the build number is already listed, it is already uploaded.
+`eas build:version:get --platform ios` shows the last build number EAS
+assigned; the next build gets that number plus one.
+
 ## Before spending a build
 
 Run the mechanical gates locally:
 
 ```
 npx tsc --noEmit
+npm test                      # Jest, run under UTC, New York and Tokyo
 node scripts/test-heat.js     # expect "29 passed, 0 failed"
+node scripts/check-i18n.js    # EN/ES/PT key and placeholder parity
+npx expo-doctor               # needs network; must pass all checks
 ```
 
 Then walk `docs/AUDIT_CHECKLIST.md`. Section 7 matters specifically when any
