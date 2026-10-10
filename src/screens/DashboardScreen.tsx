@@ -64,6 +64,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [stepsToday, setStepsToday] = useState<number | null>(null);
   const shareCardRef = useRef<View>(null);
   const [shareFormat, setShareFormat] = useState<ShareFormat>('story');
+  const shareAsOf = new Date().toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' }).toUpperCase();
   const { width: winW, height: winH } = useWindowDimensions();
   // Fit the card between the format chips and the action buttons.
   const previewScale = Math.min(
@@ -394,7 +395,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
           {/* Preview: the same card, scaled to fit the screen. */}
           <View style={{ width: BASE_W * previewScale, height: cardHeight(shareFormat) * previewScale, alignItems: 'center', justifyContent: 'center' }}>
             <View style={{ width: BASE_W, height: cardHeight(shareFormat), transform: [{ scale: previewScale }] }}>
-              <ProgressCard format={shareFormat} stats={stats} t={t} />
+              <ProgressCard format={shareFormat} stats={stats} asOf={shareAsOf} t={t} />
             </View>
           </View>
 
@@ -429,7 +430,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
               export is never affected by the preview's scaling. */}
           <View style={s.captureHost} pointerEvents="none">
             <View ref={shareCardRef} collapsable={false}>
-              <ProgressCard format={shareFormat} stats={stats} t={t} />
+              <ProgressCard format={shareFormat} stats={stats} asOf={shareAsOf} t={t} />
             </View>
           </View>
         </View>
@@ -549,15 +550,17 @@ const s = StyleSheet.create({
     flex: 1, backgroundColor: colors.scrim,
     alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16,
   },
-  formatRow: { flexDirection: 'row', gap: 8 },
+  formatRow: {
+    flexDirection: 'row', padding: 3, borderRadius: 20,
+    backgroundColor: colors.bgPill, borderWidth: 1, borderColor: colors.border,
+  },
   formatBtn: {
-    minHeight: 36, paddingHorizontal: 16, borderRadius: 18,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill,
+    minHeight: 34, paddingHorizontal: 16, borderRadius: 17,
     alignItems: 'center', justifyContent: 'center',
   },
-  formatBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
+  formatBtnActive: { backgroundColor: colors.primaryDark },
   formatText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
-  formatTextActive: { color: colors.white },
+  formatTextActive: { color: colors.actionText },
   // Mounted (so it can be captured) but parked well outside the screen.
   captureHost: { position: 'absolute', left: -10000, top: 0, opacity: 0 },
   shareActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
@@ -569,7 +572,7 @@ const s = StyleSheet.create({
   shareCloseText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   shareGoBtn: {
     minHeight: 48, paddingHorizontal: 28, borderRadius: radius.md,
-    backgroundColor: colors.action, flexDirection: 'row', gap: 8,
+    backgroundColor: colors.primaryDark, flexDirection: 'row', gap: 8,
     alignItems: 'center', justifyContent: 'center',
   },
   shareGoText: { color: colors.actionText, fontSize: 14, fontWeight: '700' },
