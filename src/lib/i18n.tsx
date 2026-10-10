@@ -103,20 +103,20 @@ const en: Record<string, string> = {
   'access.viewDetails': 'View Access Details',
 
   // Legal tab
-  'legal.banner': '⚠ FOR RESEARCH USE ONLY',
+  'legal.banner': "⚠ PERSONAL LOG · NOT MEDICAL ADVICE",
   'legal.disclaimerLabel': 'IMPORTANT DISCLAIMER',
-  'legal.p1': 'All peptides, compounds, and substances referenced in this application are intended SOLELY for research purposes in controlled laboratory settings.',
-  'legal.p2': 'These substances are NOT approved for human consumption, self-administration, or therapeutic use by any regulatory authority including the FDA, EMA, or equivalent bodies.',
-  'legal.p3': 'MONARCH PRIME PIN TRACKER is a research data logging tool only. It does not constitute medical advice, diagnosis, or treatment recommendations.',
-  'legal.p4': 'This application does not calculate, recommend, or prescribe dosages. The concentration worksheet only divides a user-entered total mass by a user-entered liquid volume and converts that user-entered volume into U-100 marking references. It is not connected to compounds, schedules, or saved records. All record and schedule entries are manually entered by the user.',
-  'legal.ack': 'By using this application, you acknowledge:',
-  'legal.li1': '• You are using this for legitimate research recordkeeping purposes only',
-  'legal.li2': '• You will not use this application to facilitate human consumption of research compounds',
-  'legal.li3': '• You accept full legal and ethical responsibility for your research activities',
-  'legal.li4': '• The developers of this application bear no liability for misuse',
-  'legal.p5': 'Misuse of research peptides may be illegal in your jurisdiction and can pose serious health risks.',
+  'legal.p1': "Monarch Prime Pin is a personal log. It records what you enter yourself: compounds, amounts, times, sites, notes and photos. It does not give medical advice, diagnosis or treatment, and it is not a medical device.",
+  'legal.p2': "Many compounds people log, including most peptides, are not approved by the FDA, EMA or equivalent bodies, and some are prescription-only where you live. A compound appearing in this app is not an endorsement and says nothing about its safety, quality or legality.",
+  'legal.p3': "Talk to a licensed clinician before you start, change or stop anything you take, and about any side effects you notice.",
+  'legal.p4': "This app does not calculate, recommend or prescribe doses. Every amount in records, protocols and vials is typed by you. The concentration worksheet only divides the total you enter by the liquid volume you enter and converts that volume into U-100 markings. Reminders and vial projections only repeat the plan you entered.",
+  'legal.ack': "By using this app, you agree that:",
+  'legal.li1': "• You are 18 or older",
+  'legal.li2': "• You decide what you take, and you are responsible for following the laws where you live",
+  'legal.li3': "• The app stores what you enter and does not check it for accuracy or safety",
+  'legal.li4': "• The developers are not liable for how you use the app or the information you record",
+  'legal.p5': "Products sold as \"for research use only\" are not made or tested for human use, and their content and purity can vary.",
   'legal.p6': 'If you are experiencing a medical emergency, contact emergency services immediately.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Research Use Only',
+  'legal.footer': "Monarch Prime Pin — Personal log · Not medical advice",
 
   // OK button
   'common.ok': 'OK',
@@ -307,7 +307,6 @@ const en: Record<string, string> = {
   'history.noPhotos': 'No progress photos yet',
 
   // Dashboard
-  'dash.researcher': 'Researcher',
   'dash.hello': 'Hello, {name}',
   'dash.devMode': 'Developer Mode',
   'dash.welcome': 'Welcome back',
@@ -345,7 +344,7 @@ const en: Record<string, string> = {
   'dash.shareBtn': 'Share your progress',
   'share.records': 'records logged',
   'share.days': '{n} days',
-  'share.compliance': 'For research organization only',
+  'share.compliance': "Personal log · Not medical advice",
   'share.action': 'Share',
   'share.close': 'Close',
   'share.failed': 'Sharing is not available on this device.',
@@ -376,7 +375,7 @@ const en: Record<string, string> = {
   'reports.preparingPdf': 'Preparing PDF…',
   'reports.shareFailed': 'Unable to share report',
   'reports.pdfFailed': 'Unable to create PDF',
-  'reports.summaryTitle': 'Monarch Prime Pin Research Record Summary',
+  'reports.summaryTitle': "Monarch Prime Pin Record Summary",
   'reports.txtSaved': 'Saved records: {n}',
   'reports.txtDays': 'Active record days: {n}',
   'reports.txtSites': 'Recorded site selections: {n}',
@@ -384,8 +383,8 @@ const en: Record<string, string> = {
   'reports.none': 'None',
   'reports.recordLines': 'Record lines:',
   'reports.noSavedMonth': 'No saved records this month',
-  'reports.footer': 'For research organization and recordkeeping only.',
-  'reports.pdfTitle': 'Monarch Prime Pin — Research Record Summary',
+  'reports.footer': "Personal log. Not medical advice.",
+  'reports.pdfTitle': "Monarch Prime Pin — Record Summary",
   'reports.pdfDate': 'Date',
   'reports.pdfCompound': 'Compound',
   'reports.pdfDose': 'Dose',
@@ -395,7 +394,7 @@ const en: Record<string, string> = {
   'reports.pdfDays': 'Active record days',
   'reports.pdfSiteSel': 'Site selections',
   'reports.pdfMost': 'Most recorded',
-  'reports.pdfFoot1': 'All values were entered by the user. For research organization and recordkeeping only — not medical advice. Generated {date}.',
+  'reports.pdfFoot1': "All values were entered by the user. Personal log — not medical advice. Generated {date}.",
   'reports.pdfFoot2': 'Tracked with Monarch Prime Pin — private, on-device peptide recordkeeping. apps.apple.com/app/id6770808426',
   'reports.dialogTitle': '{month} Record Summary',
   'reports.weeklyLabel': 'WEEKLY INJECTION FREQUENCY',
@@ -421,7 +420,7 @@ const en: Record<string, string> = {
 
   // Tools hub
   'tools.title': 'Tools',
-  'tools.subtitle': 'Manual research organization',
+  'tools.subtitle': "Plans, supplies and records",
   'tools.schedule.title': 'Schedule & Reminders',
   'tools.schedule.sub': 'Create your own dated reminders',
   'tools.inventory.title': 'Inventory',
@@ -475,7 +474,7 @@ const en: Record<string, string> = {
   'tools.itemName': 'Item name',
   'tools.quantity': 'Quantity',
   'tools.unitContainer': 'Unit or container',
-  'tools.reminderNotifTitle': 'Research schedule reminder',
+  'tools.reminderNotifTitle': "Schedule reminder",
   'tools.containerMassPh': 'Mass per container (optional)',
   'tools.checkMassBody': 'If you enter a mass per container, it must be a number greater than zero.',
   'tools.dateReceived': 'Date received (optional)',
@@ -527,7 +526,7 @@ const en: Record<string, string> = {
   'tools.copied': 'Copied ✓',
   'tools.summaryTitle': 'Monarch Prime Pin — Concentration Worksheet',
   'tools.summaryEntered': 'Entered: {mass} {unit} total mass in {vol} mL',
-  'tools.summaryFoot1': 'For research organization only. Verify all values independently.',
+  'tools.summaryFoot1': "Values you entered. Verify them independently. Not medical advice.",
   'tools.summaryFoot2': 'Tracked with Monarch Prime Pin — apps.apple.com/app/id6770808426',
   'tools.calcFootnote': 'Calculations: concentration = entered total mass ÷ entered liquid volume. U-100 reference = entered mL × 100, with each marking shown in the clearest unit. Verify all entered values and results independently.',
   // Tools — worksheet: U-100 scale visual
@@ -543,8 +542,8 @@ const en: Record<string, string> = {
   'tools.gauge.summaryLine': '{amount} {unit} reads at {units} units ({ml} mL) on the U-100 scale',
 
   // Shared UI (banner, view toggle)
-  'ui.researchOnly': 'FOR RESEARCH USE ONLY',
-  'ui.notForHuman': ' — Not for human consumption',
+  'ui.researchOnly': "PERSONAL LOG",
+  'ui.notForHuman': " — Not medical advice",
   'ui.front': 'Front',
   'ui.back': 'Back',
 
@@ -562,7 +561,7 @@ const en: Record<string, string> = {
   'auth.missingInfoBody': 'Please enter your email and password.',
   'auth.missingNameBody': 'Please enter your name so Monarch Prime Pin can personalize your dashboard.',
   'auth.failedTitle': 'Authentication failed',
-  'auth.footer': 'For Research Use Only · Not for Human Consumption',
+  'auth.footer': "Personal log · Not medical advice",
 
   // Upgrade / paywall
   'upgrade.subtitle': 'Unlock unlimited usage for {price}',
@@ -629,12 +628,12 @@ const en: Record<string, string> = {
   'ob.stepCount': '{step} of {total}',
   'ob.headline': 'Private peptide tracking,\nwithout the clutter.',
   'ob.welcomeSub': 'Try the tracker with {max} saved logs. Unlock Lifetime Pro once for unlimited tracking, reports, reminders, and tools.',
-  'ob.feat1': 'Manual research log entries',
+  'ob.feat1': "Manual log entries",
   'ob.feat2': 'Site history and rotation heatmap',
   'ob.feat3': 'Complete history and calendar',
   'ob.feat4': 'Optional Lifetime Pro, no forced monthly plan',
   'ob.getStarted': 'Get Started',
-  'ob.compliance': 'Start free with {max} saved logs.\nFor research organization only. Not medical advice.',
+  'ob.compliance': "Start free with {max} saved logs.\nPersonal log. Not medical advice.",
   // Protocols (dose plans)
   'proto.title': "Protocols",
   'proto.toolSub': "Plans you set: days, times and reminders",
@@ -798,6 +797,8 @@ const en: Record<string, string> = {
   'settings.backupNoPhotos': "Export without Photos",
   'settings.backupPhotosCappedTitle': "Some photos left out",
   'settings.backupPhotosCappedBody': "The backup holds your {kept} newest photos. {skipped} older photos were left out to keep the file a size a phone can open.",
+  // Greeting without a name
+  'dash.helloNoName': "Hello",
 };
 
 const es: Record<string, string> = {
@@ -893,20 +894,20 @@ const es: Record<string, string> = {
   'access.viewDetails': 'Ver detalles de acceso',
 
   // Legal tab — DRAFT translation; have a native speaker review before release.
-  'legal.banner': '⚠ SOLO PARA USO EN INVESTIGACIÓN',
+  'legal.banner': "⚠ REGISTRO PERSONAL · NO ES CONSEJO MÉDICO",
   'legal.disclaimerLabel': 'AVISO IMPORTANTE',
-  'legal.p1': 'Todos los péptidos, compuestos y sustancias mencionados en esta aplicación están destinados EXCLUSIVAMENTE a fines de investigación en entornos de laboratorio controlados.',
-  'legal.p2': 'Estas sustancias NO están aprobadas para consumo humano, autoadministración ni uso terapéutico por ninguna autoridad regulatoria, incluidas la FDA, la EMA u organismos equivalentes.',
-  'legal.p3': 'MONARCH PRIME PIN TRACKER es únicamente una herramienta de registro de datos de investigación. No constituye consejo médico, diagnóstico ni recomendación de tratamiento.',
-  'legal.p4': 'Esta aplicación no calcula, recomienda ni prescribe dosis. La hoja de concentración solo divide una masa total ingresada por el usuario entre un volumen de líquido ingresado por el usuario y convierte ese volumen en referencias de marcas U-100. No está conectada a compuestos, horarios ni registros guardados. Todas las entradas de registros y horarios son ingresadas manualmente por el usuario.',
-  'legal.ack': 'Al usar esta aplicación, reconoces que:',
-  'legal.li1': '• Usas esta aplicación únicamente con fines legítimos de registro de investigación',
-  'legal.li2': '• No usarás esta aplicación para facilitar el consumo humano de compuestos de investigación',
-  'legal.li3': '• Aceptas toda la responsabilidad legal y ética de tus actividades de investigación',
-  'legal.li4': '• Los desarrolladores de esta aplicación no asumen responsabilidad por el mal uso',
-  'legal.p5': 'El mal uso de péptidos de investigación puede ser ilegal en tu jurisdicción y puede representar riesgos graves para la salud.',
+  'legal.p1': "Monarch Prime Pin es un registro personal. Guarda lo que tú mismo ingresas: compuestos, cantidades, horas, sitios, notas y fotos. No da consejo médico, diagnóstico ni tratamiento, y no es un dispositivo médico.",
+  'legal.p2': "Muchos compuestos que la gente registra, incluida la mayoría de los péptidos, no están aprobados por la FDA, la EMA u organismos equivalentes, y algunos requieren receta donde vives. Que un compuesto aparezca en esta app no es un respaldo y no dice nada sobre su seguridad, calidad o legalidad.",
+  'legal.p3': "Habla con un profesional de la salud autorizado antes de empezar, cambiar o dejar cualquier cosa que tomes, y sobre cualquier efecto secundario que notes.",
+  'legal.p4': "Esta app no calcula, recomienda ni prescribe dosis. Cada cantidad en registros, protocolos y viales la escribes tú. La hoja de concentración solo divide el total que ingresas entre el volumen de líquido que ingresas y convierte ese volumen en marcas U-100. Los recordatorios y las proyecciones de viales solo repiten el plan que ingresaste.",
+  'legal.ack': "Al usar esta app, aceptas que:",
+  'legal.li1': "• Tienes 18 años o más",
+  'legal.li2': "• Tú decides lo que tomas y eres responsable de cumplir las leyes de donde vives",
+  'legal.li3': "• La app guarda lo que ingresas y no verifica su exactitud ni su seguridad",
+  'legal.li4': "• Los desarrolladores no son responsables de cómo usas la app ni de la información que registras",
+  'legal.p5': "Los productos vendidos como \"solo para uso en investigación\" no están hechos ni probados para uso humano, y su contenido y pureza pueden variar.",
   'legal.p6': 'Si tienes una emergencia médica, contacta a los servicios de emergencia de inmediato.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Solo para uso en investigación',
+  'legal.footer': "Monarch Prime Pin — Registro personal · No es consejo médico",
 
   // OK button
   'common.ok': 'OK',
@@ -1097,7 +1098,6 @@ const es: Record<string, string> = {
   'history.noPhotos': 'Aún no hay fotos de progreso',
 
   // Dashboard
-  'dash.researcher': 'Investigador',
   'dash.hello': 'Hola, {name}',
   'dash.devMode': 'Modo desarrollador',
   'dash.welcome': 'Bienvenido de vuelta',
@@ -1135,7 +1135,7 @@ const es: Record<string, string> = {
   'dash.shareBtn': 'Comparte tu progreso',
   'share.records': 'registros guardados',
   'share.days': '{n} días',
-  'share.compliance': 'Solo para organización de investigación',
+  'share.compliance': "Registro personal · No es consejo médico",
   'share.action': 'Compartir',
   'share.close': 'Cerrar',
   'share.failed': 'Compartir no está disponible en este dispositivo.',
@@ -1166,7 +1166,7 @@ const es: Record<string, string> = {
   'reports.preparingPdf': 'Preparando PDF…',
   'reports.shareFailed': 'No se pudo compartir el reporte',
   'reports.pdfFailed': 'No se pudo crear el PDF',
-  'reports.summaryTitle': 'Resumen de registros de investigación — Monarch Prime Pin',
+  'reports.summaryTitle': "Resumen de registros — Monarch Prime Pin",
   'reports.txtSaved': 'Registros guardados: {n}',
   'reports.txtDays': 'Días con registros: {n}',
   'reports.txtSites': 'Sitios seleccionados: {n}',
@@ -1174,8 +1174,8 @@ const es: Record<string, string> = {
   'reports.none': 'Ninguno',
   'reports.recordLines': 'Líneas de registro:',
   'reports.noSavedMonth': 'No hay registros guardados este mes',
-  'reports.footer': 'Solo para organización y registro de investigación.',
-  'reports.pdfTitle': 'Monarch Prime Pin — Resumen de registros de investigación',
+  'reports.footer': "Registro personal. No es consejo médico.",
+  'reports.pdfTitle': "Monarch Prime Pin — Resumen de registros",
   'reports.pdfDate': 'Fecha',
   'reports.pdfCompound': 'Compuesto',
   'reports.pdfDose': 'Dosis',
@@ -1185,7 +1185,7 @@ const es: Record<string, string> = {
   'reports.pdfDays': 'Días con registros',
   'reports.pdfSiteSel': 'Sitios seleccionados',
   'reports.pdfMost': 'Más registrado',
-  'reports.pdfFoot1': 'Todos los valores fueron ingresados por el usuario. Solo para organización y registro de investigación — no es consejo médico. Generado el {date}.',
+  'reports.pdfFoot1': "Todos los valores fueron ingresados por el usuario. Registro personal — no es consejo médico. Generado el {date}.",
   'reports.pdfFoot2': 'Registrado con Monarch Prime Pin — registro privado de péptidos en tu dispositivo. apps.apple.com/app/id6770808426',
   'reports.dialogTitle': 'Resumen de registros de {month}',
   'reports.weeklyLabel': 'FRECUENCIA SEMANAL DE INYECCIONES',
@@ -1211,7 +1211,7 @@ const es: Record<string, string> = {
 
   // Tools hub
   'tools.title': 'Herramientas',
-  'tools.subtitle': 'Organización manual de investigación',
+  'tools.subtitle': "Planes, suministros y registros",
   'tools.schedule.title': 'Horarios y recordatorios',
   'tools.schedule.sub': 'Crea tus propios recordatorios con fecha',
   'tools.inventory.title': 'Inventario',
@@ -1265,7 +1265,7 @@ const es: Record<string, string> = {
   'tools.itemName': 'Nombre del artículo',
   'tools.quantity': 'Cantidad',
   'tools.unitContainer': 'Unidad o envase',
-  'tools.reminderNotifTitle': 'Recordatorio de horario de investigación',
+  'tools.reminderNotifTitle': "Recordatorio de horario",
   'tools.containerMassPh': 'Masa por envase (opcional)',
   'tools.checkMassBody': 'Si ingresas una masa por envase, debe ser un número mayor que cero.',
   'tools.dateReceived': 'Fecha de recepción (opcional)',
@@ -1317,7 +1317,7 @@ const es: Record<string, string> = {
   'tools.copied': 'Copiado ✓',
   'tools.summaryTitle': 'Monarch Prime Pin — Hoja de concentración',
   'tools.summaryEntered': 'Ingresado: {mass} {unit} de masa total en {vol} mL',
-  'tools.summaryFoot1': 'Solo para organización de investigación. Verifica todos los valores de forma independiente.',
+  'tools.summaryFoot1': "Valores que ingresaste. Verifícalos de forma independiente. No es consejo médico.",
   'tools.summaryFoot2': 'Registrado con Monarch Prime Pin — apps.apple.com/app/id6770808426',
   'tools.calcFootnote': 'Cálculos: concentración = masa total ingresada ÷ volumen de líquido ingresado. Referencia U-100 = mL ingresados × 100, con cada marca mostrada en la unidad más clara. Verifica todos los valores y resultados de forma independiente.',
   // Tools — worksheet: U-100 scale visual
@@ -1333,8 +1333,8 @@ const es: Record<string, string> = {
   'tools.gauge.summaryLine': '{amount} {unit} se lee en {units} unidades ({ml} mL) en la escala U-100',
 
   // Shared UI (banner, view toggle)
-  'ui.researchOnly': 'SOLO PARA USO EN INVESTIGACIÓN',
-  'ui.notForHuman': ' — No apto para consumo humano',
+  'ui.researchOnly': "REGISTRO PERSONAL",
+  'ui.notForHuman': " — No es consejo médico",
   'ui.front': 'Frente',
   'ui.back': 'Espalda',
 
@@ -1352,7 +1352,7 @@ const es: Record<string, string> = {
   'auth.missingInfoBody': 'Ingresa tu correo y contraseña.',
   'auth.missingNameBody': 'Ingresa tu nombre para que Monarch Prime Pin personalice tu panel.',
   'auth.failedTitle': 'Falló la autenticación',
-  'auth.footer': 'Solo para uso en investigación · No apto para consumo humano',
+  'auth.footer': "Registro personal · No es consejo médico",
 
   // Upgrade / paywall
   'upgrade.subtitle': 'Desbloquea uso ilimitado por {price}',
@@ -1419,12 +1419,12 @@ const es: Record<string, string> = {
   'ob.stepCount': '{step} de {total}',
   'ob.headline': 'Registro privado de péptidos,\nsin complicaciones.',
   'ob.welcomeSub': 'Prueba la app con {max} registros guardados. Desbloquea Lifetime Pro una sola vez para registro ilimitado, reportes, recordatorios y herramientas.',
-  'ob.feat1': 'Entradas manuales de registro de investigación',
+  'ob.feat1': "Entradas de registro manuales",
   'ob.feat2': 'Historial de sitios y mapa de rotación',
   'ob.feat3': 'Historial completo y calendario',
   'ob.feat4': 'Lifetime Pro opcional, sin plan mensual forzado',
   'ob.getStarted': 'Comenzar',
-  'ob.compliance': 'Empieza gratis con {max} registros guardados.\nSolo para organización de investigación. No es consejo médico.',
+  'ob.compliance': "Empieza gratis con {max} registros guardados.\nRegistro personal. No es consejo médico.",
   // Protocols (dose plans)
   'proto.title': "Protocolos",
   'proto.toolSub': "Planes que defines: días, horas y recordatorios",
@@ -1588,6 +1588,8 @@ const es: Record<string, string> = {
   'settings.backupNoPhotos': "Exportar sin fotos",
   'settings.backupPhotosCappedTitle': "Algunas fotos quedaron fuera",
   'settings.backupPhotosCappedBody': "El respaldo incluye tus {kept} fotos más recientes. {skipped} fotos más antiguas quedaron fuera para que un teléfono pueda abrir el archivo.",
+  // Greeting without a name
+  'dash.helloNoName': "Hola",
 };
 
 const pt: Record<string, string> = {
@@ -1683,20 +1685,20 @@ const pt: Record<string, string> = {
   'access.viewDetails': 'Ver detalhes do acesso',
 
   // Legal tab
-  'legal.banner': '⚠ SOMENTE PARA USO EM PESQUISA',
+  'legal.banner': "⚠ REGISTRO PESSOAL · NÃO É ACONSELHAMENTO MÉDICO",
   'legal.disclaimerLabel': 'AVISO IMPORTANTE',
-  'legal.p1': 'Todos os peptídeos, compostos e substâncias mencionados neste aplicativo destinam-se EXCLUSIVAMENTE a fins de pesquisa em ambientes laboratoriais controlados.',
-  'legal.p2': 'Estas substâncias NÃO são aprovadas para consumo humano, autoadministração ou uso terapêutico por nenhuma autoridade regulatória, incluindo FDA, EMA, ANVISA ou órgãos equivalentes.',
-  'legal.p3': 'O MONARCH PRIME PIN TRACKER é apenas uma ferramenta de registro de dados de pesquisa. Não constitui aconselhamento médico, diagnóstico nem recomendação de tratamento.',
-  'legal.p4': 'Este aplicativo não calcula, recomenda nem prescreve doses. A planilha de concentração apenas divide uma massa total informada pelo usuário por um volume de líquido informado pelo usuário e converte esse volume em referências de marcação U-100. Ela não está conectada a compostos, agendamentos ou registros salvos. Todos os registros e agendamentos são inseridos manualmente pelo usuário.',
-  'legal.ack': 'Ao usar este aplicativo, você reconhece que:',
-  'legal.li1': '• Você o utiliza somente para fins legítimos de registro de pesquisa',
-  'legal.li2': '• Você não usará este aplicativo para facilitar o consumo humano de compostos de pesquisa',
-  'legal.li3': '• Você assume total responsabilidade legal e ética por suas atividades de pesquisa',
-  'legal.li4': '• Os desenvolvedores deste aplicativo não se responsabilizam por mau uso',
-  'legal.p5': 'O uso indevido de peptídeos de pesquisa pode ser ilegal na sua jurisdição e representar riscos graves à saúde.',
+  'legal.p1': "O Monarch Prime Pin é um registro pessoal. Ele guarda o que você mesmo informa: compostos, quantidades, horários, locais, notas e fotos. Ele não oferece aconselhamento médico, diagnóstico nem tratamento, e não é um dispositivo médico.",
+  'legal.p2': "Muitos compostos que as pessoas registram, incluindo a maioria dos peptídeos, não são aprovados pela FDA, EMA, ANVISA ou órgãos equivalentes, e alguns exigem receita onde você mora. Um composto aparecer neste app não é um endosso e não diz nada sobre sua segurança, qualidade ou legalidade.",
+  'legal.p3': "Converse com um profissional de saúde habilitado antes de começar, mudar ou parar qualquer coisa que você use, e sobre qualquer efeito colateral que notar.",
+  'legal.p4': "Este app não calcula, recomenda nem prescreve doses. Cada quantidade em registros, protocolos e frascos é digitada por você. A planilha de concentração apenas divide o total que você informa pelo volume de líquido que você informa e converte esse volume em marcações U-100. Lembretes e projeções de frascos apenas repetem o plano que você informou.",
+  'legal.ack': "Ao usar este app, você concorda que:",
+  'legal.li1': "• Você tem 18 anos ou mais",
+  'legal.li2': "• Você decide o que usa e é responsável por seguir as leis de onde mora",
+  'legal.li3': "• O app guarda o que você informa e não verifica exatidão nem segurança",
+  'legal.li4': "• Os desenvolvedores não se responsabilizam pela forma como você usa o app nem pelas informações que registra",
+  'legal.p5': "Produtos vendidos como \"somente para uso em pesquisa\" não são feitos nem testados para uso humano, e seu conteúdo e pureza podem variar.",
   'legal.p6': 'Se você estiver passando por uma emergência médica, procure atendimento de emergência imediatamente.',
-  'legal.footer': 'Monarch Prime Pin Tracker v1.7 — Somente para uso em pesquisa',
+  'legal.footer': "Monarch Prime Pin — Registro pessoal · Não é aconselhamento médico",
 
   // OK button
   'common.ok': 'OK',
@@ -1886,7 +1888,6 @@ const pt: Record<string, string> = {
   'history.noPhotos': 'Nenhuma foto de progresso ainda',
 
   // Dashboard
-  'dash.researcher': 'Pesquisador',
   'dash.hello': 'Olá, {name}',
   'dash.devMode': 'Modo desenvolvedor',
   'dash.welcome': 'Bem-vindo de volta',
@@ -1924,7 +1925,7 @@ const pt: Record<string, string> = {
   'dash.shareBtn': 'Compartilhe seu progresso',
   'share.records': 'registros salvos',
   'share.days': '{n} dias',
-  'share.compliance': 'Somente para organização de pesquisa',
+  'share.compliance': "Registro pessoal · Não é aconselhamento médico",
   'share.action': 'Compartilhar',
   'share.close': 'Fechar',
   'share.failed': 'Compartilhar não está disponível neste aparelho.',
@@ -1953,7 +1954,7 @@ const pt: Record<string, string> = {
   'reports.preparingPdf': 'Preparando PDF…',
   'reports.shareFailed': 'Não foi possível compartilhar o relatório',
   'reports.pdfFailed': 'Não foi possível criar o PDF',
-  'reports.summaryTitle': 'Resumo de registros de pesquisa Monarch Prime Pin',
+  'reports.summaryTitle': "Resumo de registros Monarch Prime Pin",
   'reports.txtSaved': 'Registros salvos: {n}',
   'reports.txtDays': 'Dias com registro: {n}',
   'reports.txtSites': 'Locais selecionados: {n}',
@@ -1961,8 +1962,8 @@ const pt: Record<string, string> = {
   'reports.none': 'Nenhum',
   'reports.recordLines': 'Linhas de registro:',
   'reports.noSavedMonth': 'Nenhum registro salvo neste mês',
-  'reports.footer': 'Somente para organização e registro de pesquisa.',
-  'reports.pdfTitle': 'Monarch Prime Pin — Resumo de registros de pesquisa',
+  'reports.footer': "Registro pessoal. Não é aconselhamento médico.",
+  'reports.pdfTitle': "Monarch Prime Pin — Resumo de registros",
   'reports.pdfDate': 'Data',
   'reports.pdfCompound': 'Composto',
   'reports.pdfDose': 'Dose',
@@ -1972,7 +1973,7 @@ const pt: Record<string, string> = {
   'reports.pdfDays': 'Dias com registro',
   'reports.pdfSiteSel': 'Locais selecionados',
   'reports.pdfMost': 'Mais registrado',
-  'reports.pdfFoot1': 'Todos os valores foram inseridos pelo usuário. Somente para organização e registro de pesquisa — não é aconselhamento médico. Gerado em {date}.',
+  'reports.pdfFoot1': "Todos os valores foram inseridos pelo usuário. Registro pessoal — não é aconselhamento médico. Gerado em {date}.",
   'reports.pdfFoot2': 'Registrado com o Monarch Prime Pin — registro de peptídeos privado, no seu aparelho. apps.apple.com/app/id6770808426',
   'reports.dialogTitle': 'Resumo de {month}',
   'reports.weeklyLabel': 'FREQUÊNCIA SEMANAL DE APLICAÇÕES',
@@ -1998,7 +1999,7 @@ const pt: Record<string, string> = {
 
   // Tools hub
   'tools.title': 'Ferramentas',
-  'tools.subtitle': 'Organização manual de pesquisa',
+  'tools.subtitle': "Planos, suprimentos e registros",
   'tools.schedule.title': 'Agenda e lembretes',
   'tools.schedule.sub': 'Crie seus próprios lembretes com data',
   'tools.inventory.title': 'Estoque',
@@ -2052,7 +2053,7 @@ const pt: Record<string, string> = {
   'tools.itemName': 'Nome do item',
   'tools.quantity': 'Quantidade',
   'tools.unitContainer': 'Unidade ou recipiente',
-  'tools.reminderNotifTitle': 'Lembrete da agenda de pesquisa',
+  'tools.reminderNotifTitle': "Lembrete da agenda",
   'tools.containerMassPh': 'Massa por recipiente (opcional)',
   'tools.checkMassBody': 'Se informar uma massa por recipiente, ela precisa ser um número maior que zero.',
   'tools.dateReceived': 'Data de recebimento (opcional)',
@@ -2104,7 +2105,7 @@ const pt: Record<string, string> = {
   'tools.copied': 'Copiado ✓',
   'tools.summaryTitle': 'Monarch Prime Pin — Planilha de concentração',
   'tools.summaryEntered': 'Informado: {mass} {unit} de massa total em {vol} mL',
-  'tools.summaryFoot1': 'Somente para organização de pesquisa. Verifique todos os valores de forma independente.',
+  'tools.summaryFoot1': "Valores que você informou. Verifique-os de forma independente. Não é aconselhamento médico.",
   'tools.summaryFoot2': 'Registrado com o Monarch Prime Pin — apps.apple.com/app/id6770808426',
   'tools.calcFootnote': 'Cálculos: concentração = massa total informada ÷ volume de líquido informado. Referência U-100 = mL informados × 100, com cada marcação exibida na unidade mais clara. Verifique todos os valores e resultados de forma independente.',
   // Tools — worksheet: U-100 scale visual
@@ -2120,8 +2121,8 @@ const pt: Record<string, string> = {
   'tools.gauge.summaryLine': '{amount} {unit} lê-se em {units} unidades ({ml} mL) na escala U-100',
 
   // Shared UI (banner, view toggle)
-  'ui.researchOnly': 'SOMENTE PARA USO EM PESQUISA',
-  'ui.notForHuman': ' — Não indicado para consumo humano',
+  'ui.researchOnly': "REGISTRO PESSOAL",
+  'ui.notForHuman': " — Não é aconselhamento médico",
   'ui.front': 'Frente',
   'ui.back': 'Costas',
 
@@ -2139,7 +2140,7 @@ const pt: Record<string, string> = {
   'auth.missingInfoBody': 'Informe seu e-mail e senha.',
   'auth.missingNameBody': 'Informe seu nome para que o Monarch Prime Pin personalize seu painel.',
   'auth.failedTitle': 'Falha na autenticação',
-  'auth.footer': 'Somente para uso em pesquisa · Não indicado para consumo humano',
+  'auth.footer': "Registro pessoal · Não é aconselhamento médico",
 
   // Upgrade / paywall
   'upgrade.subtitle': 'Libere uso ilimitado por {price}',
@@ -2206,12 +2207,12 @@ const pt: Record<string, string> = {
   'ob.stepCount': '{step} de {total}',
   'ob.headline': 'Registro de peptídeos privado,\nsem complicação.',
   'ob.welcomeSub': 'Experimente com {max} registros salvos. Libere o Lifetime Pro uma única vez para registro ilimitado, relatórios, lembretes e ferramentas.',
-  'ob.feat1': 'Entradas manuais de registro de pesquisa',
+  'ob.feat1': "Entradas de registro manuais",
   'ob.feat2': 'Histórico de locais e mapa de rodízio',
   'ob.feat3': 'Histórico completo e calendário',
   'ob.feat4': 'Lifetime Pro opcional, sem plano mensal obrigatório',
   'ob.getStarted': 'Começar',
-  'ob.compliance': 'Comece grátis com {max} registros salvos.\nSomente para organização de pesquisa. Não é aconselhamento médico.',
+  'ob.compliance': "Comece grátis com {max} registros salvos.\nRegistro pessoal. Não é aconselhamento médico.",
   // Protocols (dose plans)
   'proto.title': "Protocolos",
   'proto.toolSub': "Planos que você define: dias, horários e lembretes",
@@ -2375,6 +2376,8 @@ const pt: Record<string, string> = {
   'settings.backupNoPhotos': "Exportar sem fotos",
   'settings.backupPhotosCappedTitle': "Algumas fotos ficaram de fora",
   'settings.backupPhotosCappedBody': "O backup inclui suas {kept} fotos mais recentes. {skipped} fotos mais antigas ficaram de fora para que um aparelho consiga abrir o arquivo.",
+  // Greeting without a name
+  'dash.helloNoName': "Olá",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };

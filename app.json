@@ -18,9 +18,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.monarchprime.pin",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your research log entries.",
-        "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library for your research records.",
-        "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries.",
+        "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your log entries.",
+        "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library.",
+        "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your log entries.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -51,8 +51,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Monarch Prime Pin accesses your photos to attach progress images to your research log entries.",
-          "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your research log entries."
+          "photosPermission": "Monarch Prime Pin accesses your photos to attach progress photos to your log entries.",
+          "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your log entries."
         }
       ],
       "@react-native-community/datetimepicker",
