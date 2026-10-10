@@ -578,8 +578,8 @@ const en: Record<string, string> = {
   'upgrade.lifetimePro': 'LIFETIME PRO',
   'upgrade.pro1': 'Unlimited injection logging',
   'upgrade.pro2': 'Full reports and shareable summaries',
-  'upgrade.pro3': 'User-created schedules and local reminders',
-  'upgrade.pro4': 'Inventory and record templates',
+  'upgrade.pro3': "Protocols with reminders and a Today plan",
+  'upgrade.pro4': "Vials with run-out alerts",
   'upgrade.pro5': 'Concentration worksheet',
   'upgrade.wait': 'PLEASE WAIT...',
   'upgrade.unlockBtn': 'UNLOCK UNLIMITED USAGE · {price}',
@@ -814,6 +814,9 @@ const en: Record<string, string> = {
   'health.stepsAverages': "7-day average {a7} · 30-day average {a30}",
   'health.stepsSource': "Steps from Apple Health",
   'health.stepsTodayLine': "👟 {n} steps today (Apple Health)",
+  // Older tools
+  'tools.legacyTitle': "OLDER TOOLS",
+  'tools.legacySub': "Protocols and Vials replace these. Your saved entries stay here until you remove them.",
 };
 
 const es: Record<string, string> = {
@@ -1384,8 +1387,8 @@ const es: Record<string, string> = {
   'upgrade.lifetimePro': 'LIFETIME PRO',
   'upgrade.pro1': 'Registro ilimitado de inyecciones',
   'upgrade.pro2': 'Reportes completos y resúmenes para compartir',
-  'upgrade.pro3': 'Horarios y recordatorios creados por ti',
-  'upgrade.pro4': 'Inventario y plantillas de registro',
+  'upgrade.pro3': "Protocolos con recordatorios y un plan de hoy",
+  'upgrade.pro4': "Viales con avisos antes de que se acaben",
   'upgrade.pro5': 'Hoja de concentración',
   'upgrade.wait': 'ESPERA...',
   'upgrade.unlockBtn': 'DESBLOQUEA USO ILIMITADO · {price}',
@@ -1620,6 +1623,9 @@ const es: Record<string, string> = {
   'health.stepsAverages': "Promedio de 7 días {a7} · promedio de 30 días {a30}",
   'health.stepsSource': "Pasos de Apple Salud",
   'health.stepsTodayLine': "👟 {n} pasos hoy (Apple Salud)",
+  // Older tools
+  'tools.legacyTitle': "HERRAMIENTAS ANTERIORES",
+  'tools.legacySub': "Protocolos y Viales las reemplazan. Tus entradas guardadas se quedan aquí hasta que las borres.",
 };
 
 const pt: Record<string, string> = {
@@ -2187,8 +2193,8 @@ const pt: Record<string, string> = {
   'upgrade.lifetimePro': 'LIFETIME PRO',
   'upgrade.pro1': 'Registro ilimitado de aplicações',
   'upgrade.pro2': 'Relatórios completos e resumos compartilháveis',
-  'upgrade.pro3': 'Agendas e lembretes locais criados por você',
-  'upgrade.pro4': 'Estoque e modelos de registro',
+  'upgrade.pro3': "Protocolos com lembretes e um plano de hoje",
+  'upgrade.pro4': "Frascos com avisos antes de acabar",
   'upgrade.pro5': 'Planilha de concentração',
   'upgrade.wait': 'AGUARDE...',
   'upgrade.unlockBtn': 'LIBERAR USO ILIMITADO · {price}',
@@ -2423,6 +2429,9 @@ const pt: Record<string, string> = {
   'health.stepsAverages': "Média de 7 dias {a7} · média de 30 dias {a30}",
   'health.stepsSource': "Passos do Apple Saúde",
   'health.stepsTodayLine': "👟 {n} passos hoje (Apple Saúde)",
+  // Older tools
+  'tools.legacyTitle': "FERRAMENTAS ANTIGAS",
+  'tools.legacySub': "Protocolos e Frascos as substituem. Seus itens salvos ficam aqui até você removê-los.",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };
