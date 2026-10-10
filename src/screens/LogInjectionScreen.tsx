@@ -10,7 +10,8 @@ import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI'
 import { BodyDiagram } from '../components/BodyDiagram';
 import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS, TIME_PERIODS, TimePeriod, formatClockTime } from '../data/peptides';
-import { getInjections, getInventory, getRecordTemplates, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
+import { getInjections, getInventory, getProtocols, getRecordTemplates, getVials, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
+import type { Vial } from '../lib/vials/types';
 import { getInjectionSiteIds } from '../lib/sites';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
@@ -99,6 +100,9 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [saving, setSaving] = useState(false);
   const [freeLogCount, setFreeLogCount] = useState<number | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [vials, setVials] = useState<Vial[]>([]);
+  const [vialId, setVialId] = useState<string | undefined>(initialInjection?.vialId);
+  const [vialTouched, setVialTouched] = useState(!!initialInjection);
 
   const isEditing = !!initialInjection;
   const logDate = initialInjection?.date ?? initialDate ?? localDateISO();
@@ -119,6 +123,26 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
       .catch(() => { if (active) setFreeLogCount(0); });
     return () => { active = false; };
   }, [freeTrialActive]);
+
+  // Vials to draw from: active ones, plus the record's own when editing.
+  useEffect(() => {
+    let alive = true;
+    Promise.all([getVials(), planned ? getProtocols() : Promise.resolve([])]).then(([list, protocols]) => {
+      if (!alive) return;
+      setVials(list.filter(v => v.status === 'active' || v.id === initialInjection?.vialId));
+      const planVial = planned ? protocols.find(p => p.id === planned.protocolId)?.vialId : undefined;
+      if (planVial && list.some(v => v.id === planVial && v.status === 'active')) setVialId(current => current ?? planVial);
+    }).catch(() => undefined);
+    return () => { alive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A new unplanned record defaults to the one active vial with the same name.
+  useEffect(() => {
+    if (vialTouched || planned || !peptide) return;
+    const same = vials.filter(v => v.status === 'active' && v.label.trim().toLowerCase() === peptide.name.trim().toLowerCase());
+    setVialId(same.length === 1 ? same[0].id : undefined);
+  }, [peptide, vials, vialTouched, planned]);
 
   const toggle = (id: string) => {
     hapticTap();
@@ -300,6 +324,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
         photoUri: uploadedPhotoUri,
         protocolId: planned?.protocolId ?? initialInjection?.protocolId,
         occurrenceKey: planned?.occurrenceKey ?? initialInjection?.occurrenceKey,
+        vialId,
         tzOffsetMin: initialInjection ? initialInjection.tzOffsetMin : -new Date().getTimezoneOffset(),
       };
 
@@ -310,7 +335,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
         await saveInjection(record);
       }
       // A logged planned dose drops its pending reminder.
-      if (record.occurrenceKey) syncProtocolReminders().catch(() => undefined);
+      if (record.occurrenceKey || record.vialId || initialInjection?.vialId) syncProtocolReminders().catch(() => undefined);
 
       const freeLogsLeftAfterSave = freeTrialSaveNumber ? FREE_INJECTION_LIMIT - freeTrialSaveNumber : 0;
       const savedMessage = isEditing
@@ -419,7 +444,9 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
 
       Alert.alert(isEditing ? t('log.updatedTitle') : t('log.savedTitle'), savedMessage, [
         { text: t('common.ok'), onPress: () => {
-          if (isEditing) {
+          // A dose drawn from a vial is tracked on the vial; the stock item
+          // was already counted when the vial was opened.
+          if (isEditing || vialId) {
             finishSave();
           } else {
             offerInventoryDeduction();
@@ -526,6 +553,33 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             ))}
           </View>
         </Card>
+
+        {vials.length > 0 && (
+          <Card>
+            <Text style={s.cardLabel}>{t('vial.drawFrom')}</Text>
+            <View style={s.timeChips}>
+              <Pressable
+                onPress={() => { setVialTouched(true); setVialId(undefined); }}
+                style={[s.timeChip, !vialId && s.timeChipActive]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: !vialId }}
+              >
+                <Text style={[s.timeChipText, !vialId && s.timeChipTextActive]}>{t('proto.noVial')}</Text>
+              </Pressable>
+              {vials.map(vial => (
+                <Pressable
+                  key={vial.id}
+                  onPress={() => { setVialTouched(true); setVialId(vial.id); }}
+                  style={[s.timeChip, vialId === vial.id && s.timeChipActive]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: vialId === vial.id }}
+                >
+                  <Text style={[s.timeChipText, vialId === vial.id && s.timeChipTextActive]}>{vial.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Card>
+        )}
 
         {/* Time */}
         <Card>

@@ -5,11 +5,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Card, CardLabel, Disclaimer } from '../components/UI';
+import { kit, ShellHeader } from '../components/FormKit';
 import { colors, radius, spacing, withAlpha } from '../theme';
 import { formatClockTime, PEPTIDES } from '../data/peptides';
 import { useI18n } from '../lib/i18n';
 import { localDateISO, parseLocalDay } from '../lib/dates';
-import { deleteProtocol, getProtocols, newProtocolId, saveProtocol } from '../lib/storage';
+import { deleteProtocol, getProtocols, getVials, newProtocolId, saveProtocol } from '../lib/storage';
+import type { Vial } from '../lib/vials/types';
 import { syncProtocolReminders } from '../lib/protocolReminders';
 import { endProtocol, revisionOn, reviseProtocol } from '../lib/schedule/engine';
 import { addDays } from '../lib/schedule/days';
@@ -22,7 +24,7 @@ type TFn = (key: string, vars?: Record<string, string | number>) => string;
 type FrequencyChoice = 'daily' | 'everyOther' | 'twiceWeek' | 'onOff' | 'specificDays' | 'everyN';
 const FREQUENCY_CHOICES: FrequencyChoice[] = ['daily', 'everyOther', 'twiceWeek', 'onOff', 'specificDays', 'everyN'];
 const MAX_TIMES = 4;
-const COMPOUND_NAMES = [...PEPTIDES.singles, ...PEPTIDES.blends].map(p => p.name);
+export const COMPOUND_NAMES = [...PEPTIDES.singles, ...PEPTIDES.blends].map(p => p.name);
 
 /** Weekday display order: Sunday first for en-US, Monday first otherwise. */
 export function weekdayOrder(dateLocale: string): Weekday[] {
@@ -192,17 +194,6 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ShellHeader({ title, backLabel, onBack }: { title: string; backLabel: string; onBack: () => void }) {
-  return (
-    <View style={s.toolHeader}>
-      <Pressable style={s.backBtn} onPress={onBack} accessibilityRole="button" accessibilityLabel={backLabel}>
-        <Text style={s.backText}>{backLabel}</Text>
-      </Pressable>
-      <Text style={s.toolHeaderTitle}>{title}</Text>
-      <View style={s.backBtn} />
-    </View>
-  );
-}
 
 // ============================================================
 // PROTOCOL BUILDER (S14)
@@ -243,6 +234,9 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
   const [times, setTimes] = useState<string[]>(current?.times ?? ['08:00']);
   const [reminders, setReminders] = useState(current?.reminders ?? true);
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [vialId, setVialId] = useState<string | undefined>(initial?.vialId);
+  const [vials, setVials] = useState<Vial[]>([]);
+  useEffect(() => { getVials().then(list => setVials(list.filter(v => v.status === 'active' || v.id === initial?.vialId))).catch(() => undefined); }, [initial?.vialId]);
   const [picker, setPicker] = useState<{ kind: 'date' } | { kind: 'time'; index: number } | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -313,6 +307,7 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
         compound: compound.trim(),
         startDate,
         notes: notes.trim() || undefined,
+        vialId,
         status: 'active',
         revisions: [{ ...change, effectiveFrom: startDate, anchorDate: startDate }],
         createdAt: initial?.createdAt ?? nowIso,
@@ -324,6 +319,7 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
         ...reviseProtocol(initial, change, today, nowIso),
         compound: compound.trim(),
         notes: notes.trim() || undefined,
+        vialId,
       };
     }
 
@@ -520,6 +516,23 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
           </View>
         </Card>
 
+        {vials.length > 0 && (
+          <Card>
+            <CardLabel icon="🧪">{t('proto.vialLabel')}</CardLabel>
+            <View style={s.chipWrap}>
+              <Pressable style={[s.chip, !vialId && s.chipActive]} onPress={() => setVialId(undefined)} accessibilityRole="radio" accessibilityState={{ selected: !vialId }}>
+                <Text style={[s.chipText, !vialId && s.chipTextActive]}>{t('proto.noVial')}</Text>
+              </Pressable>
+              {vials.map(vial => (
+                <Pressable key={vial.id} style={[s.chip, vialId === vial.id && s.chipActive]} onPress={() => setVialId(vial.id)} accessibilityRole="radio" accessibilityState={{ selected: vialId === vial.id }}>
+                  <Text style={[s.chipText, vialId === vial.id && s.chipTextActive]}>{`${vial.label} · ${formatDay(vial.openedAt, dateLocale)}`}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={s.helper}>{t('proto.vialHelp')}</Text>
+          </Card>
+        )}
+
         <Card>
           <CardLabel icon="📅">{t('proto.startDate')}</CardLabel>
           {started ? (
@@ -565,56 +578,15 @@ function NumberRow({ label, value, setValue }: { label: string; value: string; s
   );
 }
 
-const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
-  toolHeader: { minHeight: 58, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.borderSubtle, paddingHorizontal: spacing.xl },
-  backBtn: { width: 80, minHeight: 44, justifyContent: 'center' },
-  backText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
-  toolHeaderTitle: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  scrollContent: { paddingTop: spacing.lg, paddingBottom: 60 },
-  notice: { marginHorizontal: spacing.xl, marginBottom: spacing.lg, borderLeftWidth: 3, borderLeftColor: colors.accent, backgroundColor: withAlpha(colors.accent, 0.08), padding: 12 },
-  noticeText: { color: colors.text, fontSize: 12, lineHeight: 18 },
-  input: { minHeight: 48, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.text, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 10, fontSize: 14 },
-  multiline: { minHeight: 72, textAlignVertical: 'top', marginTop: 10 },
-  primaryBtn: { minHeight: 48, borderRadius: radius.md, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center' },
-  primaryBtnText: { color: colors.actionText, fontSize: 15, fontWeight: '700' },
-  listItem: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.borderFaint, paddingVertical: 12 },
-  listTitle: { color: colors.white, fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  listMeta: { color: colors.textMuted, fontSize: 12, lineHeight: 18 },
-  itemActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  smallBtn: { minHeight: 36, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' },
-  smallBtnText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
-  empty: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 18 },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
-  chip: { minHeight: 36, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgPill, justifyContent: 'center' },
-  chipActive: { borderColor: colors.primary, backgroundColor: withAlpha(colors.primary, 0.15) },
-  chipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: colors.white },
-  unitRow: { flexDirection: 'row', backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 3 },
-  unitBtn: { flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
-  unitBtnActive: { backgroundColor: withAlpha(colors.primary, 0.25) },
-  unitText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
-  unitTextActive: { color: colors.white },
-  helper: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 8 },
-  helperWarn: { color: colors.red, fontSize: 12, marginTop: 4 },
+const s = { ...kit, ...StyleSheet.create({
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 },
   dayBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgPill },
   dayBtnActive: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
   dayText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   dayTextActive: { color: colors.actionText },
-  twoCol: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  fieldLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600', marginBottom: 6 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
-  switchTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
-  switchSub: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 2 },
   summary: { color: colors.text, fontSize: 13, fontWeight: '600', marginTop: 14 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pickerField: { flex: 1, justifyContent: 'center' },
-  pickerFieldText: { color: colors.text, fontSize: 14, fontWeight: '600' },
   removeBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   removeText: { color: colors.red, fontSize: 24 },
   linkText: { color: colors.primary, fontSize: 14, fontWeight: '700', paddingVertical: 6 },
-  pickerWrap: { marginBottom: 10, backgroundColor: colors.bgSheet, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 8 },
-  pickerDone: { alignSelf: 'flex-end', minHeight: 40, justifyContent: 'center', paddingHorizontal: 14 },
-  pickerDoneText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
-});
+}) };

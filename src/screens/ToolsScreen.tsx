@@ -18,6 +18,7 @@ import {
 import { SettingsScreen } from './SettingsScreen';
 import { UpgradeScreen } from './UpgradeScreen';
 import { ProtocolsTool } from './ProtocolsScreen';
+import { VialsTool } from './VialsScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
@@ -34,10 +35,11 @@ function animateListChange(): void {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
-type ToolId = 'protocols' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
+type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
   { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent, pro: true },
+  { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary, pro: true },
   { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary, pro: true },
   { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent, pro: true },
   { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary, pro: true },
@@ -119,6 +121,7 @@ export function ToolsScreen() {
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => setActive(null)}><SafeAreaProvider>
         {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
+        {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
         {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
         {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}

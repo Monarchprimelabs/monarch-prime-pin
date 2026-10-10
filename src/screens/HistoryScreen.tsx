@@ -49,6 +49,9 @@ export function HistoryScreen() {
       { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try {
           await deleteInjection(record.id);
+          // A planned dose without its record gets its reminder back; vial
+          // projections change too.
+          if (record.occurrenceKey || record.vialId) syncProtocolReminders().catch(() => undefined);
           setSelectedRecord(null);
           await refresh();
         } catch (e: any) {
