@@ -795,7 +795,7 @@ const en: Record<string, string> = {
   'dash.helloNoName': "Hello",
   // Apple Health (read-only)
   'health.label': "APPLE HEALTH",
-  'health.body': "Read your weight and body fat from Apple Health to show them in Reports and offer them when you log. Read-only: Monarch never writes to Apple Health, and the data stays on this phone.",
+  'health.body': "Read your weight, body fat and steps from Apple Health to show them on Home and in Reports and offer your weight when you log. Read-only: Monarch never writes to Apple Health, and the data stays on this phone.",
   'health.onTitle': "Apple Health on",
   'health.onBody': "If Reports shows no Apple Health weight, check Settings > Health > Data Access & Devices > Monarch Prime Pin. iOS does not tell apps whether read access was allowed.",
   'health.failedTitle': "Couldn't connect to Apple Health",
@@ -808,6 +808,12 @@ const en: Record<string, string> = {
   'proto.testSentTitle': "Test reminder on its way",
   'proto.testSentBody': "It arrives in about 5 seconds. Lock your phone or go to the Home Screen to see it like a real reminder.",
   'proto.testDeniedTitle': "Notifications are off",
+  // Apple Health steps
+  'health.stepsLabel': "STEPS",
+  'health.stepsToday': "steps today",
+  'health.stepsAverages': "7-day average {a7} · 30-day average {a30}",
+  'health.stepsSource': "Steps from Apple Health",
+  'health.stepsTodayLine': "👟 {n} steps today (Apple Health)",
 };
 
 const es: Record<string, string> = {
@@ -1595,7 +1601,7 @@ const es: Record<string, string> = {
   'dash.helloNoName': "Hola",
   // Apple Health (read-only)
   'health.label': "APPLE SALUD",
-  'health.body': "Lee tu peso y grasa corporal de Apple Salud para mostrarlos en Reportes y ofrecerlos al registrar. Solo lectura: Monarch nunca escribe en Apple Salud y los datos se quedan en este teléfono.",
+  'health.body': "Lee tu peso, grasa corporal y pasos de Apple Salud para mostrarlos en Inicio y en Reportes y ofrecer tu peso al registrar. Solo lectura: Monarch nunca escribe en Apple Salud y los datos se quedan en este teléfono.",
   'health.onTitle': "Apple Salud activado",
   'health.onBody': "Si Reportes no muestra peso de Apple Salud, revisa Ajustes > Salud > Acceso a datos y dispositivos > Monarch Prime Pin. iOS no les dice a las apps si se permitió la lectura.",
   'health.failedTitle': "No se pudo conectar con Apple Salud",
@@ -1608,6 +1614,12 @@ const es: Record<string, string> = {
   'proto.testSentTitle': "Recordatorio de prueba en camino",
   'proto.testSentBody': "Llega en unos 5 segundos. Bloquea tu teléfono o ve a la pantalla de inicio para verlo como uno real.",
   'proto.testDeniedTitle': "Las notificaciones están desactivadas",
+  // Apple Health steps
+  'health.stepsLabel': "PASOS",
+  'health.stepsToday': "pasos hoy",
+  'health.stepsAverages': "Promedio de 7 días {a7} · promedio de 30 días {a30}",
+  'health.stepsSource': "Pasos de Apple Salud",
+  'health.stepsTodayLine': "👟 {n} pasos hoy (Apple Salud)",
 };
 
 const pt: Record<string, string> = {
@@ -2392,7 +2404,7 @@ const pt: Record<string, string> = {
   'dash.helloNoName': "Olá",
   // Apple Health (read-only)
   'health.label': "APPLE SAÚDE",
-  'health.body': "Leia seu peso e gordura corporal do Apple Saúde para mostrá-los nos Relatórios e oferecê-los ao registrar. Somente leitura: o Monarch nunca grava no Apple Saúde e os dados ficam neste aparelho.",
+  'health.body': "Leia seu peso, gordura corporal e passos do Apple Saúde para mostrá-los no Início e nos Relatórios e oferecer seu peso ao registrar. Somente leitura: o Monarch nunca grava no Apple Saúde e os dados ficam neste aparelho.",
   'health.onTitle': "Apple Saúde ativado",
   'health.onBody': "Se os Relatórios não mostrarem peso do Apple Saúde, confira Ajustes > Saúde > Acesso a Dados e Dispositivos > Monarch Prime Pin. O iOS não informa aos apps se a leitura foi permitida.",
   'health.failedTitle': "Não foi possível conectar ao Apple Saúde",
@@ -2405,6 +2417,12 @@ const pt: Record<string, string> = {
   'proto.testSentTitle': "Lembrete de teste a caminho",
   'proto.testSentBody': "Ele chega em cerca de 5 segundos. Bloqueie o celular ou vá para a Tela de Início para vê-lo como um lembrete real.",
   'proto.testDeniedTitle': "As notificações estão desligadas",
+  // Apple Health steps
+  'health.stepsLabel': "PASSOS",
+  'health.stepsToday': "passos hoje",
+  'health.stepsAverages': "Média de 7 dias {a7} · média de 30 dias {a30}",
+  'health.stepsSource': "Passos do Apple Saúde",
+  'health.stepsTodayLine': "👟 {n} passos hoje (Apple Saúde)",
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, es, pt };

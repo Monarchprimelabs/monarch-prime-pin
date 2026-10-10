@@ -20,6 +20,7 @@ import { localDateISO, parseLocalDay } from '../lib/dates';
 import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '../components/ProgressCard';
 import { Ionicons } from '@expo/vector-icons';
 import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
+import { readHealthSteps } from '../lib/health';
 import { ProtocolsTool } from './ProtocolsScreen';
 import type { PlannedDose } from './LogInjectionScreen';
 import { parseOccurrenceKey, occurrencesBetween } from '../lib/schedule/engine';
@@ -60,6 +61,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [editRecord, setEditRecord] = useState<Injection | null>(null);
   const [protocolsOpen, setProtocolsOpen] = useState(false);
   const [planToken, setPlanToken] = useState(0);
+  const [stepsToday, setStepsToday] = useState<number | null>(null);
   const shareCardRef = useRef<View>(null);
   const [shareFormat, setShareFormat] = useState<ShareFormat>('story');
   const { width: winW, height: winH } = useWindowDimensions();
@@ -78,6 +80,10 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
     getHeatHalfLife().then(setHalfLife);
     getInjections().then(setInjections);
     setPlanToken(n => n + 1);
+    readHealthSteps(1).then(points => {
+      const today = points.find(point => point.date === localDateISO());
+      setStepsToday(points.length || today ? today?.value ?? 0 : null);
+    }).catch(() => setStepsToday(null));
     getSchedules().then(setSchedules);
     AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
   };
@@ -212,6 +218,10 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
             onOpenRecord={setEditRecord}
             onSetup={() => setProtocolsOpen(true)}
           />
+        )}
+
+        {stepsToday !== null && (
+          <Text style={s.milestoneLine}>{t('health.stepsTodayLine', { n: stepsToday.toLocaleString(dateLocale) })}</Text>
         )}
 
         {(stats.longestStreak > 1 || !!recordMilestone) && (
