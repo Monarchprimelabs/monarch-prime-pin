@@ -862,7 +862,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   );
 }
 
-function PeptidePickerSheet({
+export function PeptidePickerSheet({
   onClose, onSelect,
 }: { onClose: () => void; onSelect: (p: Peptide) => void }) {
   const { t } = useI18n();

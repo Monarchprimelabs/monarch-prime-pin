@@ -6,8 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Card, CardLabel, Disclaimer } from '../components/UI';
 import { kit, ShellHeader } from '../components/FormKit';
+import { CompoundField } from '../components/CompoundField';
 import { colors, radius, spacing, withAlpha } from '../theme';
-import { formatClockTime, PEPTIDES } from '../data/peptides';
+import { formatClockTime } from '../data/peptides';
 import { useI18n } from '../lib/i18n';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import { deleteProtocol, getProtocols, getVials, newProtocolId, saveProtocol } from '../lib/storage';
@@ -24,7 +25,6 @@ type TFn = (key: string, vars?: Record<string, string | number>) => string;
 type FrequencyChoice = 'daily' | 'everyOther' | 'twiceWeek' | 'onOff' | 'specificDays' | 'everyN';
 const FREQUENCY_CHOICES: FrequencyChoice[] = ['daily', 'everyOther', 'twiceWeek', 'onOff', 'specificDays', 'everyN'];
 const MAX_TIMES = 4;
-export const COMPOUND_NAMES = [...PEPTIDES.singles, ...PEPTIDES.blends].map(p => p.name);
 
 /** Weekday display order: Sunday first for en-US, Monday first otherwise. */
 export function weekdayOrder(dateLocale: string): Weekday[] {
@@ -243,11 +243,6 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
   const pickerTheme = colors.statusBar === 'light' ? 'dark' : 'light';
   const order = weekdayOrder(dateLocale);
 
-  const compoundMatches = useMemo(() => {
-    const query = compound.trim().toLowerCase();
-    if (!query) return [];
-    return COMPOUND_NAMES.filter(name => name.toLowerCase().includes(query) && name !== compound).slice(0, 6);
-  }, [compound]);
 
   const buildFrequency = (): Frequency | null => {
     switch (choice) {
@@ -376,23 +371,16 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
 
         <Card>
           <CardLabel icon="◆">{t('proto.compound')}</CardLabel>
-          <TextInput
+          <CompoundField
             value={compound}
-            onChangeText={setCompound}
             placeholder={t('proto.compoundPh')}
-            placeholderTextColor={colors.textFaint}
-            style={s.input}
             accessibilityLabel={t('proto.compound')}
+            onChange={picked => {
+              setCompound(picked.name);
+              // The list's usual unit for that compound; the amount stays the user's.
+              if (!amount.trim()) setUnit(picked.defaultUnit);
+            }}
           />
-          {compoundMatches.length > 0 && (
-            <View style={s.chipWrap}>
-              {compoundMatches.map(name => (
-                <Pressable key={name} style={s.chip} onPress={() => setCompound(name)} accessibilityRole="button">
-                  <Text style={s.chipText}>{name}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
         </Card>
 
         <Card>
