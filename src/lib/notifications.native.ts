@@ -22,7 +22,7 @@ export async function scheduleLocalReminder(
   date: string,
   time: string,
   repeat: 'once' | 'daily' | 'weekly' = 'once',
-  notificationTitle = 'Research schedule reminder',
+  notificationTitle = 'Schedule reminder',
 ): Promise<string> {
   const triggerDate = scheduleDate(date, time);
   if (repeat === 'once' && triggerDate.getTime() <= Date.now()) {

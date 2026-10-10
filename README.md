@@ -1,6 +1,6 @@
 # Monarch Prime PIN
 
-Monarch Prime PIN is a research tracking and logbook app built with Expo and React Native.
+Monarch Prime PIN is a personal injection log and tracker built with Expo and React Native. Records stay on the device.
 
 ## Stack
 
@@ -81,7 +81,7 @@ eas submit --platform ios --profile ios-production
 
 ## Compliance Note
 
-This application is intended for research logging and record-keeping. Preserve the current legal/compliance posture unless changes are explicitly approved.
+This application is a personal log: it records what the user enters and never suggests doses. Preserve the current legal/compliance posture (see below) unless changes are explicitly approved.
 
 **SAVE INJECTION button shows error**
 - This means a required field is missing (peptide, dose, or site). The button validates first.
@@ -94,6 +94,8 @@ This application is intended for research logging and record-keeping. Preserve t
 
 Proprietary — Monarch Prime Labs. All rights reserved.
 
-## For Research Use Only
+## Personal Log · Not Medical Advice
 
-This application is intended SOLELY for research data logging. The compounds referenced are NOT approved for human consumption by any regulatory authority. See the Legal tab in Settings for full disclaimer.
+Monarch Prime Pin is a personal log for adults (18+). It records what the user enters and does not give medical advice, diagnosis or treatment, and it never suggests or defaults an amount (App Store guideline 1.4.2). Many compounds users log are not approved by regulators; listing one is not an endorsement. The full text is in Settings > Legal.
+
+Until October 2026 the app was framed as "for research use only, not for human consumption". George approved moving to the personal-log framing on 2026-10-10 because the app is a personal injection tracker and the old wording contradicted it. Keep the store listing, age rating and review notes in step with the in-app text.

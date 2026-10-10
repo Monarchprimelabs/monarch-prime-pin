@@ -15,6 +15,7 @@ import type { Vial } from '../lib/vials/types';
 import { getInjectionSiteIds, lastLoggedBySite } from '../lib/sites';
 import { daysBetween } from '../lib/schedule/days';
 import { keepPhoto, photoDisplayUri } from '../lib/photos';
+import { HealthPoint, readHealthWeights } from '../lib/health';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { UpgradeScreen } from './UpgradeScreen';
@@ -107,10 +108,14 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [vialTouched, setVialTouched] = useState(!!initialInjection);
   const [history, setHistory] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setHistory).catch(() => undefined); }, []);
+  const [healthWeights, setHealthWeights] = useState<HealthPoint[]>([]);
+  useEffect(() => { readHealthWeights(400).then(setHealthWeights).catch(() => undefined); }, []);
 
   const isEditing = !!initialInjection;
   const logDate = initialInjection?.date ?? initialDate ?? localDateISO();
   const lastBySite = lastLoggedBySite(history, logDate, initialInjection?.id);
+  // Latest Apple Health weight on or before the record's day, if any.
+  const healthWeight = [...healthWeights].reverse().find(point => point.date <= logDate);
   const canUsePro = hasPro || !!user?.isDeveloper;
   const freeTrialActive = monetizationEnabled && !canUsePro && !isEditing;
   const freeLogsRemaining = freeLogCount === null
@@ -778,6 +783,17 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             keyboardType="numeric"
             style={s.textInput}
           />
+          {!!healthWeight && weight !== String(healthWeight.value) && (
+            <Pressable
+              style={[s.timeChip, { alignSelf: 'flex-start', marginTop: 10 }]}
+              onPress={() => { hapticTap(); setWeight(String(healthWeight.value)); }}
+              accessibilityRole="button"
+            >
+              <Text style={s.timeChipText}>
+                {t('health.useWeight', { w: healthWeight.value, date: new Date(healthWeight.date + 'T12:00:00').toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+              </Text>
+            </Pressable>
+          )}
         </Card>
 
         {/* Notes */}

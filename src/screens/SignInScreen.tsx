@@ -95,7 +95,7 @@ export function SignInScreen() {
             <BrandMark large />
           </Pressable>
 
-          <Text style={s.subBrand}>PIN · RESEARCH TRACKER</Text>
+          <Text style={s.subBrand}>PIN · PERSONAL TRACKER</Text>
 
           {!showPasscode && !SUPABASE_CONFIGURED ? (
             <>
