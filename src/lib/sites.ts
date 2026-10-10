@@ -71,3 +71,27 @@ export function getSiteUsage(injections: Injection[]): Record<string, number> {
   });
   return counts;
 }
+
+/**
+ * The most recent record per site on or before `onOrBefore` (YYYY-MM-DD),
+ * leaving out `excludeId` (the record being edited). Facts only: the log
+ * screen shows when each picked site was last logged and never ranks or
+ * suggests sites (AUDIT_CHECKLIST §4).
+ */
+export function lastLoggedBySite(
+  injections: Injection[],
+  onOrBefore: string,
+  excludeId?: string,
+): Record<string, { date: string; time: string }> {
+  const latest: Record<string, { date: string; time: string }> = {};
+  injections.forEach(record => {
+    if (record.id === excludeId || record.date > onOrBefore) return;
+    getInjectionSiteIds(record).forEach(id => {
+      const current = latest[id];
+      if (!current || `${record.date}T${record.time}` > `${current.date}T${current.time}`) {
+        latest[id] = { date: record.date, time: record.time };
+      }
+    });
+  });
+  return latest;
+}

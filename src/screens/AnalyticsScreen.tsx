@@ -57,7 +57,8 @@ export function AnalyticsScreen() {
   const doseChart = useMemo(() => {
     if (!activeCompound) return null;
     const series = injections
-      .filter(record => record.peptide === activeCompound)
+      // Mass doses only: IU and mL don't share an axis with mcg.
+      .filter(record => record.peptide === activeCompound && (record.unit === 'mcg' || record.unit === 'mg'))
       .map(record => ({
         stamp: `${record.date}T${record.time}`,
         mcg: (Number(String(record.dose).replace(',', '.')) || 0) * (record.unit === 'mg' ? 1000 : 1),

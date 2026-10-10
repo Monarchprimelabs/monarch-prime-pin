@@ -8,12 +8,13 @@ import { Disclaimer, BrandMark } from '../components/UI';
 import { colors, radius, DEV_PASSCODE, withAlpha } from '../theme';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
+import { SUPABASE_CONFIGURED } from '../lib/supabase';
 
 declare const __DEV__: boolean;
 
 export function SignInScreen() {
   const { t } = useI18n();
-  const { signInEmail, signUp, signInDeveloper } = useAuth();
+  const { signInEmail, signUp, signInDeveloper, startLocal } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +69,20 @@ export function SignInScreen() {
     }
   };
 
+  // Without a cloud backend there is no account to sign in to: an email
+  // and password here would only be stored on the phone and never checked.
+  // So the first screen is honest about that and asks only for a name.
+  const handleStartLocal = async () => {
+    setLoading(true);
+    try {
+      await startLocal(name);
+    } catch (e: any) {
+      Alert.alert(t('settings.saveFailedTitle'), e?.message || t('common.tryAgain'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={s.app} edges={['top', 'bottom']}>
       <Disclaimer />
@@ -82,7 +97,28 @@ export function SignInScreen() {
 
           <Text style={s.subBrand}>PIN · RESEARCH TRACKER</Text>
 
-          {!showPasscode ? (
+          {!showPasscode && !SUPABASE_CONFIGURED ? (
+            <>
+              <Text style={s.welcomeTitle}>{t('welcome.title')}</Text>
+              <Text style={s.welcomeBody}>{t('welcome.body')}</Text>
+              <TextInput
+                placeholder={t('welcome.namePh')}
+                placeholderTextColor={colors.textFaint}
+                value={name}
+                onChangeText={setName}
+                style={s.input}
+                autoCapitalize="words"
+                textContentType="name"
+                autoComplete="name"
+                returnKeyType="go"
+                onSubmitEditing={handleStartLocal}
+              />
+              <Pressable style={s.primary} onPress={handleStartLocal} disabled={loading}>
+                <Text style={s.primaryText}>{loading ? '...' : t('welcome.start')}</Text>
+              </Pressable>
+              <Text style={s.welcomeNote}>{t('welcome.note')}</Text>
+            </>
+          ) : !showPasscode ? (
             <>
               <View style={s.modeTabs}>
                 {(['signin', 'signup'] as const).map(m => (
@@ -200,6 +236,9 @@ const s = StyleSheet.create({
     paddingVertical: 16, alignItems: 'center', marginTop: 6, marginBottom: 18,
   },
   primaryText: { color: colors.actionText, fontSize: 15, fontWeight: '700', letterSpacing: 1 },
+  welcomeTitle: { color: colors.white, fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 10, maxWidth: 360 },
+  welcomeBody: { color: colors.textMuted, fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 22, maxWidth: 360 },
+  welcomeNote: { color: colors.textMuted, fontSize: 12, lineHeight: 18, textAlign: 'center', maxWidth: 360 },
   footer: { fontSize: 10, color: colors.textDim, letterSpacing: 1.5, marginTop: 32, textAlign: 'center' },
 
   passWrap: {

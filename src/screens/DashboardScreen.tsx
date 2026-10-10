@@ -19,9 +19,17 @@ import { KEY_LAST_BACKUP_AT } from '../lib/backup';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '../components/ProgressCard';
 import { Ionicons } from '@expo/vector-icons';
+import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
+import { ProtocolsTool } from './ProtocolsScreen';
+import type { PlannedDose } from './LogInjectionScreen';
+import { parseOccurrenceKey, occurrencesBetween } from '../lib/schedule/engine';
+import { withStatus } from '../lib/schedule/status';
 
 type Props = {
   onNavigate: (tab: string) => void;
+  /** Set when the app was opened from a protocol reminder. */
+  pendingOccurrenceKey?: string | null;
+  onPendingHandled?: () => void;
 };
 
 function displayDate(iso: string): string {
@@ -39,7 +47,7 @@ function getGreetingName(fallback: string, name?: string, email?: string) {
   return cleaned.split(' ')[0];
 }
 
-export function DashboardScreen({ onNavigate }: Props) {
+export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHandled }: Props) {
   const { user } = useAuth();
   const { hasPro, monetizationEnabled } = useEntitlements();
   const { t, dateLocale } = useI18n();
@@ -49,6 +57,10 @@ export function DashboardScreen({ onNavigate }: Props) {
   const [reminderDismissed, setReminderDismissed] = useState(false);
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [plannedLog, setPlannedLog] = useState<PlannedDose | null>(null);
+  const [editRecord, setEditRecord] = useState<Injection | null>(null);
+  const [protocolsOpen, setProtocolsOpen] = useState(false);
+  const [planToken, setPlanToken] = useState(0);
   const shareCardRef = useRef<View>(null);
   const [shareFormat, setShareFormat] = useState<ShareFormat>('story');
   const { width: winW, height: winH } = useWindowDimensions();
@@ -67,6 +79,7 @@ export function DashboardScreen({ onNavigate }: Props) {
   const refresh = () => {
     getHeatHalfLife().then(setHalfLife);
     getInjections().then(setInjections);
+    setPlanToken(n => n + 1);
     getSchedules().then(setSchedules);
     AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
   };
@@ -157,6 +170,24 @@ export function DashboardScreen({ onNavigate }: Props) {
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
   const completedScheduleCount = schedules.filter(item => item.completedAt).length;
   const canUsePro = hasPro || !!user?.isDeveloper;
+
+  // Opened from a protocol reminder: go straight to logging that dose,
+  // unless it's already logged or skipped.
+  useEffect(() => {
+    if (!pendingOccurrenceKey) return;
+    const parsed = parseOccurrenceKey(pendingOccurrenceKey);
+    onPendingHandled?.();
+    if (!parsed || !canUsePro) return;
+    Promise.all([loadPlan(), getInjections()]).then(([plan, records]) => {
+      const view = withStatus(
+        occurrencesBetween(plan.protocols.filter(p => p.id === parsed.protocolId), parsed.date, parsed.date),
+        records, plan.skips, localDateISO(),
+      ).find(v => v.key === pendingOccurrenceKey);
+      if (view && (view.status === 'planned' || view.status === 'notLogged')) setPlannedLog(toPlannedDose(view));
+    }).catch(() => undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingOccurrenceKey, canUsePro]);
+
   const freeTrialActive = monetizationEnabled && !canUsePro;
   const freeLogsRemaining = Math.max(0, FREE_INJECTION_LIMIT - stats.total);
 
@@ -174,6 +205,16 @@ export function DashboardScreen({ onNavigate }: Props) {
           <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
           <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
         </View>
+
+        {canUsePro && (
+          <TodayPlan
+            injections={injections}
+            refreshToken={planToken}
+            onLog={setPlannedLog}
+            onOpenRecord={setEditRecord}
+            onSetup={() => setProtocolsOpen(true)}
+          />
+        )}
 
         {(stats.longestStreak > 1 || !!recordMilestone) && (
           <Text style={s.milestoneLine}>
@@ -322,6 +363,30 @@ export function DashboardScreen({ onNavigate }: Props) {
             onCancel={() => setRepeatOpen(false)}
           />
         )}
+      </SafeAreaProvider></Modal>
+
+      <Modal visible={!!plannedLog} animationType="slide" onRequestClose={() => setPlannedLog(null)}><SafeAreaProvider>
+        {plannedLog && (
+          <LogInjectionScreen
+            planned={plannedLog}
+            onDone={() => { setPlannedLog(null); refresh(); }}
+            onCancel={() => setPlannedLog(null)}
+          />
+        )}
+      </SafeAreaProvider></Modal>
+
+      <Modal visible={!!editRecord} animationType="slide" onRequestClose={() => setEditRecord(null)}><SafeAreaProvider>
+        {editRecord && (
+          <LogInjectionScreen
+            initialInjection={editRecord}
+            onDone={() => { setEditRecord(null); refresh(); }}
+            onCancel={() => setEditRecord(null)}
+          />
+        )}
+      </SafeAreaProvider></Modal>
+
+      <Modal visible={protocolsOpen} animationType="slide" onRequestClose={() => { setProtocolsOpen(false); refresh(); }}><SafeAreaProvider>
+        <ProtocolsTool onClose={() => { setProtocolsOpen(false); refresh(); }} />
       </SafeAreaProvider></Modal>
 
       <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>

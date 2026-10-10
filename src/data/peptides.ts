@@ -1,3 +1,5 @@
+import type { DoseUnit } from '../lib/schedule/types';
+
 export const PEPTIDES = {
   singles: [
     // GLP-1 / Metabolic
@@ -56,7 +58,7 @@ export const PEPTIDES = {
   ],
 };
 
-export type Peptide = { id: string; name: string; defaultUnit: 'mg' | 'mcg' };
+export type Peptide = { id: string; name: string; defaultUnit: DoseUnit };
 export type Severity = 'none' | 'mild' | 'mod' | 'sev';
 
 export const SIDE_EFFECT_TAGS = [
@@ -154,7 +156,8 @@ export type Injection = {
   id: string;
   peptide: string;
   dose: string;
-  unit: 'mcg' | 'mg';
+  /** mcg/mg on every record saved before 1.8; IU and mL arrive with protocols. */
+  unit: DoseUnit;
   date: string;
   time: string;
   /** Present when the user picked a named period instead of an exact time. */
@@ -165,4 +168,11 @@ export type Injection = {
   weight: number;
   notes?: string;
   photoUri?: string;
+  /** Set when the record fulfils a planned dose (src/lib/schedule). */
+  protocolId?: string;
+  occurrenceKey?: string;
+  /** The vial this dose was drawn from (src/lib/vials). */
+  vialId?: string;
+  /** Minutes east of UTC on the device when the record was saved. */
+  tzOffsetMin?: number;
 };
