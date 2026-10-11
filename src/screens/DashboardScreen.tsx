@@ -149,7 +149,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const lastInj = useMemo(() => [...injections].sort(
     (a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`),
   )[0], [injections]);
-  const greetingName = getGreetingName(t('dash.researcher'), user?.name, user?.email);
+  const greetingName = getGreetingName('', user?.name, user?.email);
   const lastInjSiteIds = lastInj ? getInjectionSiteIds(lastInj) : [];
   const lastInjSites = lastInjSiteIds.length ? lastInjSiteIds.map(id => t('zone.' + id)).join(', ') : lastInj?.site ?? '';
   const heatEntries = useMemo(() => buildHeatEntries(injections), [injections]);
@@ -196,7 +196,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         <Header
-          title={t('dash.hello', { name: greetingName })}
+          title={greetingName ? t('dash.hello', { name: greetingName }) : t('dash.helloNoName')}
           subtitle={user?.isDeveloper ? t('dash.devMode') : t('dash.welcome')}
         />
 

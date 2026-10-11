@@ -62,7 +62,16 @@ matches the computation:
 - [ ] Colors = logged frequency only; legend says so
 - [ ] Worksheet "locates an entered amount on a scale" — never "calculates dose"
 - [ ] No compound names on anything that leaves the app by default
-      (widget, share card)
+      (widget, share card, notifications)
+- [ ] Framing (since 2026-10-10): a personal log, not medical advice, 18+.
+      Never "for research use only" or "not for human consumption" in the
+      app, and keep the App Store listing, age rating and review notes in
+      step (docs/APP_STORE_CONNECT_CHANGES.md). Medical words belong only in
+      the disclaimer itself ("not medical advice", "talk to a clinician")
+- [ ] No default or example amounts anywhere: placeholders, presets,
+      library, stacks (guideline 1.4.2)
+- [ ] Apple Health is read-only: weight and body fat shown as entered there,
+      never interpreted
 
 ## 5. Render-level (cannot be verified from code — needs device/screenshot QA)
 

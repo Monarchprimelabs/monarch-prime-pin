@@ -13,11 +13,20 @@ import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS,
 import { heatColors } from '../theme';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import { useI18n } from '../lib/i18n';
+import { HealthPoint, readHealthBodyFat, readHealthWeights } from '../lib/health';
 
 export function AnalyticsScreen() {
   const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
+  // Apple Health (optional, read-only) replaces log-entry weights in the
+  // trend when it has any; body fat is shown as its latest value only.
+  const [healthWeights, setHealthWeights] = useState<HealthPoint[]>([]);
+  const [healthBodyFat, setHealthBodyFat] = useState<HealthPoint | null>(null);
+  useEffect(() => {
+    readHealthWeights().then(setHealthWeights).catch(() => undefined);
+    readHealthBodyFat().then(points => setHealthBodyFat(points[points.length - 1] ?? null)).catch(() => undefined);
+  }, []);
 
   // Compute weekly buckets (last 8 weeks)
   const weeks = useMemo(() => {
@@ -113,12 +122,14 @@ export function AnalyticsScreen() {
 
   // Chronological weight series (oldest → newest), capped to the most
   // recent 30 entries so the chart stays readable.
+  const weightFromHealth = healthWeights.length > 0;
   const weightSeries = useMemo(() => {
+    if (healthWeights.length > 0) return healthWeights.slice(-30).map(point => ({ weight: point.value }));
     const entries = injections
       .filter(i => i.weight > 0)
       .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
     return entries.slice(-30);
-  }, [injections]);
+  }, [injections, healthWeights]);
 
   const weightChart = useMemo(() => {
     if (weightSeries.length < 2) return null;
@@ -302,6 +313,14 @@ export function AnalyticsScreen() {
                 {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
               </Text>
             </>
+          )}
+          {weightSeries.length > 0 && (
+            <Text style={s.weightRangeNote}>{t(weightFromHealth ? 'health.sourceHealth' : 'health.sourceLog')}</Text>
+          )}
+          {!!healthBodyFat && (
+            <Text style={s.weightRangeNote}>
+              {t('health.bodyFatLatest', { v: healthBodyFat.value, date: parseLocalDay(healthBodyFat.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+            </Text>
           )}
         </Card>
 
