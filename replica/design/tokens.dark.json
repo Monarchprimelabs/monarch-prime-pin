@@ -1,0 +1,51 @@
+{
+  "_about": "MPP's own dark palette (src/theme/index.ts), only the roles the new scheduling and vial components use. Values mirror the theme; the theme file stays the source of truth. bg is the opaque app background; translucent cards sit on it. New components: orange text uses accentLight (accent-text), filled buttons use primaryDark (action-fill), muted text sits on cards only. The existing white-on-primary button (3.68:1 in dark) and orange-on-white (3.18:1 in light) are pre-existing MPP pairs and are left alone.",
+  "color": {
+    "bg": "#050810",
+    "text": "#E8EEF7",
+    "text-muted": "#7B8FAB",
+    "primary": "#1E88E5",
+    "accent": "#F5871F",
+    "teal": "#43A047",
+    "red": "#E53935",
+    "action": "#1E88E5",
+    "action-text": "#FFFFFF",
+    "accent-text": "#FFB066",
+    "action-fill": "#1565C0"
+  },
+  "pairs": [
+    [
+      "text",
+      "bg"
+    ],
+    [
+      "text-muted",
+      "bg"
+    ],
+    [
+      "primary",
+      "bg"
+    ],
+    [
+      "teal",
+      "bg"
+    ],
+    [
+      "red",
+      "bg"
+    ],
+    [
+      "primary",
+      "bg",
+      "ui"
+    ],
+    [
+      "accent-text",
+      "bg"
+    ],
+    [
+      "action-text",
+      "action-fill"
+    ]
+  ]
+}

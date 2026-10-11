@@ -9,6 +9,8 @@ type AuthContextValue = {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
   signInGuest: () => Promise<void>;
+  /** No accounts without a cloud backend: a name-only profile on this device. */
+  startLocal: (name: string) => Promise<void>;
   signInDeveloper: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -100,6 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persist({ ...user, name: displayName });
   };
 
+  const startLocal = async (name: string) => {
+    await persist({
+      id: `local-${Date.now()}`,
+      name: cleanDisplayName(name),
+      isGuest: false,
+      isDeveloper: false,
+    });
+  };
+
   const signInGuest = async () => {
     await persist({ id: 'guest', name: 'Guest', isGuest: true, isDeveloper: false });
   };
@@ -116,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInEmail, signUp, updateProfileName, signInGuest, signInDeveloper, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInEmail, signUp, updateProfileName, signInGuest, startLocal, signInDeveloper, signOut }}>
       {children}
     </AuthContext.Provider>
   );

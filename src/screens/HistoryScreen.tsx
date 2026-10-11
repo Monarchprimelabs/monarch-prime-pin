@@ -11,6 +11,14 @@ import { LogInjectionScreen } from './LogInjectionScreen';
 import { UpgradeScreen } from './UpgradeScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
+import { PlannedDoseCard, PlanData, loadPlan, toPlannedDose } from '../components/TodayPlan';
+import type { PlannedDose } from './LogInjectionScreen';
+import { occurrencesBetween } from '../lib/schedule/engine';
+import { withStatus } from '../lib/schedule/status';
+import { removeDoseSkip, saveDoseSkip } from '../lib/storage';
+import { syncProtocolReminders } from '../lib/protocolReminders';
+import { localDateISO } from '../lib/dates';
+import { photoDisplayUri } from '../lib/photos';
 
 const PRO_TABS = new Set(['calendar', 'photos']);
 
@@ -18,6 +26,7 @@ export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
   const [injections, setInjections] = useState<Injection[]>([]);
   const [backdateFor, setBackdateFor] = useState<string | null>(null);
+  const [plannedLog, setPlannedLog] = useState<PlannedDose | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<Injection | null>(null);
   const [editingRecord, setEditingRecord] = useState<Injection | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -41,6 +50,9 @@ export function HistoryScreen() {
       { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try {
           await deleteInjection(record.id);
+          // A planned dose without its record gets its reminder back; vial
+          // projections change too.
+          if (record.occurrenceKey || record.vialId) syncProtocolReminders().catch(() => undefined);
           setSelectedRecord(null);
           await refresh();
         } catch (e: any) {
@@ -74,6 +86,7 @@ export function HistoryScreen() {
           <CalendarView
             injections={injections}
             onLogForDate={(date) => setBackdateFor(date)}
+            onLogPlanned={setPlannedLog}
             onOpen={setSelectedRecord}
           />
         )}
@@ -90,6 +103,16 @@ export function HistoryScreen() {
             initialDate={backdateFor}
             onDone={() => { setBackdateFor(null); refresh(); }}
             onCancel={() => setBackdateFor(null)}
+          />
+        )}
+      </SafeAreaProvider></Modal>
+
+      <Modal visible={!!plannedLog} animationType="slide" onRequestClose={() => setPlannedLog(null)}><SafeAreaProvider>
+        {plannedLog && (
+          <LogInjectionScreen
+            planned={plannedLog}
+            onDone={() => { setPlannedLog(null); refresh(); }}
+            onCancel={() => setPlannedLog(null)}
           />
         )}
       </SafeAreaProvider></Modal>
@@ -178,7 +201,7 @@ function RecordDetail({
         {!!record.photoUri && (
           <View style={s.detailSection}>
             <Text style={s.detailLabel}>{t('log.photo')}</Text>
-            <Image source={{ uri: record.photoUri }} style={s.detailPhoto} />
+            <Image source={{ uri: photoDisplayUri(record.photoUri) }} style={s.detailPhoto} />
           </View>
         )}
         <Pressable onPress={onDelete} style={s.detailDelete} accessibilityRole="button" accessibilityLabel="Delete record">
@@ -267,8 +290,16 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
   );
 }
 
-function CalendarView({ injections, onLogForDate, onOpen }: { injections: Injection[]; onLogForDate: (date: string) => void; onOpen: (record: Injection) => void }) {
+function CalendarView({ injections, onLogForDate, onLogPlanned, onOpen }: {
+  injections: Injection[];
+  onLogForDate: (date: string) => void;
+  onLogPlanned: (dose: PlannedDose) => void;
+  onOpen: (record: Injection) => void;
+}) {
   const { t, dateLocale } = useI18n();
+  const [plan, setPlan] = useState<PlanData | null>(null);
+  const reloadPlan = () => { loadPlan().then(setPlan).catch(() => setPlan(null)); };
+  useEffect(() => { reloadPlan(); }, [injections]);
   const recordTime = (r: Injection) => r.timePeriod ? t('period.' + r.timePeriod) : formatClockTime(r.time);
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -296,6 +327,19 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
   };
 
   const hasInj = (d: number) => injections.some(i => i.date === dateStr(d));
+  // Planned doses for the month (past and today only; the calendar stops at today).
+  const todayIso = localDateISO();
+  const monthEnd = dateStr(daysInMonth) < todayIso ? dateStr(daysInMonth) : todayIso;
+  const monthViews = plan && dateStr(1) <= todayIso
+    ? withStatus(occurrencesBetween(plan.protocols, dateStr(1), monthEnd), injections, plan.skips, todayIso)
+    : [];
+  const hasOpenPlan = (d: number) => monthViews.some(v => v.date === dateStr(d) && v.status !== 'logged');
+  const openPlanned = monthViews.filter(v => v.date === dateStr(selected) && v.status !== 'logged');
+  const skip = async (key: string, on: boolean) => {
+    await (on ? saveDoseSkip(key) : removeDoseSkip(key));
+    syncProtocolReminders().catch(() => undefined);
+    reloadPlan();
+  };
   const dayInj = injections.filter(i => i.date === dateStr(selected));
   const selectedDateStr = dateStr(selected);
   const selectedIsFuture = isFuture(selected);
@@ -350,7 +394,12 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
                 disabled={d === null || future}
               >
                 {d !== null && <Text style={s.calCellText}>{d}</Text>}
-                {d !== null && hasInj(d) && <View style={s.calDot} />}
+                {d !== null && (hasInj(d) || hasOpenPlan(d)) && (
+                  <View style={s.calDotRow}>
+                    {hasInj(d) && <View style={s.calDot} />}
+                    {hasOpenPlan(d) && <View style={s.calRing} />}
+                  </View>
+                )}
               </Pressable>
             );
           })}
@@ -358,8 +407,19 @@ function CalendarView({ injections, onLogForDate, onOpen }: { injections: Inject
       </Card>
       <Card>
         <Text style={s.calSelDate}>{capitalize(new Date(year, month, selected).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' }))}</Text>
+        {openPlanned.map(view => (
+          <PlannedDoseCard
+            key={view.key}
+            view={view}
+            canAct
+            onLog={() => onLogPlanned(toPlannedDose(view))}
+            onSkip={() => skip(view.key, true)}
+            onUnskip={() => skip(view.key, false)}
+            onOpen={() => undefined}
+          />
+        ))}
         {dayInj.length === 0 ? (
-          <Text style={s.empty}>{t('history.emptyDay')}</Text>
+          openPlanned.length === 0 ? <Text style={s.empty}>{t('history.emptyDay')}</Text> : null
         ) : dayInj.map(i => (
           <Pressable key={i.id} onPress={() => onOpen(i)} style={[s.histCard, { borderLeftColor: sevColors[i.sev], marginHorizontal: 0 }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -433,7 +493,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
               accessibilityRole="button"
               accessibilityLabel={compareMode ? `Select photo from ${formatDate(p.date, dateLocale)} for comparison` : `Open photo record from ${formatDate(p.date, dateLocale)}`}
             >
-              <Image source={{ uri: p.photoUri }} style={s.photoThumbImg} />
+              <Image source={{ uri: photoDisplayUri(p.photoUri) }} style={s.photoThumbImg} />
               <Text style={s.photoThumbDate}>{p.date}</Text>
               {compareMode && selectedIndex >= 0 && (
                 <View style={s.compareBadge}><Text style={s.compareBadgeText}>{selectedIndex + 1}</Text></View>
@@ -461,7 +521,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
                 .sort((a, b) => a.date.localeCompare(b.date))
                 .map(record => (
                   <View key={record.id} style={s.comparePane}>
-                    <Image source={{ uri: record.photoUri }} style={s.compareImg} resizeMode="cover" />
+                    <Image source={{ uri: photoDisplayUri(record.photoUri) }} style={s.compareImg} resizeMode="cover" />
                     <Text style={s.compareDate}>{formatDate(record.date, dateLocale)}</Text>
                     <Text style={s.compareMeta}>{record.peptide}</Text>
                   </View>
@@ -536,7 +596,9 @@ const s = StyleSheet.create({
   },
   calCellSel: { backgroundColor: withAlpha(colors.primary, 0.4) },
   calCellText: { color: colors.white, fontSize: 14 },
-  calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.teal, marginTop: 2 },
+  calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.teal },
+  calDotRow: { flexDirection: 'row', gap: 2, marginTop: 2 },
+  calRing: { width: 5, height: 5, borderRadius: 3, borderWidth: 1, borderColor: colors.textFaint },
   calSelDate: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 8 },
   logForDateBtn: {
     marginTop: 14,

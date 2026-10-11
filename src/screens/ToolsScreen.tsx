@@ -17,6 +17,8 @@ import {
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
 import { UpgradeScreen } from './UpgradeScreen';
+import { ProtocolsTool } from './ProtocolsScreen';
+import { VialsTool } from './VialsScreen';
 import { useEntitlements } from '../lib/entitlements';
 import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
@@ -33,9 +35,11 @@ function animateListChange(): void {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
-type ToolId = 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
+type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
+  { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent, pro: true },
+  { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary, pro: true },
   { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary, pro: true },
   { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent, pro: true },
   { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary, pro: true },
@@ -116,6 +120,8 @@ export function ToolsScreen() {
         ))}
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => setActive(null)}><SafeAreaProvider>
+        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
+        {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
         {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
         {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
@@ -523,6 +529,10 @@ const U100_MARKINGS = [1, 5, 10, 20, 50];
 // Real U-100 barrels come in 30, 50, and 100 unit sizes; the gauge picks the
 // smallest scale the reading fits on so small readings stay legible.
 const GAUGE_SCALES = [30, 50, 100];
+// The user can fix the scale to their own syringe: 0.3, 0.5 or 1 mL U-100
+// barrels hold 30, 50 or 100 units. 'auto' keeps the old fit-to-reading.
+type SyringeSize = 'auto' | 30 | 50 | 100;
+const SYRINGE_SIZES: SyringeSize[] = ['auto', 30, 50, 100];
 
 function ConversionTool({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -531,6 +541,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const [liquidVolume, setLiquidVolume] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [targetUnit, setTargetUnit] = useState('mg');
+  const [syringe, setSyringe] = useState<SyringeSize>('auto');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const hydrated = useRef(false);
 
@@ -544,6 +555,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
         if (typeof saved.volume === 'string') setLiquidVolume(saved.volume);
         if (typeof saved.target === 'string') setTargetAmount(saved.target);
         if (saved.targetUnit === 'mg' || saved.targetUnit === 'mcg') setTargetUnit(saved.targetUnit);
+        if (SYRINGE_SIZES.includes(saved.syringe)) setSyringe(saved.syringe);
       })
       .catch(() => undefined)
       .finally(() => { hydrated.current = true; });
@@ -553,9 +565,9 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
     if (!hydrated.current) return;
     AsyncStorage.setItem(
       KEY_WORKSHEET_INPUTS,
-      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume, target: targetAmount, targetUnit }),
+      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume, target: targetAmount, targetUnit, syringe }),
     ).catch(() => undefined);
-  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit]);
+  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit, syringe]);
 
   const copyText = async (key: string, text: string) => {
     try {
@@ -703,8 +715,19 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
               ))}
             </View>
           </View>
+          <Text style={[s.fieldLabel, { marginTop: 14 }]}>{t('tools.gauge.syringeLabel')}</Text>
+          <View style={s.segment}>
+            {SYRINGE_SIZES.map(size => (
+              <SegmentButton
+                key={String(size)}
+                label={size === 'auto' ? t('tools.gauge.syringeAuto') : `${size / 100} mL`}
+                active={syringe === size}
+                onPress={() => setSyringe(size)}
+              />
+            ))}
+          </View>
           {gauge ? (
-            <UnitGauge units={gauge.units} ml={gauge.ml} massLabel={gauge.massLabel} />
+            <UnitGauge units={gauge.units} ml={gauge.ml} massLabel={gauge.massLabel} fixedScale={syringe === 'auto' ? undefined : syringe} />
           ) : (
             <View style={[s.resultPanel, { marginTop: 14 }]}>
               <Text style={s.resultEmpty}>{t('tools.gauge.empty')}</Text>
@@ -724,10 +747,10 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
 // Horizontal unit-scale gauge: a left-to-right fill with a ruler of tick marks
 // underneath, read the same way as the printed scale on a barrel. Drawn
 // entirely with views — deliberately NOT a syringe illustration.
-function UnitGauge({ units, ml, massLabel }: { units: number; ml: number; massLabel: string }) {
+function UnitGauge({ units, ml, massLabel, fixedScale }: { units: number; ml: number; massLabel: string; fixedScale?: number }) {
   const { t } = useI18n();
-  const over = units > 100;
-  const scale = GAUGE_SCALES.find(max => units <= max) ?? 100;
+  const scale = fixedScale ?? GAUGE_SCALES.find(max => units <= max) ?? 100;
+  const over = units > scale;
   const pct = Math.max(0.005, Math.min(1, units / scale));
   const majorStep = scale === 100 ? 20 : 10;
   const minorStep = scale === 100 ? 10 : 5;
@@ -761,7 +784,11 @@ function UnitGauge({ units, ml, massLabel }: { units: number; ml: number; massLa
         })}
       </View>
       <Text style={s.gaugeScaleCaption}>{t('tools.gauge.scaleCaption', { scale })}</Text>
-      {over && <Text style={s.gaugeOverText}>{t('tools.gauge.over')}</Text>}
+      {over && (
+        <Text style={s.gaugeOverText}>
+          {fixedScale ? t('tools.gauge.overSyringe', { scale, ml: scale / 100 }) : t('tools.gauge.over')}
+        </Text>
+      )}
     </View>
   );
 }

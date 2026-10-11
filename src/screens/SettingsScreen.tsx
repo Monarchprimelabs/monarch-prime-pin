@@ -17,6 +17,7 @@ import { THEMES, ThemeId, getTheme, setThemeSetting } from '../theme';
 import { Language, useI18n } from '../lib/i18n';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { cancelAllLocalReminders } from '../lib/notifications';
+import { SUPABASE_CONFIGURED } from '../lib/supabase';
 import { UpgradeScreen } from './UpgradeScreen';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
@@ -129,15 +130,19 @@ function RemindersTab() {
       t('settings.backupWarnBody'),
       [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('settings.backupWarnGo'), onPress: runBackupExport },
+        { text: t('settings.backupWithPhotos'), onPress: () => runBackupExport(true) },
+        { text: t('settings.backupNoPhotos'), onPress: () => runBackupExport(false) },
       ],
     );
   };
 
-  const runBackupExport = async () => {
+  const runBackupExport = async (includePhotos: boolean) => {
     setBackupBusy(true);
     try {
-      await exportBackup();
+      const counts = await exportBackup({ includePhotos });
+      if (counts.photosSkipped > 0) {
+        Alert.alert(t('settings.backupPhotosCappedTitle'), t('settings.backupPhotosCappedBody', { kept: counts.photos, skipped: counts.photosSkipped }));
+      }
     } catch (error: any) {
       Alert.alert(t('settings.backupFailedTitle'), error?.message || t('common.tryAgain'));
     } finally {
@@ -160,6 +165,8 @@ function RemindersTab() {
           sch: counts.schedules,
           inv: counts.inventory,
           tpl: counts.templates,
+          pro: counts.protocols,
+          pho: counts.photos,
         }),
         [
           { text: t('common.cancel'), style: 'cancel' },
@@ -210,6 +217,8 @@ function RemindersTab() {
     ]);
   };
 
+  // Two steps: what goes, then a last confirmation. The Pro purchase is
+  // stored separately and survives (it also restores from the App Store).
   const confirmDeleteAccount = () => {
     Alert.alert(
       t('settings.deleteConfirmTitle'),
@@ -217,17 +226,32 @@ function RemindersTab() {
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: t('common.delete'),
+          text: t('settings.deleteContinue'),
           style: 'destructive',
-          onPress: async () => {
-            await cancelAllLocalReminders();
-            await clearLocalData();
-            await signOut();
-          },
+          onPress: () => Alert.alert(
+            t('settings.deleteFinalTitle'),
+            t('settings.deleteFinalBody'),
+            [
+              { text: t('common.cancel'), style: 'cancel' },
+              {
+                text: t('settings.deleteFinalGo'),
+                style: 'destructive',
+                onPress: async () => {
+                  await cancelAllLocalReminders();
+                  await clearLocalData();
+                  await signOut();
+                },
+              },
+            ],
+          ),
         },
       ]
     );
   };
+  // With no cloud account, signing out only hides the same on-device data
+  // behind the welcome screen, so it's offered only for real accounts and
+  // the developer bypass.
+  const canSignOut = !!user && (user.isDeveloper || (SUPABASE_CONFIGURED && !user.isGuest));
 
   return (
     <>
@@ -382,9 +406,11 @@ function RemindersTab() {
       </Card>
 
       <View style={{ paddingHorizontal: spacing.xl }}>
-        <Pressable style={s.signOutBtn} onPress={confirmSignOut}>
-          <Text style={s.signOutText}>{t('settings.signOut')}</Text>
-        </Pressable>
+        {canSignOut && (
+          <Pressable style={s.signOutBtn} onPress={confirmSignOut}>
+            <Text style={s.signOutText}>{t('settings.signOut')}</Text>
+          </Pressable>
+        )}
 
         <Pressable style={s.deleteBtn} onPress={confirmDeleteAccount}>
           <Text style={s.deleteBtnText}>{t('settings.deleteAccount')}</Text>
