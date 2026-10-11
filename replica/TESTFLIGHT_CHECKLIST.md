@@ -105,8 +105,19 @@ Tick each box. If something fails, note the step number and take a screenshot.
 - [ ] 11.8 Turn the card off. Reports goes back to "Weights from your log entries".
 - [ ] 11.9 Build check (AUDIT_CHECKLIST §7): the .ipa's entitlements include `com.apple.developer.healthkit`.
 
-## 12. Looks
+## 12. TestFlight feedback round 1 (PR "tf-feedback-1")
 
-- [ ] 12.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
-- [ ] 12.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
-- [ ] 12.3 The top banner sits below the status bar on the new modals.
+- [ ] 12.1 Home has no "Log Review" card; "Last Injection" with Log Again is still there.
+- [ ] 12.2 The site heat map has the 7d / 30d / 90d / All buttons and no scrub bar.
+- [ ] 12.3 Leave the app in the background overnight, then open it. The heat map colors have moved a step toward "Rested" without switching tabs.
+- [ ] 12.4 New Protocol and Add a Vial: the compound field opens the searchable list (singles, blends, Custom name). It's the same list as the log screen.
+- [ ] 12.5 Protocols > Send a Test Reminder: lock the phone. A "Protocol reminder" arrives in about 5 seconds.
+- [ ] 12.6 Apple Health on (it asks once more, for Steps): Home shows "👟 N steps today". Reports has a Steps card with 14 bars and 7- and 30-day averages.
+- [ ] 12.7 Tools on a fresh install shows no Schedule, Inventory or Record Templates. On a phone that already has entries in them, they appear under "Older tools". The log screen's "Use Record Template" shows only if templates exist.
+- [ ] 12.8 Share your progress: the new navy card in Story, Post and Square. Share the Story to Instagram and check it fills the frame sharply.
+
+## 13. Looks
+
+- [ ] 13.1 Every new screen in **light and dark** themes: Protocols, the builder, Vials, the vial form and Today's plan. Text is readable and the switches are visible when off.
+- [ ] 13.2 Spanish and Portuguese: no cut-off labels on the frequency chips, week strip or vial card.
+- [ ] 13.3 The top banner sits below the status bar on the new modals.

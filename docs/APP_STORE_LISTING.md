@@ -53,7 +53,7 @@ VIALS
 REPORTS AND TOOLS
 • Weekly and monthly summaries, site usage and weight trend
 • Concentration worksheet with syringe sizes: unit conversion on the numbers you enter
-• Optional Apple Health: read your weight and body fat (read-only)
+• Optional Apple Health: read your weight, body fat and steps (read-only)
 • Export every record to CSV, or back up everything (photos included) to a file you keep
 
 PRICING
@@ -68,7 +68,7 @@ Monarch Prime Pin is a personal log for adults. It does not give medical advice,
 • Today's plan: log or skip planned entries, see your week
 • Vials: what's left and how far it covers your plan
 • See when each site was last logged
-• Optional Apple Health weight and body fat (read-only)
+• Optional Apple Health weight, body fat and steps (read-only)
 • Photos are now kept safely through app updates, and backups can include them
 • CSV export includes plans, vials and skipped entries
 • Syringe sizes in the concentration worksheet
@@ -212,7 +212,7 @@ VIALES
 REPORTES Y HERRAMIENTAS
 • Resúmenes semanales y mensuales, uso de sitios y tendencia de peso
 • Hoja de concentración con tamaños de jeringa: conversión de unidades con los números que ingresas
-• Apple Salud opcional: lee tu peso y grasa corporal (solo lectura)
+• Apple Salud opcional: lee tu peso, grasa corporal y pasos (solo lectura)
 • Exporta todos tus registros a CSV o respalda todo (fotos incluidas) en un archivo que tú guardas
 
 PRECIO
@@ -227,7 +227,7 @@ Monarch Prime Pin es un registro personal para adultos. No da consejo médico y 
 • Plan de hoy: registra u omite entradas planificadas y ve tu semana
 • Viales: lo que queda y hasta cuándo cubre tu plan
 • Ve cuándo registraste cada sitio por última vez
-• Peso y grasa corporal de Apple Salud, opcional (solo lectura)
+• Peso, grasa corporal y pasos de Apple Salud, opcional (solo lectura)
 • Las fotos ahora se conservan con las actualizaciones y los respaldos pueden incluirlas
 • La exportación CSV incluye planes, viales y entradas omitidas
 • Tamaños de jeringa en la hoja de concentración
@@ -287,7 +287,7 @@ FRASCOS
 RELATÓRIOS E FERRAMENTAS
 • Resumos semanais e mensais, uso de locais e tendência de peso
 • Planilha de concentração com tamanhos de seringa: conversão de unidades com os números que você informa
-• Apple Saúde opcional: leia seu peso e gordura corporal (somente leitura)
+• Apple Saúde opcional: leia seu peso, gordura corporal e passos (somente leitura)
 • Exporte todos os registros em CSV ou faça backup de tudo (com fotos) em um arquivo que você guarda
 
 PREÇO
@@ -302,7 +302,7 @@ O Monarch Prime Pin é um registro pessoal para adultos. Ele não oferece aconse
 • Plano de hoje: registre ou pule entradas planejadas e veja sua semana
 • Frascos: o que resta e até quando cobre seu plano
 • Veja quando cada local foi registrado por último
-• Peso e gordura corporal do Apple Saúde, opcional (somente leitura)
+• Peso, gordura corporal e passos do Apple Saúde, opcional (somente leitura)
 • As fotos agora são mantidas nas atualizações e os backups podem incluí-las
 • A exportação CSV inclui planos, frascos e entradas puladas
 • Tamanhos de seringa na planilha de concentração

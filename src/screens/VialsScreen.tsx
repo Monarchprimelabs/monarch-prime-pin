@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Card, CardLabel, Disclaimer } from '../components/UI';
 import { kit, ShellHeader } from '../components/FormKit';
+import { CompoundField } from '../components/CompoundField';
 import { colors, radius } from '../theme';
 import { Injection } from '../data/peptides';
 import { useI18n } from '../lib/i18n';
@@ -17,7 +18,7 @@ import { addDays } from '../lib/schedule/days';
 import { DoseSkip, Protocol } from '../lib/schedule/types';
 import { concentration, formatVialAmount, projectVial, toVialTotal, VialProjection } from '../lib/vials/math';
 import { Vial, VialAmountUnit } from '../lib/vials/types';
-import { COMPOUND_NAMES, formatDay } from './ProtocolsScreen';
+import { formatDay } from './ProtocolsScreen';
 
 const AMOUNT_UNITS: VialAmountUnit[] = ['mg', 'mcg', 'IU'];
 const toNumber = (value: string) => Number(String(value).replace(',', '.'));
@@ -213,10 +214,6 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
   const [picker, setPicker] = useState<'opened' | 'expires' | null>(null);
 
   const stock = inventory.filter(item => item.quantity > 0 || item.id === initial?.inventoryItemId);
-  const matches = useMemo(() => {
-    const q = label.trim().toLowerCase();
-    return q ? COMPOUND_NAMES.filter(n => n.toLowerCase().includes(q) && n !== label).slice(0, 6) : [];
-  }, [label]);
 
   const save = async () => {
     const total = toNumber(amount);
@@ -282,16 +279,12 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Card>
           <CardLabel icon="◆">{t('vial.label')}</CardLabel>
-          <TextInput value={label} onChangeText={setLabel} placeholder={t('proto.compoundPh')} placeholderTextColor={colors.textFaint} style={s.input} />
-          {matches.length > 0 && (
-            <View style={s.chipWrap}>
-              {matches.map(name => (
-                <Pressable key={name} style={s.chip} onPress={() => setLabel(name)} accessibilityRole="button">
-                  <Text style={s.chipText}>{name}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+          <CompoundField
+            value={label}
+            placeholder={t('proto.compoundPh')}
+            accessibilityLabel={t('vial.label')}
+            onChange={picked => setLabel(picked.name)}
+          />
         </Card>
         <Card>
           <CardLabel icon="▱">{t('vial.contents')}</CardLabel>

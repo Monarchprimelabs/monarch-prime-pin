@@ -116,6 +116,36 @@ async function runSync({ askPermission }: { askPermission?: boolean }): Promise<
 }
 
 /** Calls back with the occurrence key when the user taps a protocol reminder. */
+/**
+ * Fire one reminder in a few seconds, with the same channel and wording as
+ * real ones, so the user can check notifications reach their lock screen.
+ */
+export async function sendTestReminder(seconds = 5): Promise<'sent' | 'denied'> {
+  let permission = await Notifications.getPermissionsAsync();
+  if (!permission.granted && permission.canAskAgain) permission = await Notifications.requestPermissionsAsync();
+  if (!permission.granted) return 'denied';
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+      name: translateNow('proto.channelName'),
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+  }
+  const at = new Date(Date.now() + seconds * 1000);
+  await Notifications.scheduleNotificationAsync({
+    identifier: 'mpp-protocol|test',
+    content: {
+      title: translateNow('proto.notifTitle'),
+      body: translateNow('proto.notifBody', { time: formatClockTime(`${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`) }),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: at,
+      channelId: Platform.OS === 'android' ? CHANNEL_ID : undefined,
+    },
+  });
+  return 'sent';
+}
+
 const handledResponses = new Set<string>();
 
 export function onProtocolReminderTap(handler: (occurrenceKey: string) => void): () => void {
