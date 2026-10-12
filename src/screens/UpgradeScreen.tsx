@@ -135,6 +135,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
             t('upgrade.free2', { max: FREE_INJECTION_LIMIT }),
             t('upgrade.free3'),
             t('upgrade.free4'),
+            t('upgrade.free5'),
           ].map(item => <Feature key={item} text={item} />)}
         </Card>
 

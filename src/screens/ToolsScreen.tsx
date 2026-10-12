@@ -40,7 +40,8 @@ type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | '
 const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
-  { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent, pro: true },
+  // One active protocol is free (src/lib/freeTier.ts); the tool enforces it.
+  { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent },
   { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary, pro: true },
   { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary, pro: true },
   { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent, pro: true },
@@ -129,6 +130,7 @@ export function ToolsScreen() {
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
                 {!!tool.pro && !canUsePro && <Text style={s.proBadge}>PRO</Text>}
+                {tool.id === 'protocols' && !canUsePro && <Text style={s.freeBadge}>{t('tools.oneFree')}</Text>}
               </View>
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
             </View>
@@ -137,7 +139,7 @@ export function ToolsScreen() {
         ))}
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
-        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
+        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} canUsePro={canUsePro} onUpgrade={() => setActive('upgrade')} />}
         {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
         {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
@@ -892,6 +894,7 @@ const s = StyleSheet.create({
   },
   toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  freeBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   proBadge: { color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.accent, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   toolSub: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   chev: { color: colors.primary, fontSize: 25, marginLeft: 8 },

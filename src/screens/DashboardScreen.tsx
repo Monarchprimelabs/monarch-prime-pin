@@ -182,7 +182,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
     if (!pendingOccurrenceKey) return;
     const parsed = parseOccurrenceKey(pendingOccurrenceKey);
     onPendingHandled?.();
-    if (!parsed || !canUsePro) return;
+    if (!parsed) return;
     Promise.all([loadPlan(), getInjections()]).then(([plan, records]) => {
       const view = withStatus(
         occurrencesBetween(plan.protocols.filter(p => p.id === parsed.protocolId), parsed.date, parsed.date),
@@ -191,7 +191,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       if (view && (view.status === 'planned' || view.status === 'notLogged')) setPlannedLog(toPlannedDose(view));
     }).catch(() => undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingOccurrenceKey, canUsePro]);
+  }, [pendingOccurrenceKey]);
 
   const freeTrialActive = monetizationEnabled && !canUsePro;
   const freeLogsRemaining = Math.max(0, FREE_INJECTION_LIMIT - stats.total);
@@ -211,15 +211,14 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
           <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
         </View>
 
-        {canUsePro && (
-          <TodayPlan
-            injections={injections}
-            refreshToken={planToken}
-            onLog={setPlannedLog}
-            onOpenRecord={setEditRecord}
-            onSetup={() => setProtocolsOpen(true)}
-          />
-        )}
+        {/* Free users get the Today plan too: one protocol is free. */}
+        <TodayPlan
+          injections={injections}
+          refreshToken={planToken}
+          onLog={setPlannedLog}
+          onOpenRecord={setEditRecord}
+          onSetup={() => setProtocolsOpen(true)}
+        />
 
         {stepsToday !== null && (
           <Text style={s.milestoneLine}>{t('health.stepsTodayLine', { n: stepsToday.toLocaleString(dateLocale) })}</Text>
@@ -371,7 +370,11 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </SafeAreaProvider></Modal>
 
       <Modal visible={protocolsOpen} animationType="slide" onRequestClose={() => { setProtocolsOpen(false); refresh(); }}><SafeAreaProvider>
-        <ProtocolsTool onClose={() => { setProtocolsOpen(false); refresh(); }} />
+        <ProtocolsTool
+          onClose={() => { setProtocolsOpen(false); refresh(); }}
+          canUsePro={canUsePro}
+          onUpgrade={() => { setProtocolsOpen(false); onNavigate('analytics'); }}
+        />
       </SafeAreaProvider></Modal>
 
       <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>

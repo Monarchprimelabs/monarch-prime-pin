@@ -15,6 +15,7 @@ import { deleteProtocol, getProtocols, getVials, newProtocolId, saveProtocol } f
 import type { Vial } from '../lib/vials/types';
 import { sendTestReminder, syncProtocolReminders } from '../lib/protocolReminders';
 import { endProtocol, revisionOn, reviseProtocol } from '../lib/schedule/engine';
+import { canStartProtocol } from '../lib/freeTier';
 import { addDays } from '../lib/schedule/days';
 import {
   Cycle, DOSE_UNITS, DoseUnit, Frequency, Protocol, ProtocolRevision, Weekday,
@@ -75,7 +76,15 @@ function toTimeString(value: Date): string {
 // ============================================================
 // PROTOCOL LIST (S13)
 // ============================================================
-export function ProtocolsTool({ onClose }: { onClose: () => void }) {
+type ProtocolsToolProps = {
+  onClose: () => void;
+  /** False on the free plan, which allows one active protocol. */
+  canUsePro?: boolean;
+  /** Opens the Lifetime Pro screen when a free user starts a second protocol. */
+  onUpgrade?: () => void;
+};
+
+export function ProtocolsTool({ onClose, canUsePro = true, onUpgrade }: ProtocolsToolProps) {
   const { t, dateLocale } = useI18n();
   const [items, setItems] = useState<Protocol[]>([]);
   const [editing, setEditing] = useState<Protocol | 'new' | null>(null);
@@ -86,6 +95,17 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
   const today = localDateISO();
   const active = items.filter(p => p.status === 'active');
   const ended = items.filter(p => p.status === 'ended');
+
+  const startNew = () => {
+    if (canStartProtocol(active.length, canUsePro)) {
+      setEditing('new');
+      return;
+    }
+    Alert.alert(t('proto.freeLimitTitle'), t('proto.freeLimitBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      ...(onUpgrade ? [{ text: t('proto.seePro'), onPress: onUpgrade }] : []),
+    ]);
+  };
 
   const confirmEnd = (protocol: Protocol) => {
     Alert.alert(t('proto.endTitle'), t('proto.endBody', { name: protocol.compound }), [
@@ -175,9 +195,10 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
       <ScrollView contentContainerStyle={s.scrollContent}>
         <View style={s.notice}><Text style={s.noticeText}>{t('proto.notice')}</Text></View>
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
-          <Pressable style={s.primaryBtn} onPress={() => setEditing('new')} accessibilityRole="button">
+          <Pressable style={s.primaryBtn} onPress={startNew} accessibilityRole="button">
             <Text style={s.primaryBtnText}>{t('proto.new')}</Text>
           </Pressable>
+          {!canUsePro && <Text style={s.freeNote}>{t('proto.freeNote')}</Text>}
           <Pressable
             style={s.testBtn}
             accessibilityRole="button"
@@ -580,6 +601,7 @@ function NumberRow({ label, value, setValue }: { label: string; value: string; s
 }
 
 const s = { ...kit, ...StyleSheet.create({
+  freeNote: { color: colors.textMuted, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 8 },
   testBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   testBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 },
