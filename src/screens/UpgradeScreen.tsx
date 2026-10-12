@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
@@ -155,7 +155,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
           )}
           {!hasPro && monetizationEnabled && (
             <Text style={s.purchaseFootnote}>
-              {t('upgrade.footnote')}
+              {t(Platform.OS === 'android' ? 'upgrade.footnoteAndroid' : 'upgrade.footnote')}
             </Text>
           )}
           {!monetizationEnabled && (
@@ -170,7 +170,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
             disabled={working}
             onPress={() => run(async () => {
               const restored = await restorePurchases();
-              if (!restored) throw new Error(t('upgrade.noPurchase'));
+              if (!restored) throw new Error(t(Platform.OS === 'android' ? 'upgrade.noPurchaseAndroid' : 'upgrade.noPurchase'));
             }, t('upgrade.restoredBody'))}
           >
             <Text style={s.restoreText}>{t('upgrade.restore')}</Text>
