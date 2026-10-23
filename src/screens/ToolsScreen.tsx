@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, UIManager, View,
+  Alert, LayoutAnimation, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, UIManager, View,
 } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -106,7 +107,7 @@ export function ToolsScreen() {
   };
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <Header title={t('tools.title')} subtitle={t('tools.subtitle')} />
       <ScrollView contentContainerStyle={s.pageContent}>

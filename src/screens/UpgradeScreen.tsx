@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
@@ -95,7 +96,7 @@ export function UpgradeScreen({ onClose }: { onClose?: () => void }) {
   const price = product?.displayPrice || LIFETIME_PRO_PRICE_LABEL;
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         <Header title="Monarch Pro" subtitle={t('upgrade.subtitle', { price })} />

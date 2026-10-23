@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Alert, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Card, CardLabel, Disclaimer } from '../components/UI';

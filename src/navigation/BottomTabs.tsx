@@ -178,7 +178,8 @@ const s = StyleSheet.create({
   tabBarSafe: {
     backgroundColor: 'transparent',
   },
-  tabBar: {
+  // On wide windows the five tabs stay grouped in the middle, under the centred log button.
+  tabBar: { width: '100%', maxWidth: 560, alignSelf: 'center',
     flexDirection: 'row',
     paddingVertical: 8,
     paddingHorizontal: 4,

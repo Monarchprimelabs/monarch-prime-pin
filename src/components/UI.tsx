@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { colors, spacing, radius, fonts, withAlpha } from '../theme';
 import { useI18n } from '../lib/i18n';
+import { READABLE_MAX_WIDTH, WIDE_MAX_WIDTH, useWideLayout } from '../lib/layout';
 
 const SYMBOL: number = require('../../assets/logo-symbol.png');
 const FULL_LOGO: number = require('../../assets/logo-full.png');
@@ -46,9 +47,18 @@ export function BrandMark({ large }: { large?: boolean }) {
 // ============================================================
 // Header — avatar logo + title + subtitle
 // ============================================================
-export function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+export function Header({ title, subtitle, columns = 'one' }: {
+  title: string;
+  subtitle?: string;
+  /** Matches the screen's content width on wide windows, so the title lines up with it. */
+  columns?: 'one' | 'two';
+}) {
+  const wide = useWideLayout();
+  const align = wide
+    ? { width: '100%' as const, maxWidth: columns === 'two' ? WIDE_MAX_WIDTH : READABLE_MAX_WIDTH, alignSelf: 'center' as const }
+    : undefined;
   return (
-    <View style={s.header}>
+    <View style={[s.header, align]}>
       <View style={s.avatar}>
         <BrandMark />
       </View>

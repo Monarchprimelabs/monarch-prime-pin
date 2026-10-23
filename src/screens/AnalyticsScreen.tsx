@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Alert, Pressable, Share, View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, View, Text, StyleSheet } from 'react-native';
+import { TwoColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Circle as SvgCircle, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import * as Print from 'expo-print';
@@ -16,6 +18,7 @@ import { useI18n } from '../lib/i18n';
 import { HealthPoint, readHealthBodyFat, readHealthSteps, readHealthWeights } from '../lib/health';
 
 export function AnalyticsScreen() {
+  const wide = useWideLayout();
   const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
@@ -235,245 +238,491 @@ export function AnalyticsScreen() {
   };
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
-      <Header title={t('reports.title')} subtitle={t('reports.subtitle')} />
+      <Header columns="two" title={t('reports.title')} subtitle={t('reports.subtitle')} />
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
-        <Card>
-          <CardLabel icon="📄">{t('reports.monthlyLabel')}</CardLabel>
-          <Text style={s.reportMonth}>{monthLabel}</Text>
-          <View style={s.reportGrid}>
-            <SummaryStat label={t('reports.savedRecords')} value={monthRecords.length} />
-            <SummaryStat label={t('reports.recordDays')} value={monthDays} />
-            <SummaryStat label={t('reports.siteSelections')} value={monthSites} />
-          </View>
-          <Text style={s.reportLine}>{t('reports.mostRecorded', { value: monthTop ? `${monthTop[0]} (${monthTop[1]})` : t('reports.noneThisMonth') })}</Text>
-          <Pressable style={s.shareBtn} onPress={shareReport} accessibilityRole="button" accessibilityLabel="Share monthly record summary">
-            <Text style={s.shareBtnText}>{t('reports.share')}</Text>
-          </Pressable>
-          <Pressable
-            style={[s.pdfBtn, buildingPdf && { opacity: 0.5 }]}
-            disabled={buildingPdf}
-            onPress={sharePdfReport}
-            accessibilityRole="button"
-            accessibilityLabel="Share monthly summary as PDF"
-          >
-            <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : t('reports.sharePdf')}</Text>
-          </Pressable>
-        </Card>
-        <Card>
-          <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
-          <Text style={s.sub}>{t('reports.last8')}</Text>
-          <View style={s.barChart}>
-            {weeks.map((v, i) => (
-              <View key={i} style={s.barCol}>
-                <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
-                <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
-              </View>
-            ))}
-          </View>
-        </Card>
-
-        <Card>
-          <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
-          {weightSeries.length === 0 ? (
-            <Text style={s.empty}>{t('reports.noWeight')}</Text>
-          ) : !weightChart ? (
-            <Text style={s.empty}>
-              {t('reports.weightLatestOnly', { w: weightSeries[0].weight })}
-            </Text>
-          ) : (
-            <>
-              <View style={s.weightSummaryRow}>
-                <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
-                <Text style={s.weightDelta}>
-                  {weightChart.last !== weightChart.first
-                    ? t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })
-                    : weightChart.max > weightChart.min
-                      ? t('reports.weightRanged', { min: weightChart.min, max: weightChart.max })
-                      : t('reports.weightNoChange')}
-                </Text>
-              </View>
-              <Svg viewBox="0 0 200 60" width="100%" height={90}>
-                <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{weightChart.max}</SvgText>
-                <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{weightChart.min}</SvgText>
-                <Polyline
-                  points={weightChart.polyline}
-                  fill="none"
-                  stroke={colors.primary}
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-                {weightChart.points.map((point, index) => (
-                  <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.primary} />
-                ))}
-              </Svg>
-              <Text style={s.weightRangeNote}>
-                {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
-              </Text>
-            </>
-          )}
-          {weightSeries.length > 0 && (
-            <Text style={s.weightRangeNote}>{t(weightFromHealth ? 'health.sourceHealth' : 'health.sourceLog')}</Text>
-          )}
-          {!!healthBodyFat && (
-            <Text style={s.weightRangeNote}>
-              {t('health.bodyFatLatest', { v: healthBodyFat.value, date: parseLocalDay(healthBodyFat.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
-            </Text>
-          )}
-        </Card>
-
-        {healthSteps.length > 0 && (() => {
-          // Last 14 days as bars, today on the right; days without data stay empty.
-          const byDate = new Map(healthSteps.map(point => [point.date, point.value]));
-          const days = Array.from({ length: 14 }, (_, i) => {
-            const d = new Date(); d.setDate(d.getDate() - (13 - i));
-            return localDateISO(d);
-          });
-          const values = days.map(day => byDate.get(day) ?? 0);
-          const max = Math.max(...values, 1);
-          const today = byDate.get(localDateISO()) ?? 0;
-          const recent = healthSteps.slice(-7);
-          const avg7 = recent.length ? Math.round(recent.reduce((sum, p) => sum + p.value, 0) / recent.length) : 0;
-          const avg30 = Math.round(healthSteps.reduce((sum, p) => sum + p.value, 0) / healthSteps.length);
-          const fmt = (n: number) => n.toLocaleString(dateLocale);
-          return (
-            <Card>
-              <CardLabel icon="👟">{t('health.stepsLabel')}</CardLabel>
-              <View style={s.weightSummaryRow}>
-                <Text style={s.weightLatest}>{fmt(today)}</Text>
-                <Text style={s.weightDelta}>{t('health.stepsToday')}</Text>
-              </View>
-              <Svg viewBox="0 0 200 50" width="100%" height={70}>
-                {values.map((value, index) => {
-                  const h = Math.max(value > 0 ? 1.5 : 0, (value / max) * 42);
-                  return (
-                    <Rect
-                      key={days[index]}
-                      x={4 + index * 14}
-                      y={46 - h}
-                      width={9}
-                      height={h}
-                      rx={2}
-                      fill={index === 13 ? colors.accentLight : colors.primary}
-                      opacity={value > 0 ? 1 : 0.2}
-                    />
-                  );
-                })}
-              </Svg>
-              <Text style={s.weightRangeNote}>
-                {t('health.stepsAverages', { a7: fmt(avg7), a30: fmt(avg30) })}
-              </Text>
-              <Text style={s.weightRangeNote}>{t('health.stepsSource')}</Text>
-            </Card>
-          );
-        })()}
-
-        <Card>
-          <CardLabel icon="💊">{t('reports.topPeptides')}</CardLabel>
-          {peptideRanks.length === 0 ? (
-            <Text style={s.empty}>{t('reports.noPeptides')}</Text>
-          ) : peptideRanks.map(p => (
-            <View key={p.name} style={s.rankRow}>
-              <Text style={s.rankName} numberOfLines={1}>{p.name}</Text>
-              <View style={s.rankBarWrap}>
-                <View style={[s.rankBar, { width: `${(p.count / maxPept) * 100}%` }]} />
-              </View>
-              <Text style={s.rankCount}>{p.count}</Text>
-            </View>
-          ))}
-        </Card>
-
-        {compoundOptions.length > 0 && (
-          <Card>
-            <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
-            <View style={s.chipRow}>
-              {compoundOptions.map(name => (
-                <Pressable
-                  key={name}
-                  onPress={() => setDoseCompound(name)}
-                  style={[s.chip, activeCompound === name && s.chipActive]}
-                >
-                  <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
+        {wide ? (
+          <TwoColumn
+            left={<>
+              <Card>
+                <CardLabel icon="📄">{t('reports.monthlyLabel')}</CardLabel>
+                <Text style={s.reportMonth}>{monthLabel}</Text>
+                <View style={s.reportGrid}>
+                  <SummaryStat label={t('reports.savedRecords')} value={monthRecords.length} />
+                  <SummaryStat label={t('reports.recordDays')} value={monthDays} />
+                  <SummaryStat label={t('reports.siteSelections')} value={monthSites} />
+                </View>
+                <Text style={s.reportLine}>{t('reports.mostRecorded', { value: monthTop ? `${monthTop[0]} (${monthTop[1]})` : t('reports.noneThisMonth') })}</Text>
+                <Pressable style={s.shareBtn} onPress={shareReport} accessibilityRole="button" accessibilityLabel="Share monthly record summary">
+                  <Text style={s.shareBtnText}>{t('reports.share')}</Text>
                 </Pressable>
-              ))}
-            </View>
-            {!doseChart || doseChart.count === 0 ? (
-              <Text style={s.empty}>{t('reports.noDoses')}</Text>
-            ) : !doseChart.points ? (
-              <Text style={s.empty}>
-                {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
-              </Text>
-            ) : (
-              <>
-                <View style={s.weightSummaryRow}>
-                  <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
-                  <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
-                </View>
-                <Svg viewBox="0 0 200 60" width="100%" height={90}>
-                  <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                  <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                  <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
-                  <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
-                  <Polyline
-                    points={doseChart.polyline}
-                    fill="none"
-                    stroke={colors.teal}
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                  {doseChart.points.map((point, index) => (
-                    <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
+                <Pressable
+                  style={[s.pdfBtn, buildingPdf && { opacity: 0.5 }]}
+                  disabled={buildingPdf}
+                  onPress={sharePdfReport}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share monthly summary as PDF"
+                >
+                  <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : t('reports.sharePdf')}</Text>
+                </Pressable>
+              </Card>
+              <Card>
+                <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
+                <Text style={s.sub}>{t('reports.last8')}</Text>
+                <View style={s.barChart}>
+                  {weeks.map((v, i) => (
+                    <View key={i} style={s.barCol}>
+                      <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
+                      <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
+                    </View>
                   ))}
-                </Svg>
-                <Text style={s.weightRangeNote}>
-                  {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
-                </Text>
-              </>
-            )}
-          </Card>
-        )}
-
-        {symptomRanks.length > 0 && (
-          <Card>
-            <CardLabel icon="📋">{t('reports.symptomsLabel')}</CardLabel>
-            <Text style={s.sub}>{t('reports.symptomsSub')}</Text>
-            {symptomRanks.map(rank => (
-              <View key={rank.name} style={s.rankRow}>
-                <Text style={s.rankName} numberOfLines={1}>{t('symptom.' + rank.name)}</Text>
-                <View style={s.rankBarWrap}>
-                  <View style={[s.rankBar, { width: `${(rank.count / maxSymptom) * 100}%`, backgroundColor: colors.accent }]} />
                 </View>
-                <Text style={s.rankCount}>{rank.count}</Text>
-              </View>
-            ))}
-          </Card>
-        )}
+              </Card>
 
-        <Card>
-          <CardLabel icon="📍">{t('reports.siteUsage')}</CardLabel>
-          <View style={s.siteGrid}>
-            {siteUsage.map(({ id, name, count, band }) => (
-              <View
-                key={id}
-                style={[
-                  s.siteCell,
-                  band !== 'clear' && {
-                    borderColor: heatColors[band].ring,
-                    backgroundColor: `${heatColors[band].dot}26`,
-                  },
-                ]}
-              >
-                <Text style={s.siteCellName}>{t('zoneShort.' + id)}</Text>
-                <Text style={[s.siteCellCount, count > 0 && { color: colors.white }]}>{count}</Text>
+              <Card>
+                <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
+                {weightSeries.length === 0 ? (
+                  <Text style={s.empty}>{t('reports.noWeight')}</Text>
+                ) : !weightChart ? (
+                  <Text style={s.empty}>
+                    {t('reports.weightLatestOnly', { w: weightSeries[0].weight })}
+                  </Text>
+                ) : (
+                  <>
+                    <View style={s.weightSummaryRow}>
+                      <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
+                      <Text style={s.weightDelta}>
+                        {weightChart.last !== weightChart.first
+                          ? t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })
+                          : weightChart.max > weightChart.min
+                            ? t('reports.weightRanged', { min: weightChart.min, max: weightChart.max })
+                            : t('reports.weightNoChange')}
+                      </Text>
+                    </View>
+                    <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                      <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                      <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                      <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{weightChart.max}</SvgText>
+                      <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{weightChart.min}</SvgText>
+                      <Polyline
+                        points={weightChart.polyline}
+                        fill="none"
+                        stroke={colors.primary}
+                        strokeWidth="1.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                      {weightChart.points.map((point, index) => (
+                        <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.primary} />
+                      ))}
+                    </Svg>
+                    <Text style={s.weightRangeNote}>
+                      {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
+                    </Text>
+                  </>
+                )}
+                {weightSeries.length > 0 && (
+                  <Text style={s.weightRangeNote}>{t(weightFromHealth ? 'health.sourceHealth' : 'health.sourceLog')}</Text>
+                )}
+                {!!healthBodyFat && (
+                  <Text style={s.weightRangeNote}>
+                    {t('health.bodyFatLatest', { v: healthBodyFat.value, date: parseLocalDay(healthBodyFat.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+                  </Text>
+                )}
+              </Card>
+
+            </>}
+            right={<>
+              {healthSteps.length > 0 && (() => {
+                // Last 14 days as bars, today on the right; days without data stay empty.
+                const byDate = new Map(healthSteps.map(point => [point.date, point.value]));
+                const days = Array.from({ length: 14 }, (_, i) => {
+                  const d = new Date(); d.setDate(d.getDate() - (13 - i));
+                  return localDateISO(d);
+                });
+                const values = days.map(day => byDate.get(day) ?? 0);
+                const max = Math.max(...values, 1);
+                const today = byDate.get(localDateISO()) ?? 0;
+                const recent = healthSteps.slice(-7);
+                const avg7 = recent.length ? Math.round(recent.reduce((sum, p) => sum + p.value, 0) / recent.length) : 0;
+                const avg30 = Math.round(healthSteps.reduce((sum, p) => sum + p.value, 0) / healthSteps.length);
+                const fmt = (n: number) => n.toLocaleString(dateLocale);
+                return (
+                  <Card>
+                    <CardLabel icon="👟">{t('health.stepsLabel')}</CardLabel>
+                    <View style={s.weightSummaryRow}>
+                      <Text style={s.weightLatest}>{fmt(today)}</Text>
+                      <Text style={s.weightDelta}>{t('health.stepsToday')}</Text>
+                    </View>
+                    <Svg viewBox="0 0 200 50" width="100%" height={70}>
+                      {values.map((value, index) => {
+                        const h = Math.max(value > 0 ? 1.5 : 0, (value / max) * 42);
+                        return (
+                          <Rect
+                            key={days[index]}
+                            x={4 + index * 14}
+                            y={46 - h}
+                            width={9}
+                            height={h}
+                            rx={2}
+                            fill={index === 13 ? colors.accentLight : colors.primary}
+                            opacity={value > 0 ? 1 : 0.2}
+                          />
+                        );
+                      })}
+                    </Svg>
+                    <Text style={s.weightRangeNote}>
+                      {t('health.stepsAverages', { a7: fmt(avg7), a30: fmt(avg30) })}
+                    </Text>
+                    <Text style={s.weightRangeNote}>{t('health.stepsSource')}</Text>
+                  </Card>
+                );
+              })()}
+
+              <Card>
+                <CardLabel icon="💊">{t('reports.topPeptides')}</CardLabel>
+                {peptideRanks.length === 0 ? (
+                  <Text style={s.empty}>{t('reports.noPeptides')}</Text>
+                ) : peptideRanks.map(p => (
+                  <View key={p.name} style={s.rankRow}>
+                    <Text style={s.rankName} numberOfLines={1}>{p.name}</Text>
+                    <View style={s.rankBarWrap}>
+                      <View style={[s.rankBar, { width: `${(p.count / maxPept) * 100}%` }]} />
+                    </View>
+                    <Text style={s.rankCount}>{p.count}</Text>
+                  </View>
+                ))}
+              </Card>
+
+              {compoundOptions.length > 0 && (
+                <Card>
+                  <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
+                  <View style={s.chipRow}>
+                    {compoundOptions.map(name => (
+                      <Pressable
+                        key={name}
+                        onPress={() => setDoseCompound(name)}
+                        style={[s.chip, activeCompound === name && s.chipActive]}
+                      >
+                        <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {!doseChart || doseChart.count === 0 ? (
+                    <Text style={s.empty}>{t('reports.noDoses')}</Text>
+                  ) : !doseChart.points ? (
+                    <Text style={s.empty}>
+                      {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
+                    </Text>
+                  ) : (
+                    <>
+                      <View style={s.weightSummaryRow}>
+                        <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
+                        <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
+                      </View>
+                      <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                        <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                        <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                        <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
+                        <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
+                        <Polyline
+                          points={doseChart.polyline}
+                          fill="none"
+                          stroke={colors.teal}
+                          strokeWidth="1.5"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {doseChart.points.map((point, index) => (
+                          <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
+                        ))}
+                      </Svg>
+                      <Text style={s.weightRangeNote}>
+                        {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
+                      </Text>
+                    </>
+                  )}
+                </Card>
+              )}
+
+              {symptomRanks.length > 0 && (
+                <Card>
+                  <CardLabel icon="📋">{t('reports.symptomsLabel')}</CardLabel>
+                  <Text style={s.sub}>{t('reports.symptomsSub')}</Text>
+                  {symptomRanks.map(rank => (
+                    <View key={rank.name} style={s.rankRow}>
+                      <Text style={s.rankName} numberOfLines={1}>{t('symptom.' + rank.name)}</Text>
+                      <View style={s.rankBarWrap}>
+                        <View style={[s.rankBar, { width: `${(rank.count / maxSymptom) * 100}%`, backgroundColor: colors.accent }]} />
+                      </View>
+                      <Text style={s.rankCount}>{rank.count}</Text>
+                    </View>
+                  ))}
+                </Card>
+              )}
+
+              <Card>
+                <CardLabel icon="📍">{t('reports.siteUsage')}</CardLabel>
+                <View style={s.siteGrid}>
+                  {siteUsage.map(({ id, name, count, band }) => (
+                    <View
+                      key={id}
+                      style={[
+                        s.siteCell,
+                        band !== 'clear' && {
+                          borderColor: heatColors[band].ring,
+                          backgroundColor: `${heatColors[band].dot}26`,
+                        },
+                      ]}
+                    >
+                      <Text style={s.siteCellName}>{t('zoneShort.' + id)}</Text>
+                      <Text style={[s.siteCellCount, count > 0 && { color: colors.white }]}>{count}</Text>
+                    </View>
+                  ))}
+                </View>
+              </Card>
+            </>}
+          />
+        ) : (
+          <>
+            <Card>
+              <CardLabel icon="📄">{t('reports.monthlyLabel')}</CardLabel>
+              <Text style={s.reportMonth}>{monthLabel}</Text>
+              <View style={s.reportGrid}>
+                <SummaryStat label={t('reports.savedRecords')} value={monthRecords.length} />
+                <SummaryStat label={t('reports.recordDays')} value={monthDays} />
+                <SummaryStat label={t('reports.siteSelections')} value={monthSites} />
               </View>
-            ))}
-          </View>
-        </Card>
+              <Text style={s.reportLine}>{t('reports.mostRecorded', { value: monthTop ? `${monthTop[0]} (${monthTop[1]})` : t('reports.noneThisMonth') })}</Text>
+              <Pressable style={s.shareBtn} onPress={shareReport} accessibilityRole="button" accessibilityLabel="Share monthly record summary">
+                <Text style={s.shareBtnText}>{t('reports.share')}</Text>
+              </Pressable>
+              <Pressable
+                style={[s.pdfBtn, buildingPdf && { opacity: 0.5 }]}
+                disabled={buildingPdf}
+                onPress={sharePdfReport}
+                accessibilityRole="button"
+                accessibilityLabel="Share monthly summary as PDF"
+              >
+                <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : t('reports.sharePdf')}</Text>
+              </Pressable>
+            </Card>
+            <Card>
+              <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
+              <Text style={s.sub}>{t('reports.last8')}</Text>
+              <View style={s.barChart}>
+                {weeks.map((v, i) => (
+                  <View key={i} style={s.barCol}>
+                    <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
+                    <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
+
+            <Card>
+              <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
+              {weightSeries.length === 0 ? (
+                <Text style={s.empty}>{t('reports.noWeight')}</Text>
+              ) : !weightChart ? (
+                <Text style={s.empty}>
+                  {t('reports.weightLatestOnly', { w: weightSeries[0].weight })}
+                </Text>
+              ) : (
+                <>
+                  <View style={s.weightSummaryRow}>
+                    <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
+                    <Text style={s.weightDelta}>
+                      {weightChart.last !== weightChart.first
+                        ? t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })
+                        : weightChart.max > weightChart.min
+                          ? t('reports.weightRanged', { min: weightChart.min, max: weightChart.max })
+                          : t('reports.weightNoChange')}
+                    </Text>
+                  </View>
+                  <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                    <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                    <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                    <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{weightChart.max}</SvgText>
+                    <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{weightChart.min}</SvgText>
+                    <Polyline
+                      points={weightChart.polyline}
+                      fill="none"
+                      stroke={colors.primary}
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    />
+                    {weightChart.points.map((point, index) => (
+                      <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.primary} />
+                    ))}
+                  </Svg>
+                  <Text style={s.weightRangeNote}>
+                    {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
+                  </Text>
+                </>
+              )}
+              {weightSeries.length > 0 && (
+                <Text style={s.weightRangeNote}>{t(weightFromHealth ? 'health.sourceHealth' : 'health.sourceLog')}</Text>
+              )}
+              {!!healthBodyFat && (
+                <Text style={s.weightRangeNote}>
+                  {t('health.bodyFatLatest', { v: healthBodyFat.value, date: parseLocalDay(healthBodyFat.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+                </Text>
+              )}
+            </Card>
+
+            {healthSteps.length > 0 && (() => {
+              // Last 14 days as bars, today on the right; days without data stay empty.
+              const byDate = new Map(healthSteps.map(point => [point.date, point.value]));
+              const days = Array.from({ length: 14 }, (_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - (13 - i));
+                return localDateISO(d);
+              });
+              const values = days.map(day => byDate.get(day) ?? 0);
+              const max = Math.max(...values, 1);
+              const today = byDate.get(localDateISO()) ?? 0;
+              const recent = healthSteps.slice(-7);
+              const avg7 = recent.length ? Math.round(recent.reduce((sum, p) => sum + p.value, 0) / recent.length) : 0;
+              const avg30 = Math.round(healthSteps.reduce((sum, p) => sum + p.value, 0) / healthSteps.length);
+              const fmt = (n: number) => n.toLocaleString(dateLocale);
+              return (
+                <Card>
+                  <CardLabel icon="👟">{t('health.stepsLabel')}</CardLabel>
+                  <View style={s.weightSummaryRow}>
+                    <Text style={s.weightLatest}>{fmt(today)}</Text>
+                    <Text style={s.weightDelta}>{t('health.stepsToday')}</Text>
+                  </View>
+                  <Svg viewBox="0 0 200 50" width="100%" height={70}>
+                    {values.map((value, index) => {
+                      const h = Math.max(value > 0 ? 1.5 : 0, (value / max) * 42);
+                      return (
+                        <Rect
+                          key={days[index]}
+                          x={4 + index * 14}
+                          y={46 - h}
+                          width={9}
+                          height={h}
+                          rx={2}
+                          fill={index === 13 ? colors.accentLight : colors.primary}
+                          opacity={value > 0 ? 1 : 0.2}
+                        />
+                      );
+                    })}
+                  </Svg>
+                  <Text style={s.weightRangeNote}>
+                    {t('health.stepsAverages', { a7: fmt(avg7), a30: fmt(avg30) })}
+                  </Text>
+                  <Text style={s.weightRangeNote}>{t('health.stepsSource')}</Text>
+                </Card>
+              );
+            })()}
+
+            <Card>
+              <CardLabel icon="💊">{t('reports.topPeptides')}</CardLabel>
+              {peptideRanks.length === 0 ? (
+                <Text style={s.empty}>{t('reports.noPeptides')}</Text>
+              ) : peptideRanks.map(p => (
+                <View key={p.name} style={s.rankRow}>
+                  <Text style={s.rankName} numberOfLines={1}>{p.name}</Text>
+                  <View style={s.rankBarWrap}>
+                    <View style={[s.rankBar, { width: `${(p.count / maxPept) * 100}%` }]} />
+                  </View>
+                  <Text style={s.rankCount}>{p.count}</Text>
+                </View>
+              ))}
+            </Card>
+
+            {compoundOptions.length > 0 && (
+              <Card>
+                <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
+                <View style={s.chipRow}>
+                  {compoundOptions.map(name => (
+                    <Pressable
+                      key={name}
+                      onPress={() => setDoseCompound(name)}
+                      style={[s.chip, activeCompound === name && s.chipActive]}
+                    >
+                      <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {!doseChart || doseChart.count === 0 ? (
+                  <Text style={s.empty}>{t('reports.noDoses')}</Text>
+                ) : !doseChart.points ? (
+                  <Text style={s.empty}>
+                    {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
+                  </Text>
+                ) : (
+                  <>
+                    <View style={s.weightSummaryRow}>
+                      <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
+                      <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
+                    </View>
+                    <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                      <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                      <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                      <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
+                      <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
+                      <Polyline
+                        points={doseChart.polyline}
+                        fill="none"
+                        stroke={colors.teal}
+                        strokeWidth="1.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                      {doseChart.points.map((point, index) => (
+                        <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
+                      ))}
+                    </Svg>
+                    <Text style={s.weightRangeNote}>
+                      {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
+                    </Text>
+                  </>
+                )}
+              </Card>
+            )}
+
+            {symptomRanks.length > 0 && (
+              <Card>
+                <CardLabel icon="📋">{t('reports.symptomsLabel')}</CardLabel>
+                <Text style={s.sub}>{t('reports.symptomsSub')}</Text>
+                {symptomRanks.map(rank => (
+                  <View key={rank.name} style={s.rankRow}>
+                    <Text style={s.rankName} numberOfLines={1}>{t('symptom.' + rank.name)}</Text>
+                    <View style={s.rankBarWrap}>
+                      <View style={[s.rankBar, { width: `${(rank.count / maxSymptom) * 100}%`, backgroundColor: colors.accent }]} />
+                    </View>
+                    <Text style={s.rankCount}>{rank.count}</Text>
+                  </View>
+                ))}
+              </Card>
+            )}
+
+            <Card>
+              <CardLabel icon="📍">{t('reports.siteUsage')}</CardLabel>
+              <View style={s.siteGrid}>
+                {siteUsage.map(({ id, name, count, band }) => (
+                  <View
+                    key={id}
+                    style={[
+                      s.siteCell,
+                      band !== 'clear' && {
+                        borderColor: heatColors[band].ring,
+                        backgroundColor: `${heatColors[band].dot}26`,
+                      },
+                    ]}
+                  >
+                    <Text style={s.siteCellName}>{t('zoneShort.' + id)}</Text>
+                    <Text style={[s.siteCellCount, count > 0 && { color: colors.white }]}>{count}</Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

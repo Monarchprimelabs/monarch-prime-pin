@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, Alert,
-  KeyboardAvoidingView, Platform, ScrollView,
+  View, Text, TextInput, Pressable, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, BrandMark } from '../components/UI';
 import { colors, radius, DEV_PASSCODE, withAlpha } from '../theme';
@@ -84,7 +84,7 @@ export function SignInScreen() {
   };
 
   return (
-    <SafeAreaView style={s.app} edges={['top', 'bottom']}>
+    <SafeAreaView style={s.app} edges={['top', 'bottom', 'left', 'right']}>
       <Disclaimer />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

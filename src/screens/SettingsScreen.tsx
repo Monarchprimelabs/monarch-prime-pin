@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -27,7 +28,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const { t } = useI18n();
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <Header title={t('settings.title')} subtitle="" />
       {!!onClose && (

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
+import { ReadableScrollView as ScrollView, readableColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
@@ -34,6 +36,7 @@ export function HistoryScreen() {
   const { user } = useAuth();
   const { t, dateLocale } = useI18n();
   const canUsePro = hasPro || !!user?.isDeveloper;
+  const wide = useWideLayout();
 
   const refresh = async () => {
     try {
@@ -63,10 +66,10 @@ export function HistoryScreen() {
   };
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <Header title={t('history.title')} />
-      <View style={s.subTabs}>
+      <View style={[s.subTabs, readableColumn(wide)]}>
         {(['log', 'calendar', 'photos'] as const).map(tabId => (
           <Pressable
             key={tabId}

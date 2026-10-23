@@ -15,13 +15,19 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "com.monarchprime.pin",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your log entries.",
         "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library.",
         "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your log entries.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {

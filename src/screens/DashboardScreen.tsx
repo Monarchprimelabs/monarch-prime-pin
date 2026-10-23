@@ -20,6 +20,8 @@ import { localDateISO, parseLocalDay } from '../lib/dates';
 import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '../components/ProgressCard';
 import { Ionicons } from '@expo/vector-icons';
 import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
+import { TwoColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
 import { readHealthSteps } from '../lib/health';
 import { ProtocolsTool } from './ProtocolsScreen';
 import type { PlannedDose } from './LogInjectionScreen';
@@ -175,6 +177,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
   const completedScheduleCount = schedules.filter(item => item.completedAt).length;
   const canUsePro = hasPro || !!user?.isDeveloper;
+  const wide = useWideLayout();
 
   // Opened from a protocol reminder: go straight to logging that dose,
   // unless it's already logged or skipped.
@@ -196,146 +199,261 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const freeTrialActive = monetizationEnabled && !canUsePro;
   const freeLogsRemaining = Math.max(0, FREE_INJECTION_LIMIT - stats.total);
 
+  const heat = (
+    <Card>
+      <CardLabel icon="📍">{t('dash.siteHeatmap')}</CardLabel>
+      <ViewPill view={view} setView={setView} />
+      <View style={s.windowRow}>
+        {([
+          { days: 7, label: t('dash.window7') },
+          { days: 30, label: t('dash.window30') },
+          { days: 90, label: t('dash.window90') },
+          { days: undefined, label: t('dash.windowAll') },
+        ] as { days?: number; label: string }[]).map(option => (
+          <Pressable
+            key={option.label}
+            onPress={() => setHeatWindow(option.days)}
+            style={[s.windowBtn, heatWindow === option.days && s.windowBtnActive]}
+          >
+            <Text style={[s.windowBtnText, heatWindow === option.days && s.windowBtnTextActive]}>
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <BodyDiagram view={view} mode="heatmap" bandsByZone={siteBands} />
+      <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
+      <View style={s.legend}>
+        {HEAT_BAND_ORDER.map(band => (
+          <LegendDot key={band} color={heatColors[band].dot} label={t('dash.band.' + band)} />
+        ))}
+      </View>
+      <Text style={s.legendCaption}>{t('dash.legendCaption')}</Text>
+    </Card>
+  );
+
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         <Header
+          columns="two"
           title={greetingName ? t('dash.hello', { name: greetingName }) : t('dash.helloNoName')}
           subtitle={user?.isDeveloper ? t('dash.devMode') : t('dash.welcome')}
         />
 
-        <View style={s.statRow}>
-          <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label={t('dash.dayStreak')} />
-          <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
-          <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
-        </View>
+        {wide ? (
+          <TwoColumn
+            left={<>
+              <View style={s.statRow}>
+                <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label={t('dash.dayStreak')} />
+                <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
+                <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
+              </View>
 
-        {/* Free users get the Today plan too: one protocol is free. */}
-        <TodayPlan
-          injections={injections}
-          refreshToken={planToken}
-          onLog={setPlannedLog}
-          onOpenRecord={setEditRecord}
-          onSetup={() => setProtocolsOpen(true)}
-        />
+              {/* Free users get the Today plan too: one protocol is free. */}
+              <TodayPlan
+                injections={injections}
+                refreshToken={planToken}
+                onLog={setPlannedLog}
+                onOpenRecord={setEditRecord}
+                onSetup={() => setProtocolsOpen(true)}
+              />
 
-        {stepsToday !== null && (
-          <Text style={s.milestoneLine}>{t('health.stepsTodayLine', { n: stepsToday.toLocaleString(dateLocale) })}</Text>
-        )}
+              {stepsToday !== null && (
+                <Text style={s.milestoneLine}>{t('health.stepsTodayLine', { n: stepsToday.toLocaleString(dateLocale) })}</Text>
+              )}
 
-        {(stats.longestStreak > 1 || !!recordMilestone) && (
-          <Text style={s.milestoneLine}>
-            {stats.longestStreak > 1 ? t('dash.longestStreak', { n: stats.longestStreak }) : ''}
-            {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
-            {recordMilestone ? t('dash.milestone', { n: recordMilestone }) : ''}
-          </Text>
-        )}
-
-        {freeTrialActive && (
-          <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.unlockEyebrow}>{t('log.freeTrialLabel')}</Text>
-              <Text style={s.unlockTitle}>
-                {freeLogsRemaining > 0
-                  ? (freeLogsRemaining === 1 ? t('dash.freeLogsLeftOne') : t('dash.freeLogsLeftMany', { n: freeLogsRemaining }))
-                  : t('dash.unlockNeeded')}
-              </Text>
-              <Text style={s.unlockBody}>
-                {t('dash.unlockBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-              </Text>
-            </View>
-            <Text style={s.unlockChev}>›</Text>
-          </Pressable>
-        )}
-
-        {canUsePro && nextSchedule && (
-          <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.scheduleEyebrow}>{t('dash.nextScheduled')}</Text>
-              <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
-              <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
-            </View>
-            <View style={s.scheduleDone}>
-              <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
-              <Text style={s.scheduleDoneLabel}>{t('dash.done')}</Text>
-            </View>
-          </Pressable>
-        )}
-
-        {showBackupNudge && (
-          <Pressable style={s.backupNudge} onPress={() => onNavigate('settings')}>
-            <Ionicons name="cloud-upload-outline" size={18} color={colors.teal} />
-            <Text style={s.backupNudgeText}>
-              {lastBackupAt === null
-                ? t('dash.backupNever')
-                : t('dash.backupOld', { n: backupDaysAgo ?? 0 })}
-            </Text>
-            <Text style={s.unlockChev}>›</Text>
-          </Pressable>
-        )}
-
-        <Card>
-          <CardLabel icon="📍">{t('dash.siteHeatmap')}</CardLabel>
-          <ViewPill view={view} setView={setView} />
-          <View style={s.windowRow}>
-            {([
-              { days: 7, label: t('dash.window7') },
-              { days: 30, label: t('dash.window30') },
-              { days: 90, label: t('dash.window90') },
-              { days: undefined, label: t('dash.windowAll') },
-            ] as { days?: number; label: string }[]).map(option => (
-              <Pressable
-                key={option.label}
-                onPress={() => setHeatWindow(option.days)}
-                style={[s.windowBtn, heatWindow === option.days && s.windowBtnActive]}
-              >
-                <Text style={[s.windowBtnText, heatWindow === option.days && s.windowBtnTextActive]}>
-                  {option.label}
+              {(stats.longestStreak > 1 || !!recordMilestone) && (
+                <Text style={s.milestoneLine}>
+                  {stats.longestStreak > 1 ? t('dash.longestStreak', { n: stats.longestStreak }) : ''}
+                  {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
+                  {recordMilestone ? t('dash.milestone', { n: recordMilestone }) : ''}
                 </Text>
-              </Pressable>
-            ))}
-          </View>
-          <BodyDiagram view={view} mode="heatmap" bandsByZone={siteBands} />
-          <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
-          <View style={s.legend}>
-            {HEAT_BAND_ORDER.map(band => (
-              <LegendDot key={band} color={heatColors[band].dot} label={t('dash.band.' + band)} />
-            ))}
-          </View>
-          <Text style={s.legendCaption}>{t('dash.legendCaption')}</Text>
-        </Card>
+              )}
 
-        {lastInj && (
-          <Card>
-            <CardLabel icon="💉">{t('dash.lastInjection')}</CardLabel>
-            <Text style={s.lastInjPeptide}>{lastInj.peptide}</Text>
-            <Text style={s.lastInjMeta}>
-              {lastInj.dose}{lastInj.unit}  ·  {lastInj.date}  ·{' '}
-              <Text style={{ color: severity[lastInj.sev] }}>
-                {t('sev.' + lastInj.sev)}
+              {freeTrialActive && (
+                <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.unlockEyebrow}>{t('log.freeTrialLabel')}</Text>
+                    <Text style={s.unlockTitle}>
+                      {freeLogsRemaining > 0
+                        ? (freeLogsRemaining === 1 ? t('dash.freeLogsLeftOne') : t('dash.freeLogsLeftMany', { n: freeLogsRemaining }))
+                        : t('dash.unlockNeeded')}
+                    </Text>
+                    <Text style={s.unlockBody}>
+                      {t('dash.unlockBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
+                    </Text>
+                  </View>
+                  <Text style={s.unlockChev}>›</Text>
+                </Pressable>
+              )}
+
+              {canUsePro && nextSchedule && (
+                <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.scheduleEyebrow}>{t('dash.nextScheduled')}</Text>
+                    <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
+                    <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
+                  </View>
+                  <View style={s.scheduleDone}>
+                    <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
+                    <Text style={s.scheduleDoneLabel}>{t('dash.done')}</Text>
+                  </View>
+                </Pressable>
+              )}
+
+              {showBackupNudge && (
+                <Pressable style={s.backupNudge} onPress={() => onNavigate('settings')}>
+                  <Ionicons name="cloud-upload-outline" size={18} color={colors.teal} />
+                  <Text style={s.backupNudgeText}>
+                    {lastBackupAt === null
+                      ? t('dash.backupNever')
+                      : t('dash.backupOld', { n: backupDaysAgo ?? 0 })}
+                  </Text>
+                  <Text style={s.unlockChev}>›</Text>
+                </Pressable>
+              )}
+
+              {lastInj && (
+                <Card>
+                  <CardLabel icon="💉">{t('dash.lastInjection')}</CardLabel>
+                  <Text style={s.lastInjPeptide}>{lastInj.peptide}</Text>
+                  <Text style={s.lastInjMeta}>
+                    {lastInj.dose}{lastInj.unit}  ·  {lastInj.date}  ·{' '}
+                    <Text style={{ color: severity[lastInj.sev] }}>
+                      {t('sev.' + lastInj.sev)}
+                    </Text>
+                  </Text>
+                  <Text style={s.lastInjMeta}>{t('dash.sites', { site: lastInjSites })}</Text>
+                  <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
+                    <Text style={s.repeatBtnText}>{t('dash.logAgain')}</Text>
+                  </Pressable>
+                </Card>
+              )}
+
+              <View style={s.qaRow}>
+                <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
+                  <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
+                  <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
+                </Pressable>
+              </View>
+
+              {stats.total > 0 && (
+                <Pressable style={s.shareRow} onPress={() => setShareOpen(true)}>
+                  <Ionicons name="share-outline" size={17} color={colors.primary} />
+                  <Text style={s.shareRowText}>{t('dash.shareBtn')}</Text>
+                  <Text style={s.unlockChev}>›</Text>
+                </Pressable>
+              )}
+            </>}
+            right={heat}
+          />
+        ) : (
+          <>
+            <View style={s.statRow}>
+              <StatCard icon="flame-outline" color={colors.accent} value={stats.streak} label={t('dash.dayStreak')} />
+              <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
+              <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
+            </View>
+
+            {/* Free users get the Today plan too: one protocol is free. */}
+            <TodayPlan
+              injections={injections}
+              refreshToken={planToken}
+              onLog={setPlannedLog}
+              onOpenRecord={setEditRecord}
+              onSetup={() => setProtocolsOpen(true)}
+            />
+
+            {stepsToday !== null && (
+              <Text style={s.milestoneLine}>{t('health.stepsTodayLine', { n: stepsToday.toLocaleString(dateLocale) })}</Text>
+            )}
+
+            {(stats.longestStreak > 1 || !!recordMilestone) && (
+              <Text style={s.milestoneLine}>
+                {stats.longestStreak > 1 ? t('dash.longestStreak', { n: stats.longestStreak }) : ''}
+                {stats.longestStreak > 1 && recordMilestone ? '  ·  ' : ''}
+                {recordMilestone ? t('dash.milestone', { n: recordMilestone }) : ''}
               </Text>
-            </Text>
-            <Text style={s.lastInjMeta}>{t('dash.sites', { site: lastInjSites })}</Text>
-            <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
-              <Text style={s.repeatBtnText}>{t('dash.logAgain')}</Text>
-            </Pressable>
-          </Card>
-        )}
+            )}
 
-        <View style={s.qaRow}>
-          <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
-            <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
-            <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
-          </Pressable>
-        </View>
+            {lastInj && (
+              <Card>
+                <CardLabel icon="💉">{t('dash.lastInjection')}</CardLabel>
+                <Text style={s.lastInjPeptide}>{lastInj.peptide}</Text>
+                <Text style={s.lastInjMeta}>
+                  {lastInj.dose}{lastInj.unit}  ·  {lastInj.date}  ·{' '}
+                  <Text style={{ color: severity[lastInj.sev] }}>
+                    {t('sev.' + lastInj.sev)}
+                  </Text>
+                </Text>
+                <Text style={s.lastInjMeta}>{t('dash.sites', { site: lastInjSites })}</Text>
+                <Pressable style={s.repeatBtn} onPress={() => setRepeatOpen(true)}>
+                  <Text style={s.repeatBtnText}>{t('dash.logAgain')}</Text>
+                </Pressable>
+              </Card>
+            )}
 
-        {stats.total > 0 && (
-          <Pressable style={s.shareRow} onPress={() => setShareOpen(true)}>
-            <Ionicons name="share-outline" size={17} color={colors.primary} />
-            <Text style={s.shareRowText}>{t('dash.shareBtn')}</Text>
-            <Text style={s.unlockChev}>›</Text>
-          </Pressable>
+            <View style={s.qaRow}>
+              <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
+                <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
+                <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
+              </Pressable>
+            </View>
+
+            {freeTrialActive && (
+              <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.unlockEyebrow}>{t('log.freeTrialLabel')}</Text>
+                  <Text style={s.unlockTitle}>
+                    {freeLogsRemaining > 0
+                      ? (freeLogsRemaining === 1 ? t('dash.freeLogsLeftOne') : t('dash.freeLogsLeftMany', { n: freeLogsRemaining }))
+                      : t('dash.unlockNeeded')}
+                  </Text>
+                  <Text style={s.unlockBody}>
+                    {t('dash.unlockBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
+                  </Text>
+                </View>
+                <Text style={s.unlockChev}>›</Text>
+              </Pressable>
+            )}
+
+            {canUsePro && nextSchedule && (
+              <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.scheduleEyebrow}>{t('dash.nextScheduled')}</Text>
+                  <Text style={s.scheduleTitle}>{nextSchedule.title}</Text>
+                  <Text style={s.scheduleMeta}>{displayDate(nextSchedule.date)} · {nextSchedule.time}</Text>
+                </View>
+                <View style={s.scheduleDone}>
+                  <Text style={s.scheduleDoneValue}>{completedScheduleCount}</Text>
+                  <Text style={s.scheduleDoneLabel}>{t('dash.done')}</Text>
+                </View>
+              </Pressable>
+            )}
+
+            {showBackupNudge && (
+              <Pressable style={s.backupNudge} onPress={() => onNavigate('settings')}>
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.teal} />
+                <Text style={s.backupNudgeText}>
+                  {lastBackupAt === null
+                    ? t('dash.backupNever')
+                    : t('dash.backupOld', { n: backupDaysAgo ?? 0 })}
+                </Text>
+                <Text style={s.unlockChev}>›</Text>
+              </Pressable>
+            )}
+
+            {heat}
+            {stats.total > 0 && (
+              <Pressable style={s.shareRow} onPress={() => setShareOpen(true)}>
+                <Ionicons name="share-outline" size={17} color={colors.primary} />
+                <Text style={s.shareRowText}>{t('dash.shareBtn')}</Text>
+                <Text style={s.unlockChev}>›</Text>
+              </Pressable>
+            )}
+          </>
         )}
       </ScrollView>
 
