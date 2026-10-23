@@ -1129,7 +1129,7 @@ const s = StyleSheet.create({
   submitText: { color: colors.actionText, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
 
   sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
-  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.scrim },
+  sheetBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.bgSheet,
     borderTopLeftRadius: 20, borderTopRightRadius: 20,

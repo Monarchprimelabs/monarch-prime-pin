@@ -62,7 +62,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [protocolsOpen, setProtocolsOpen] = useState(false);
   const [planToken, setPlanToken] = useState(0);
   const [stepsToday, setStepsToday] = useState<number | null>(null);
-  const shareCardRef = useRef<View>(null);
+  const shareCardRef = useRef<React.ComponentRef<typeof View>>(null);
   const [shareFormat, setShareFormat] = useState<ShareFormat>('story');
   const shareAsOf = new Date().toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' }).toUpperCase();
   const { width: winW, height: winH } = useWindowDimensions();

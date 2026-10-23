@@ -59,7 +59,7 @@ export async function disableHealth(): Promise<void> {
 }
 
 /** Latest sample per local day, oldest first. */
-async function readDaily(identifier: typeof WEIGHT | typeof BODY_FAT, unit: string, days: number, scale = 1): Promise<HealthPoint[]> {
+async function readDaily(identifier: typeof WEIGHT | typeof BODY_FAT, unit: 'lb' | '%', days: number, scale = 1): Promise<HealthPoint[]> {
   if (!(await getHealthEnabled()) || !healthSupported()) return [];
   const startDate = new Date(Date.now() - days * 86400000);
   const samples = await queryQuantitySamples(identifier, {

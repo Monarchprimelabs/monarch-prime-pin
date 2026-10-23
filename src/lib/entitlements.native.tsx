@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
-import type { Product } from 'react-native-iap';
+import type { Product } from 'expo-iap';
 import { trackPurchase } from './funnel';
 
 const KEY_ENTITLEMENT = '@mpp/pro_entitlement';
@@ -54,12 +54,12 @@ type EntitlementContextValue = {
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
 
-type IapModule = typeof import('react-native-iap');
+type IapModule = typeof import('expo-iap');
 let iapModulePromise: Promise<IapModule | null> | null = null;
 
 async function getIapModule(): Promise<IapModule | null> {
   if (!iapModulePromise) {
-    iapModulePromise = import('react-native-iap').catch(() => null);
+    iapModulePromise = import('expo-iap').catch(() => null);
   }
   return iapModulePromise;
 }
@@ -149,7 +149,7 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
           });
 
           const products = await iap.fetchProducts({ skus: [LIFETIME_PRO_PRODUCT_ID], type: 'in-app' });
-          const lifetimeProduct = products.find(value => value.type === 'in-app') as Product | undefined;
+          const lifetimeProduct = (products ?? []).find(value => value.type === 'in-app') as Product | undefined;
           if (active) setProduct(lifetimeProduct || null);
         } catch {
           // Expo Go and unavailable App Store products both land here. Stored

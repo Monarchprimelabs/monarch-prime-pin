@@ -20,9 +20,9 @@ export default function App() {
     if (Platform.OS === 'web') return;
 
     const sources = [
-      Image.resolveAssetSource(require('./assets/logo-symbol.png')).uri,
-      Image.resolveAssetSource(require('./assets/logo-full.png')).uri,
-    ];
+      Image.resolveAssetSource(require('./assets/logo-symbol.png'))?.uri,
+      Image.resolveAssetSource(require('./assets/logo-full.png'))?.uri,
+    ].filter((source): source is string => !!source);
     Promise.all(sources.map(source => Image.prefetch(source))).catch(() => undefined);
   }, []);
 

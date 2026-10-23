@@ -215,7 +215,7 @@ const s = StyleSheet.create({
   heroLabel: { color: P.text, fontSize: 11, fontWeight: '800', letterSpacing: 4, marginTop: 4 },
 
   ringRow: { alignItems: 'flex-start' },
-  ringCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   ringValue: { color: P.ink, fontSize: 40, fontWeight: '900', letterSpacing: -1 },
   ringLabel: { color: P.muted, fontSize: 9, fontWeight: '800', letterSpacing: 2.6, marginTop: 2 },
 
