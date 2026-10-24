@@ -588,6 +588,15 @@ const en: Record<string, string> = {
   'proto.toolSub': "Plans you set: days, times and reminders",
   'proto.notice': "Protocols hold the plan you enter: compound, amount, days and times. Monarch shows and reminds you of that plan. It never suggests an amount or a schedule.",
   'proto.new': "New Protocol",
+  'insight.title': "INSIGHTS",
+  'insight.footer': "Summary of your own entries. Not medical advice.",
+  'insight.month': "{n} entries across {c} compounds in {month}",
+  'insight.siteTop': "{site} used {n} times in the last 14 days",
+  'insight.siteIdle': "{site} not used in {d} days",
+  'insight.plan': "{logged} of {planned} planned entries logged in the last 7 days",
+  'insight.vial': "{vial}: about {n} logged entries remaining at your recorded amounts",
+  'insight.sleep': "Average sleep: {a} h on days with entries vs {b} h without",
+  'insight.empty': "Insights appear as you log entries.",
   'labs.title': "Lab Results",
   'labs.toolSub': "Your own lab values, charted over time",
   'labs.add': "Add Lab Result",
@@ -1476,6 +1485,15 @@ const es: Record<string, string> = {
   'proto.toolSub': "Planes que defines: días, horas y recordatorios",
   'proto.notice': "Los protocolos guardan el plan que ingresas: compuesto, cantidad, días y horas. Monarch muestra ese plan y te lo recuerda. Nunca sugiere una cantidad ni un horario.",
   'proto.new': "Nuevo protocolo",
+  'insight.title': "RESÚMENES",
+  'insight.footer': "Resumen de tus propios registros. No es consejo médico.",
+  'insight.month': "{n} entradas de {c} compuestos en {month}",
+  'insight.siteTop': "{site}: usado {n} veces en los últimos 14 días",
+  'insight.siteIdle': "{site}: sin usar desde hace {d} días",
+  'insight.plan': "{logged} de {planned} entradas planificadas registradas en los últimos 7 días",
+  'insight.vial': "{vial}: quedan unas {n} entradas a las cantidades que registraste",
+  'insight.sleep': "Sueño promedio: {a} h los días con entradas y {b} h los días sin entradas",
+  'insight.empty': "Los resúmenes aparecen a medida que registras.",
   'labs.title': "Resultados de laboratorio",
   'labs.toolSub': "Tus propios valores de laboratorio, en gráficas",
   'labs.add': "Agregar resultado",
@@ -2361,6 +2379,15 @@ const pt: Record<string, string> = {
   'proto.toolSub': "Planos que você define: dias, horários e lembretes",
   'proto.notice': "Os protocolos guardam o plano que você informa: composto, quantidade, dias e horários. O Monarch mostra esse plano e lembra você dele. Ele nunca sugere uma quantidade ou um horário.",
   'proto.new': "Novo protocolo",
+  'insight.title': "RESUMOS",
+  'insight.footer': "Resumo dos seus próprios registros. Não é aconselhamento médico.",
+  'insight.month': "{n} registros de {c} compostos em {month}",
+  'insight.siteTop': "{site}: usado {n} vezes nos últimos 14 dias",
+  'insight.siteIdle': "{site}: sem uso há {d} dias",
+  'insight.plan': "{logged} de {planned} entradas planejadas registradas nos últimos 7 dias",
+  'insight.vial': "{vial}: restam cerca de {n} registros nas quantidades que você registrou",
+  'insight.sleep': "Sono médio: {a} h nos dias com registros e {b} h nos dias sem",
+  'insight.empty': "Os resumos aparecem conforme você registra.",
   'labs.title': "Resultados de exames",
   'labs.toolSub': "Seus próprios valores de exames, em gráficos",
   'labs.add': "Adicionar resultado",
@@ -2706,6 +2733,11 @@ function translate(language: Language, key: string, vars?: Record<string, string
     }
   }
   return text;
+}
+
+/** A fixed-language translator, for tests and anything rendered outside React. */
+export function translateFor(language: Language, key: string, vars?: Record<string, string | number>): string {
+  return translate(language, key, vars);
 }
 
 // For code outside React (notification text). Follows the provider's language.

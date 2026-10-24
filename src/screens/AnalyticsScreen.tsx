@@ -12,7 +12,6 @@ import * as Sharing from 'expo-sharing';
 import { Disclaimer, Header, Card, CardLabel } from '../components/UI';
 import { colors, spacing, radius, withAlpha } from '../theme';
 import { ALL_ZONES, Injection } from '../data/peptides';
-import { getInjections } from '../lib/storage';
 import { getSiteUsage } from '../lib/sites';
 import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS, HeatBand } from '../lib/heat';
 import { heatColors } from '../theme';
@@ -20,6 +19,10 @@ import { localDateISO, parseLocalDay } from '../lib/dates';
 import { useI18n } from '../lib/i18n';
 import { HealthPoint, readHealthBodyFat, readHealthSteps, readHealthWeights } from '../lib/health';
 import { notifyPositiveMoment } from '../lib/reviewPrompt';
+import { generateInsights } from '../lib/insights';
+import { getDoseSkips, getInjections, getProtocols, getVials } from '../lib/storage';
+import type { DoseSkip, Protocol } from '../lib/schedule/types';
+import type { Vial } from '../lib/vials/types';
 
 export function AnalyticsScreen() {
   const wide = useWideLayout();
@@ -28,6 +31,12 @@ export function AnalyticsScreen() {
   const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
+  const [planData, setPlanData] = useState<{ protocols: Protocol[]; skips: DoseSkip[]; vials: Vial[] }>({ protocols: [], skips: [], vials: [] });
+  useEffect(() => {
+    Promise.all([getProtocols(), getDoseSkips(), getVials()])
+      .then(([protocols, skips, vials]) => setPlanData({ protocols, skips, vials }))
+      .catch(() => undefined);
+  }, []);
   // Apple Health (optional, read-only) replaces log-entry weights in the
   // trend when it has any; body fat is shown as its latest value only.
   const [healthWeights, setHealthWeights] = useState<HealthPoint[]>([]);
@@ -246,6 +255,22 @@ export function AnalyticsScreen() {
     }
   };
 
+  // Insights (Premium): facts about the user's own entries, never advice.
+  const insights = generateInsights({
+    injections, ...planData, today: localDateISO(), monthLabel,
+  }, t);
+  const insightsCard = allows('insights') ? (
+    <Card>
+      <CardLabel icon="💡">{t('insight.title')}</CardLabel>
+      {insights.length === 0
+        ? <Text style={s.insightText}>{t('insight.empty')}</Text>
+        : insights.map(insight => <Text key={insight.id} style={s.insightText}>• {insight.text}</Text>)}
+      <Text style={s.insightFooter}>{t('insight.footer')}</Text>
+    </Card>
+  ) : (
+    <PremiumLockCard feature="insights" title={t('insight.title')} body={t('insight.footer')} />
+  );
+
   return (
     <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
@@ -347,6 +372,8 @@ export function AnalyticsScreen() {
 
             </>}
             right={<>
+              {insightsCard}
+
               {healthSteps.length > 0 && (() => {
                 // Last 14 days as bars, today on the right; days without data stay empty.
                 const byDate = new Map(healthSteps.map(point => [point.date, point.value]));
@@ -592,7 +619,9 @@ export function AnalyticsScreen() {
               )}
             </Card>
 
-            {healthSteps.length > 0 && (() => {
+            {insightsCard}
+
+              {healthSteps.length > 0 && (() => {
               // Last 14 days as bars, today on the right; days without data stay empty.
               const byDate = new Map(healthSteps.map(point => [point.date, point.value]));
               const days = Array.from({ length: 14 }, (_, i) => {
@@ -773,6 +802,8 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
 }
 
 const s = StyleSheet.create({
+  insightText: { color: colors.text, fontSize: 14, lineHeight: 21, marginBottom: 4 },
+  insightFooter: { color: colors.textMuted, fontSize: 12, marginTop: 8 },
   app: { flex: 1, backgroundColor: colors.bg },
   sub: { fontSize: 11, color: colors.textMuted, marginTop: -8, marginBottom: 14 },
   empty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
