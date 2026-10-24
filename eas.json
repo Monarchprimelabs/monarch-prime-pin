@@ -34,6 +34,13 @@
       "env": {
         "EXPO_PUBLIC_MONETIZATION_ENABLED": "true"
       }
+    },
+    "ios-production-no-worksheet": {
+      "extends": "production",
+      "env": {
+        "EXPO_PUBLIC_MONETIZATION_ENABLED": "true",
+        "EXPO_PUBLIC_REMOVE_WORKSHEET": "true"
+      }
     }
   },
   "submit": {
@@ -43,6 +50,11 @@
       }
     },
     "ios-production": {
+      "ios": {
+        "ascAppId": "6770808426"
+      }
+    },
+    "ios-production-no-worksheet": {
       "ios": {
         "ascAppId": "6770808426"
       }

@@ -39,6 +39,8 @@ function animateListChange(): void {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
+const REMOVE_WORKSHEET = process.env.EXPO_PUBLIC_REMOVE_WORKSHEET === 'true';
+
 type ToolId = 'protocols' | 'vials' | 'labs' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
@@ -49,7 +51,9 @@ const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: strin
   { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary },
   // Premium: stays visible with a lock for free users (2.5.19).
   { id: 'labs', icon: 'pulse-outline', titleKey: 'labs.title', subKey: 'labs.toolSub', tint: colors.teal },
-  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary },
+  REMOVE_WORKSHEET
+    ? { id: 'conversion', icon: 'swap-horizontal-outline', titleKey: 'tools.units.title', subKey: 'tools.units.sub', tint: colors.primary }
+    : { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary },
   { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent },
   { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary },
   { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: colors.accent },
@@ -68,6 +72,19 @@ function isValidTime(value: string): boolean {
   if (!/^\d{2}:\d{2}$/.test(value)) return false;
   const [hour, minute] = value.split(':').map(Number);
   return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+}
+
+// EXPO_PUBLIC_REMOVE_WORKSHEET is inlined at build time (eas.json profile
+// "ios-production-no-worksheet"). Metro folds the condition before collecting
+// dependencies, so that build never bundles ./WorksheetTool and offers a
+// plain unit converter instead. The default build is unchanged.
+function ConversionEntry({ onClose }: { onClose: () => void }) {
+  if (process.env.EXPO_PUBLIC_REMOVE_WORKSHEET === 'true') {
+    const { UnitConverterTool } = require('./UnitConverterTool');
+    return <UnitConverterTool onClose={onClose} />;
+  }
+  const { WorksheetTool } = require('./WorksheetTool');
+  return <WorksheetTool onClose={onClose} />;
 }
 
 export function ToolsScreen() {
@@ -159,7 +176,7 @@ export function ToolsScreen() {
           {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
           {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
           {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
-          {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
+          {active === 'conversion' && <ConversionEntry onClose={() => setActive(null)} />}
           {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
         </PaywallProvider>
       </SafeAreaProvider></Modal>
@@ -167,7 +184,7 @@ export function ToolsScreen() {
   );
 }
 
-function ToolShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+export function ToolShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const { t } = useI18n();
   return (
     <SafeAreaView style={s.app}>
@@ -558,257 +575,7 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-const U100_MARKINGS = [1, 5, 10, 20, 50];
-// Real U-100 barrels come in 30, 50, and 100 unit sizes; the gauge picks the
-// smallest scale the reading fits on so small readings stay legible.
-const GAUGE_SCALES = [30, 50, 100];
-// The user can fix the scale to their own syringe: 0.3, 0.5 or 1 mL U-100
-// barrels hold 30, 50 or 100 units. 'auto' keeps the old fit-to-reading.
-type SyringeSize = 'auto' | 30 | 50 | 100;
-const SYRINGE_SIZES: SyringeSize[] = ['auto', 30, 50, 100];
-
-function ConversionTool({ onClose }: { onClose: () => void }) {
-  const { t } = useI18n();
-  const [solutionMass, setSolutionMass] = useState('');
-  const [solutionMassUnit, setSolutionMassUnit] = useState('mg');
-  const [liquidVolume, setLiquidVolume] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [targetUnit, setTargetUnit] = useState('mg');
-  const [syringe, setSyringe] = useState<SyringeSize>('auto');
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [showMath, setShowMath] = useState(false);
-  // Fields start empty every time (no saved or suggested values).
-
-  const copyText = async (key: string, text: string) => {
-    try {
-      await Clipboard.setStringAsync(text);
-      hapticTap();
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(current => (current === key ? null : current)), 1400);
-    } catch {
-      // Clipboard is best-effort; never block the worksheet.
-    }
-  };
-
-  const worksheetResults = useMemo(() => {
-    const mass = parsePositiveNumber(solutionMass);
-    const volume = parsePositiveNumber(liquidVolume);
-    if (!mass || !volume) return { concentration: [], u100: [] };
-    const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
-    const totalU100Units = volume * 100;
-    const mcgPerUnit = (massMg * 1000) / totalU100Units;
-
-    return {
-      concentration: [
-        { label: t('tools.concLabel'), value: `${formatNumber(massMg / volume)} mg/mL` },
-        { label: t('tools.concLabel'), value: `${formatNumber((massMg * 1000) / volume)} mcg/mL` },
-      ],
-      u100: [
-        { label: t('tools.enteredVolume'), value: `${formatNumber(totalU100Units)} ${t('tools.u100Units')}` },
-        ...U100_MARKINGS.map(units => ({
-          label: units === 1 ? t('tools.unitsEqOne') : t('tools.unitsEqMany', { n: units }),
-          value: formatMass(mcgPerUnit * units),
-        })),
-      ],
-    };
-  }, [liquidVolume, solutionMass, solutionMassUnit, t]);
-
-  const gauge = useMemo(() => {
-    const mass = parsePositiveNumber(solutionMass);
-    const volume = parsePositiveNumber(liquidVolume);
-    const target = parsePositiveNumber(targetAmount);
-    if (!mass || !volume || !target) return null;
-    const massMg = solutionMassUnit === 'mg' ? mass : mass / 1000;
-    const mcgPerUnit = (massMg * 1000) / (volume * 100);
-    const targetMcg = targetUnit === 'mg' ? target * 1000 : target;
-    const units = targetMcg / mcgPerUnit;
-    return { units, ml: units / 100, massLabel: formatMass(targetMcg) };
-  }, [liquidVolume, solutionMass, solutionMassUnit, targetAmount, targetUnit]);
-
-  const summaryText = worksheetResults.concentration.length === 0 ? null : [
-    t('tools.summaryTitle'),
-    t('tools.summaryEntered', { mass: solutionMass, unit: solutionMassUnit, vol: liquidVolume }),
-    ...worksheetResults.concentration.map(result => `${result.label}: ${result.value}`),
-    ...worksheetResults.u100.map(result => `${result.label}: ${result.value}`),
-    ...(gauge ? [t('tools.gauge.summaryLine', {
-      amount: targetAmount, unit: targetUnit, units: formatNumber(gauge.units), ml: formatNumber(gauge.ml),
-    })] : []),
-    t('tools.summaryFoot1'),
-    t('tools.summaryFoot2'),
-  ].join('\n');
-
-  return (
-    <ToolShell title={t('tools.worksheet.title')} onClose={onClose}>
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Permanent, not dismissible (Guideline 1.4.2). */}
-        <Notice text={t('tools.notice.worksheet')} />
-        <Pressable onPress={() => setShowMath(v => !v)} style={s.mathToggle} accessibilityRole="button" accessibilityState={{ expanded: showMath }}>
-          <Text style={s.mathToggleText}>{showMath ? t('tools.hideMath') : t('tools.showMath')}</Text>
-        </Pressable>
-        {showMath && <Text style={s.mathText}>{t('tools.mathFormula')}</Text>}
-        <Card>
-          <CardLabel icon="▱">{t('tools.solutionConc')}</CardLabel>
-          <Text style={s.fieldLabel}>{t('tools.totalMass')}</Text>
-          <View style={s.inlineInputRow}>
-            <Field value={solutionMass} setValue={setSolutionMass} placeholder={t('tools.totalMassPh')} keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
-            <View style={s.compactToggle}>
-              {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
-                <Pressable
-                  key={option.id}
-                  style={[s.compactBtn, solutionMassUnit === option.id && s.compactBtnActive]}
-                  onPress={() => setSolutionMassUnit(option.id)}
-                >
-                  <Text style={[s.compactText, solutionMassUnit === option.id && s.compactTextActive]}>{option.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          <Text style={[s.fieldLabel, { marginTop: 14 }]}>{t('tools.liquidVolume')}</Text>
-          <Field value={liquidVolume} setValue={setLiquidVolume} placeholder={t('tools.liquidVolumePh')} keyboardType="decimal-pad" />
-          <View style={s.resultPanel}>
-            {worksheetResults.concentration.length > 0 ? worksheetResults.concentration.map((result, index) => {
-              const rowKey = `conc-${index}`;
-              return (
-                <Pressable key={rowKey} style={s.resultRow} onPress={() => copyText(rowKey, result.value)}>
-                  <Text style={s.resultLabel}>{copiedKey === rowKey ? t('tools.copied') : result.label}</Text>
-                  <Text style={s.resultValue}>{result.value}</Text>
-                </Pressable>
-              );
-            }) : (
-              <Text style={s.resultEmpty}>{t('tools.emptyConc')}</Text>
-            )}
-          </View>
-          {worksheetResults.concentration.length > 0 && (
-            <Text style={s.copyHint}>{t('tools.tapToCopy')}</Text>
-          )}
-        </Card>
-
-        <Card>
-          <CardLabel icon="▱">{t('tools.u100Label')}</CardLabel>
-          <Text style={s.referenceText}>
-            {t('tools.u100Reference')}
-          </Text>
-          <View style={s.resultPanel}>
-            {worksheetResults.u100.length > 0 ? worksheetResults.u100.map((result, index) => {
-              const rowKey = `u100-${index}`;
-              return (
-                <Pressable key={rowKey} style={s.resultRow} onPress={() => copyText(rowKey, result.value)}>
-                  <Text style={s.resultLabel}>{copiedKey === rowKey ? t('tools.copied') : result.label}</Text>
-                  <Text style={s.resultValue}>{result.value}</Text>
-                </Pressable>
-              );
-            }) : (
-              <Text style={s.resultEmpty}>{t('tools.emptyU100')}</Text>
-            )}
-          </View>
-          {!!summaryText && (
-            <Pressable
-              style={[s.primaryBtn, { marginTop: 12 }]}
-              onPress={() => copyText('summary', summaryText)}
-            >
-              <Text style={s.primaryBtnText}>
-                {copiedKey === 'summary' ? t('tools.copied') : t('tools.copySummary')}
-              </Text>
-            </Pressable>
-          )}
-        </Card>
-
-        <Card>
-          <CardLabel icon="▱">{t('tools.gauge.label')}</CardLabel>
-          <Text style={s.fieldLabel}>{t('tools.gauge.amountLabel')}</Text>
-          <View style={s.inlineInputRow}>
-            <Field value={targetAmount} setValue={setTargetAmount} placeholder={t('tools.gauge.amountPh')} keyboardType="decimal-pad" style={{ flex: 1, marginBottom: 0 }} />
-            <View style={s.compactToggle}>
-              {[{ id: 'mg', label: 'mg' }, { id: 'mcg', label: 'mcg' }].map(option => (
-                <Pressable
-                  key={option.id}
-                  style={[s.compactBtn, targetUnit === option.id && s.compactBtnActive]}
-                  onPress={() => setTargetUnit(option.id)}
-                >
-                  <Text style={[s.compactText, targetUnit === option.id && s.compactTextActive]}>{option.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          <Text style={[s.fieldLabel, { marginTop: 14 }]}>{t('tools.gauge.syringeLabel')}</Text>
-          <View style={s.segment}>
-            {SYRINGE_SIZES.map(size => (
-              <SegmentButton
-                key={String(size)}
-                label={size === 'auto' ? t('tools.gauge.syringeAuto') : `${size / 100} mL`}
-                active={syringe === size}
-                onPress={() => setSyringe(size)}
-              />
-            ))}
-          </View>
-          {gauge ? (
-            <UnitGauge units={gauge.units} ml={gauge.ml} massLabel={gauge.massLabel} fixedScale={syringe === 'auto' ? undefined : syringe} />
-          ) : (
-            <View style={[s.resultPanel, { marginTop: 14 }]}>
-              <Text style={s.resultEmpty}>{t('tools.gauge.empty')}</Text>
-            </View>
-          )}
-          <Text style={s.gaugeNote}>{t('tools.gauge.note')}</Text>
-        </Card>
-
-        <Text style={s.calculatorFootnote}>
-          {t('tools.calcFootnote')}
-        </Text>
-      </ScrollView>
-    </ToolShell>
-  );
-}
-
-// Horizontal unit-scale gauge: a left-to-right fill with a ruler of tick marks
-// underneath, read the same way as the printed scale on a barrel. Drawn
-// entirely with views — deliberately NOT a syringe illustration.
-function UnitGauge({ units, ml, massLabel, fixedScale }: { units: number; ml: number; massLabel: string; fixedScale?: number }) {
-  const { t } = useI18n();
-  const scale = fixedScale ?? GAUGE_SCALES.find(max => units <= max) ?? 100;
-  const over = units > scale;
-  const pct = Math.max(0.005, Math.min(1, units / scale));
-  const majorStep = scale === 100 ? 20 : 10;
-  const minorStep = scale === 100 ? 10 : 5;
-  const ticks: number[] = [];
-  for (let mark = 0; mark <= scale; mark += minorStep) ticks.push(mark);
-
-  return (
-    <View style={s.gaugeWrap}>
-      <View style={s.gaugeReadoutRow}>
-        <Text style={[s.gaugeUnitsBig, over && s.gaugeUnitsBigOver]}>
-          {t('tools.gauge.unitsBig', { n: formatNumber(units) })}
-        </Text>
-        <View style={s.gaugeReadoutRight}>
-          <Text style={s.gaugeLine}>{t('tools.gauge.mlLine', { v: formatNumber(ml) })}</Text>
-          <Text style={s.gaugeMass}>= {massLabel}</Text>
-        </View>
-      </View>
-      <View style={s.gaugeTrackH}>
-        <View style={[s.gaugeFillH, { width: `${pct * 100}%` }, over && s.gaugeFillOver]} />
-        <View style={[s.gaugeMarkerH, { left: `${pct * 100}%` }, over && s.gaugeMarkerOver]} />
-      </View>
-      <View style={s.gaugeRuler}>
-        {ticks.map(mark => {
-          const major = mark % majorStep === 0;
-          return (
-            <View key={mark} style={[s.gaugeTickCol, { left: `${(mark / scale) * 100}%` }]}>
-              <View style={[s.gaugeTickLineH, major && s.gaugeTickLineHMajor]} />
-              {major && <Text style={s.gaugeTickLabelH}>{mark}</Text>}
-            </View>
-          );
-        })}
-      </View>
-      <Text style={s.gaugeScaleCaption}>{t('tools.gauge.scaleCaption', { scale })}</Text>
-      {over && (
-        <Text style={s.gaugeOverText}>
-          {fixedScale ? t('tools.gauge.overSyringe', { scale, ml: scale / 100 }) : t('tools.gauge.over')}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function parsePositiveNumber(value: string): number {
+export function parsePositiveNumber(value: string): number {
   const normalized = value.trim().replace(',', '.');
   if (!/^\d*\.?\d+$/.test(normalized)) return 0;
   const parsed = Number(normalized);
@@ -817,7 +584,7 @@ function parsePositiveNumber(value: string): number {
 
 // Adaptive precision: enough decimals to be useful, never the 6-digit
 // repeating tails that overflowed the result panel (e.g. 3,333.333333).
-function formatNumber(value: number): string {
+export function formatNumber(value: number): string {
   if (!Number.isFinite(value)) return '0';
   const abs = Math.abs(value);
   const maximumFractionDigits = abs >= 100 ? 1 : abs >= 1 ? 2 : abs >= 0.01 ? 3 : 4;
@@ -831,12 +598,12 @@ function formatContainerMass(mcg: number): string {
   return mcg >= 1000 ? `${formatNumber(mcg / 1000)} mg` : `${formatNumber(mcg)} mcg`;
 }
 
-function formatMass(mcg: number): string {
+export function formatMass(mcg: number): string {
   if (mcg >= 1000) return `${formatNumber(mcg / 1000)} mg (${formatNumber(mcg)} mcg)`;
   return `${formatNumber(mcg)} mcg (${formatNumber(mcg / 1000)} mg)`;
 }
 
-function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
+export function Field({ value, setValue, placeholder, multiline, keyboardType, style }: {
   value: string; setValue: (value: string) => void; placeholder: string; multiline?: boolean; keyboardType?: any; style?: any;
 }) {
   return <TextInput value={value} onChangeText={setValue} placeholder={placeholder} placeholderTextColor={colors.textFaint} multiline={multiline} keyboardType={keyboardType} style={[s.input, multiline && s.multiline, style]} />;
@@ -844,10 +611,10 @@ function Field({ value, setValue, placeholder, multiline, keyboardType, style }:
 function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
   return <Pressable style={s.primaryBtn} onPress={onPress}><Text style={s.primaryBtnText}>{label}</Text></Pressable>;
 }
-function SegmentButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+export function SegmentButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return <Pressable style={[s.segmentBtn, active && s.segmentBtnActive]} onPress={onPress}><Text style={[s.segmentText, active && s.segmentTextActive]}>{label}</Text></Pressable>;
 }
-function Notice({ text }: { text: string }) { return <View style={s.notice}><Text style={s.noticeText}>{text}</Text></View>; }
+export function Notice({ text }: { text: string }) { return <View style={s.notice}><Text style={s.noticeText}>{text}</Text></View>; }
 function Empty({ text }: { text: string }) { return <Text style={s.empty}>{text}</Text>; }
 function ListItem({ title, meta, onDelete, accent, actions }: { title: string; meta: string; onDelete: () => void; accent?: string; actions?: React.ReactNode }) {
   return (
@@ -984,3 +751,6 @@ const s = StyleSheet.create({
   referenceText: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 12 },
   calculatorFootnote: { color: colors.textFaint, fontSize: 10, lineHeight: 15, textAlign: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.lg },
 });
+
+/** Shared with the worksheet module, which is left out of the no-worksheet build. */
+export { s as toolStyles };
