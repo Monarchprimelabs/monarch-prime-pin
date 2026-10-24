@@ -68,7 +68,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Monarch Prime Pin reads your body weight, body fat percentage and step count to show them next to your records, on Home and in Reports. The data stays on your phone.",
+          "NSHealthShareUsageDescription": "Monarch Prime Pin reads your body weight, body fat percentage and step count, and, if you turn on Health trends, heart rate variability, resting heart rate, sleep, blood glucose, lean body mass and waist, to show your own trends next to your records, on Home and in Reports. The data stays on your phone.",
           "NSHealthUpdateUsageDescription": "Monarch Prime Pin only reads from Apple Health and never writes to it.",
           "background": false
         }
@@ -80,6 +80,10 @@
         "projectId": "42783ff2-be3c-4272-aed1-59cb6ede2f4e"
       }
     },
-    "owner": "monarchprimelabs"
+    "owner": "monarchprimelabs",
+    "locales": {
+      "es": "./locales/es.json",
+      "pt": "./locales/pt.json"
+    }
   }
 }

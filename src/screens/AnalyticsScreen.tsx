@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Alert, Pressable, ScrollView, Share, View, Text, StyleSheet } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Share, View, Text, StyleSheet } from 'react-native';
 import { TwoColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
 import { usePremium } from '../lib/usePremium';
@@ -23,6 +23,7 @@ import { generateInsights } from '../lib/insights';
 import { getDoseSkips, getInjections, getProtocols, getVials } from '../lib/storage';
 import type { DoseSkip, Protocol } from '../lib/schedule/types';
 import type { Vial } from '../lib/vials/types';
+import { HealthTrendsCard } from '../components/HealthTrends';
 
 export function AnalyticsScreen() {
   const wide = useWideLayout();
@@ -31,6 +32,7 @@ export function AnalyticsScreen() {
   const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
+  const [sleepByDay, setSleepByDay] = useState<Record<string, number> | undefined>(undefined);
   const [planData, setPlanData] = useState<{ protocols: Protocol[]; skips: DoseSkip[]; vials: Vial[] }>({ protocols: [], skips: [], vials: [] });
   useEffect(() => {
     Promise.all([getProtocols(), getDoseSkips(), getVials()])
@@ -257,8 +259,12 @@ export function AnalyticsScreen() {
 
   // Insights (Premium): facts about the user's own entries, never advice.
   const insights = generateInsights({
-    injections, ...planData, today: localDateISO(), monthLabel,
+    injections, ...planData, today: localDateISO(), monthLabel, sleepByDay,
   }, t);
+  // Expanded Apple Health trends (Premium, iOS only).
+  const healthTrendsCard = Platform.OS !== 'ios' ? null : allows('expandedHealth')
+    ? <HealthTrendsCard onSleep={setSleepByDay} />
+    : <PremiumLockCard feature="expandedHealth" title={t('healthx.title')} body={t('healthx.lockedBody')} />;
   const insightsCard = allows('insights') ? (
     <Card>
       <CardLabel icon="💡">{t('insight.title')}</CardLabel>
@@ -373,6 +379,8 @@ export function AnalyticsScreen() {
             </>}
             right={<>
               {insightsCard}
+
+              {healthTrendsCard}
 
               {healthSteps.length > 0 && (() => {
                 // Last 14 days as bars, today on the right; days without data stay empty.
@@ -620,6 +628,8 @@ export function AnalyticsScreen() {
             </Card>
 
             {insightsCard}
+
+              {healthTrendsCard}
 
               {healthSteps.length > 0 && (() => {
               // Last 14 days as bars, today on the right; days without data stay empty.
