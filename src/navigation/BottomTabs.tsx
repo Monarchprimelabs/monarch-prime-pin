@@ -15,6 +15,8 @@ import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 import { adoptLegacyPhotos } from '../lib/storage';
 import { FounderSheetHost } from '../components/FounderSheet';
+import { usePremium } from '../lib/usePremium';
+import { setPremiumKnown } from '../lib/notify/store';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
@@ -22,6 +24,13 @@ export function BottomTabs() {
   const { t } = useI18n();
   const [active, setActive] = React.useState<TabId>('home');
   const [pendingOccurrence, setPendingOccurrence] = React.useState<string | null>(null);
+  const { premium } = usePremium();
+
+  // Notification syncs run outside React, so they read the last known
+  // Premium state (monthly report, weekly summary wording).
+  React.useEffect(() => {
+    setPremiumKnown(premium).then(() => syncProtocolReminders()).catch(() => undefined);
+  }, [premium]);
 
   // Protocol reminders are a rolling window: rebuild it whenever the app
   // comes forward, which also re-anchors them after a time zone change.

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ReadableScrollView as ScrollView } from '../components/Columns';
@@ -14,6 +14,9 @@ import { isPaidFounderSource } from '../lib/store/premium';
 import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
 import { hapticSuccess } from '../lib/haptics';
 import { colors, radius, spacing, withAlpha } from '../theme';
+import { getNotifyPrefs, setNotifyPrefs, setTrialEndsAt } from '../lib/notify/store';
+import { requestNotificationPermission } from '../lib/notify/scheduler';
+import { syncProtocolReminders } from '../lib/protocolReminders';
 
 // What Premium includes, in plain language, matching src/lib/featureGate.ts
 // (Guideline 3.1.2(c)). Apple Health trends are iOS only.
@@ -39,6 +42,9 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
   const [working, setWorking] = useState(false);
   const [copied, setCopied] = useState(false);
   const awaitingPurchase = useRef(false);
+  const [remindTrial, setRemindTrial] = useState(false);
+  // The plan and opt-in at the moment Buy was tapped, for the trial reminder.
+  const startedTrial = useRef<{ remind: boolean } | null>(null);
 
   useEffect(() => {
     if (premium.source === 'none' && monetizationEnabled) trackPaywallView();
@@ -49,6 +55,16 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     if (!awaitingPurchase.current || premium.source === 'none') return;
     awaitingPurchase.current = false;
+    if (startedTrial.current?.remind && premium.source === 'subscription') {
+      // The annual trial is one week (storekit/Products.storekit); remind 2 days before.
+      const ends = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      setTrialEndsAt(ends)
+        .then(getNotifyPrefs)
+        .then(prefs => setNotifyPrefs({ ...prefs, trialEnding: true }))
+        .then(() => syncProtocolReminders())
+        .catch(() => undefined);
+    }
+    startedTrial.current = null;
     hapticSuccess();
     Alert.alert(t('paywall.purchasedTitle'), t('paywall.purchasedBody'));
     onClose?.();
@@ -92,6 +108,7 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
   const buy = () => run(async () => {
     trackUpgradeTap();
     awaitingPurchase.current = true;
+    startedTrial.current = plan === 'annual' && copy?.showTrialTimeline ? { remind: remindTrial } : null;
     try {
       await purchase(PRODUCT_ID[plan]);
     } catch (error) {
@@ -233,6 +250,19 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
                     <Text style={s.timeline}>{t('paywall.timeline1')}</Text>
                     <Text style={s.timeline}>{t('paywall.timeline2')}</Text>
                     <Text style={s.timeline}>{t('paywall.timeline3', { price: selected.displayPrice })}</Text>
+                    <View style={s.remindRow}>
+                      <Text style={[s.timeline, { flex: 1 }]}>{t('notify.trialOptIn')}</Text>
+                      <Switch
+                        value={remindTrial}
+                        onValueChange={async value => {
+                          setRemindTrial(value);
+                          if (value && !(await requestNotificationPermission().catch(() => false))) setRemindTrial(false);
+                        }}
+                        trackColor={{ false: 'rgba(120,130,150,0.4)', true: colors.primary }}
+                        thumbColor={colors.white}
+                        accessibilityLabel={t('notify.trialOptIn')}
+                      />
+                    </View>
                   </Card>
                 )}
               </>
@@ -257,6 +287,7 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
+  remindRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: 6 },
   closeBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   closeText: { color: colors.textMuted, fontSize: 20, fontWeight: '700' },

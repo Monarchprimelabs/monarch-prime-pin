@@ -212,7 +212,8 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
   const [openedAt, setOpenedAt] = useState(initial?.openedAt ?? localDateISO());
   const [expiresAt, setExpiresAt] = useState<string | undefined>(initial?.expiresAt);
   const [inventoryItemId, setInventoryItemId] = useState<string | undefined>(initial?.inventoryItemId);
-  const [picker, setPicker] = useState<'opened' | 'expires' | null>(null);
+  const [restockDate, setRestockDate] = useState<string | undefined>(initial?.restockDate);
+  const [picker, setPicker] = useState<'opened' | 'expires' | 'restock' | null>(null);
 
   const stock = inventory.filter(item => item.quantity > 0 || item.id === initial?.inventoryItemId);
 
@@ -232,6 +233,7 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
       diluentMl: ml,
       openedAt,
       expiresAt,
+      restockDate,
       inventoryItemId,
       status: initial?.status ?? 'active',
       createdAt: initial?.createdAt ?? nowIso,
@@ -253,7 +255,7 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
   const pickerNode = picker && (
     <View style={s.pickerWrap}>
       <DateTimePicker
-        value={parseLocalDay((picker === 'opened' ? openedAt : expiresAt) ?? localDateISO())}
+        value={parseLocalDay((picker === 'opened' ? openedAt : picker === 'expires' ? expiresAt : restockDate) ?? localDateISO())}
         mode="date"
         display={Platform.OS === 'ios' ? 'inline' : 'default'}
         themeVariant={colors.statusBar === 'light' ? 'dark' : 'light'}
@@ -262,7 +264,9 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
           const which = picker;
           if (Platform.OS !== 'ios') setPicker(null);
           if (!selected || event.type === 'dismissed') return;
-          if (which === 'opened') setOpenedAt(localDateISO(selected)); else setExpiresAt(localDateISO(selected));
+          if (which === 'opened') setOpenedAt(localDateISO(selected));
+          else if (which === 'expires') setExpiresAt(localDateISO(selected));
+          else setRestockDate(localDateISO(selected));
         }}
       />
       {Platform.OS === 'ios' && (
@@ -321,6 +325,18 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
             )}
           </View>
           {picker === 'expires' && pickerNode}
+          <Text style={s.fieldLabel}>{t('notify.restockField')}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable style={[s.input, s.pickerField]} onPress={() => setPicker('restock')} accessibilityRole="button">
+              <Text style={s.pickerFieldText}>{restockDate ? formatDay(restockDate, dateLocale) : t('notify.restockNone')}</Text>
+            </Pressable>
+            {!!restockDate && (
+              <Pressable style={st.clearBtn} onPress={() => setRestockDate(undefined)} accessibilityRole="button" accessibilityLabel={t('notify.restockClear')}>
+                <Text style={{ color: colors.red, fontSize: 22 }}>×</Text>
+              </Pressable>
+            )}
+          </View>
+          {picker === 'restock' && pickerNode}
         </Card>
         {stock.length > 0 && (
           <Card>

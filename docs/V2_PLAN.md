@@ -16,7 +16,7 @@ Oct 24, 2026. Nothing below is built until the owner approves.
 | Free: 2 active plans | Unreleased branch has 1 free plan. | Change to 2, per the handoff. |
 | Worksheet is free | Worksheet is Pro today (`ToolsScreen.tsx`). | Ungate it (M5). |
 | Widgets in 2.0 | The 1.7.0 widget failed on device three builds running and was removed (`docs/RELEASING.md`). | See decision 6. |
-| "Log it" runs in the background from the notification | Expo notification actions can't reliably run app code without opening the app. | "Log it" opens straight to a one-tap save of that planned entry. Snooze works in the background. |
+| "Log it" runs in the background from the notification | Expo notification actions can't reliably run app code without opening the app. | "Log it" opens straight to a one-tap save of that planned entry. "Snooze 1 h" also opens the app briefly so the snooze is always scheduled. |
 | Compile-time `REMOVE_WORKSHEET` | No Xcode configurations in an Expo app. | An EAS build profile sets `EXPO_PUBLIC_REMOVE_WORKSHEET=true`; the worksheet is loaded with a conditional `require`, which Metro and the minifier drop from that bundle. A script checks the bundle for worksheet strings. |
 
 ## 2. 1.x data that marks a free founder (check before any 2.0 write)
@@ -124,3 +124,8 @@ paywall UI test run on a Mac through Codex. Rough size: M1-M4 is the core
   - *Paywall UI test and StoreKit-session tests:* need Xcode; Codex runs
     them against `storekit/Products.storekit`. The plan text, frequency caps
     and review-prompt rules are unit-tested in Jest.
+- **M7 notifications:** `src/lib/notify/*`. Every type has its own switch in
+  Settings > Notifications; non-plan ones are capped at 2 a day and moved out
+  of quiet hours. No text names a compound or vial (lock screens). Permission
+  is asked only for a plan reminder or the trial-reminder opt-in. There are no
+  promotional notifications.

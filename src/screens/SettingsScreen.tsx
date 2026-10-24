@@ -22,6 +22,7 @@ import { SUPABASE_CONFIGURED } from '../lib/supabase';
 import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '../lib/health';
 import { usePaywall } from '../lib/paywall';
 import { useFounder } from '../lib/founders';
+import { NotificationSettings } from '../components/NotificationSettings';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
@@ -348,12 +349,7 @@ function RemindersTab() {
         </Pressable>
       </Card>
 
-      <Card>
-        <CardLabel icon="🔔">{t('settings.notificationsLabel')}</CardLabel>
-        <Text style={s.localDataText}>
-          {t('settings.notificationsBody')}
-        </Text>
-      </Card>
+      <NotificationSettings />
 
       {!!user?.isDeveloper && !!funnel && (
         <Card>
