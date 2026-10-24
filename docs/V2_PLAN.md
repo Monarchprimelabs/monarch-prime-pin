@@ -73,28 +73,21 @@ worksheet and 2 plans become free for everyone anyway.
   `backup.ts` and `csvRows.ts` (labs), `i18n.tsx`, `app.json` (Health usage
   strings), `eas.json` (no-worksheet profile).
 
-## 6. Decisions for the owner
+## 6. Owner decisions (Oct 24, 2026)
 
-1. **1.0.5 paid-download buyers:** treat them as paid founders (Premium for
-   life)? Recommended yes. Needs the date the price went to Free from App
-   Store Connect (Pricing history); the repo suggests about June 19, 2026.
-2. **`legacy-install` users** (had data before 1.1.0, given Pro for free):
-   keep them at Premium? Recommended yes: they have Pro now, and taking it
-   away invites complaints.
-3. **1.9.0:** ship the iPad/Duo build first, or fold it into 2.0? Folding
-   means one review and the founder stamp happens on 2.0's first launch as
-   planned. Shipping 1.9 first gets the Duo out sooner; founder detection still
-   works because it reads 1.x data.
-4. **Android:** launching Sunday with the $9.99 Lifetime Pro makes those
-   buyers paid founders on Android too (Play purchases are separate). Or hold
-   Android for 2.0 so it launches with subscriptions.
-5. **Product IDs:** `com.monarchprime.pin.premium.monthly`, `.annual`,
-   `.lifetime` match the bundle ID. Legacy ID found in code:
-   `com.monarchprime.pin.pro.lifetime`. Confirm both in App Store Connect.
-6. **Widgets:** build them in 2.0 with Codex testing on a Mac, or move them
-   to 2.1 so they can't hold up 2.0? Recommended 2.1.
-7. **Terms of Use URL** (or Apple's standard EULA) and the **Privacy Policy
-   URL** for the paywall.
+1. **1.0.5 paid-download buyers: Premium for life.** Identified by their saved
+   `paid-app` grant, or by a production `originalPurchaseDate` before
+   `PAID_APP_FREE_DATE`. That date is still to confirm in App Store Connect
+   (Sales and Trends: the last day with paid downloads). The repo only shows
+   that the free-tier build was approved on 2026-06-19.
+2. **`legacy-install` users keep Premium.**
+3. **iPad and Duo ship together with 2.0** (one release, one review).
+4. **Android launches with the 2.0 membership model** (subscriptions), not
+   the $9.99 Lifetime Pro.
+5. **Widgets move to 2.1.**
+6. Still open: confirm the product IDs and the legacy ID in App Store
+   Connect; the Privacy Policy URL (Terms default to Apple's standard EULA);
+   `FOUNDER_CUTOFF` and `FOUNDER_CODE` before submitting.
 
 ## 7. Milestones
 

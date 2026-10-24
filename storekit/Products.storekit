@@ -1,0 +1,103 @@
+{
+  "identifier": "0C3C6E76",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "B29B0FE1",
+      "localizations": [
+        {
+          "description": "1.x one-time unlock (legacy, off sale after 2.0)",
+          "displayName": "Lifetime Pro",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.monarchprime.pin.pro.lifetime",
+      "referenceName": "Legacy Lifetime Pro",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "79.99",
+      "familyShareable": false,
+      "internalID": "0098CC68",
+      "localizations": [
+        {
+          "description": "Premium forever, one payment",
+          "displayName": "Lifetime Premium",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.monarchprime.pin.premium.lifetime",
+      "referenceName": "Lifetime Premium",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "6770808426",
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "21500001",
+      "localizations": [],
+      "name": "Monarch Prime Pin Premium",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "77210965",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Monarch Prime Pin Premium, billed monthly",
+              "displayName": "Premium Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.monarchprime.pin.premium.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly",
+          "subscriptionGroupID": "21500001",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "9D65DEF3",
+          "introductoryOffer": {
+            "internalID": "D2B7EAAE",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          },
+          "localizations": [
+            {
+              "description": "Monarch Prime Pin Premium, billed yearly",
+              "displayName": "Premium Annual",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.monarchprime.pin.premium.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual",
+          "subscriptionGroupID": "21500001",
+          "type": "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}
