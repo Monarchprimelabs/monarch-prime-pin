@@ -20,11 +20,11 @@ import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from 
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { SUPABASE_CONFIGURED } from '../lib/supabase';
 import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '../lib/health';
-import { UpgradeScreen } from './UpgradeScreen';
+import { usePaywall } from '../lib/paywall';
+import { useFounder } from '../lib/founders';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { t } = useI18n();
 
   return (
@@ -59,12 +59,9 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'rem' && <RemindersTab />}
-        {tab === 'acc' && <AccessTab onOpen={() => setUpgradeOpen(true)} />}
+        {tab === 'acc' && <AccessTab />}
         {tab === 'leg' && <LegalTab />}
       </ScrollView>
-      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}><SafeAreaProvider>
-        <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
-      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }
@@ -457,29 +454,55 @@ function RemindersTab() {
   );
 }
 
-function AccessTab({ onOpen }: { onOpen: () => void }) {
-  const { source, monetizationEnabled } = useEntitlements();
-  const { t } = useI18n();
-  const label = source === 'paid-app' || source === 'legacy-install'
-    ? t('access.founding')
-    : source === 'lifetime'
-      ? t('access.lifetime')
-      : source === 'early-access'
-        ? t('access.earlyAccess')
-        : t('access.freePlan');
+function AccessTab() {
+  const { premium, monetizationEnabled, restorePurchases } = useEntitlements();
+  const { status: founder, setDebugStatus } = useFounder();
+  const { openPaywall } = usePaywall();
+  const { t, dateLocale } = useI18n();
+  const paidFounder = founder === 'paidFounder'
+    || premium.source === 'legacyLifetime' || premium.source === 'paidApp' || premium.source === 'legacyInstall';
+  const label = paidFounder
+    ? t('premium.statusPaidFounder')
+    : premium.source === 'lifetimePremium'
+      ? t('premium.statusLifetime')
+      : premium.source === 'subscription'
+        ? t('premium.statusSub')
+        : founder === 'freeFounder'
+          ? t('premium.statusFreeFounder')
+          : t('premium.statusFree');
   return (
     <Card>
       <CardLabel icon="◆">{t('access.label')}</CardLabel>
+      {(founder === 'freeFounder' || paidFounder) && <Text style={s.founderBadge}>{t('founder.badge')}</Text>}
       <Text style={s.accessTitle}>{label}</Text>
-      <Text style={s.localDataText}>
-        {t('access.body', { n: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-      </Text>
+      {premium.source === 'subscription' && premium.expires !== null && (
+        <Text style={s.localDataText}>
+          {t('paywall.renews', { date: new Date(premium.expires).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' }) })}
+        </Text>
+      )}
+      <Text style={s.localDataText}>{t('access.body')}</Text>
       {!monetizationEnabled && (
         <Text style={s.accessPreview}>{t('access.earlyNote')}</Text>
       )}
-      <Pressable style={s.saveNameBtn} onPress={onOpen}>
-        <Text style={s.saveNameText}>{t('access.viewDetails')}</Text>
+      <Pressable style={s.saveNameBtn} onPress={() => openPaywall({ kind: 'settings' })}>
+        <Text style={s.saveNameText}>{t('premium.seePremium')}</Text>
       </Pressable>
+      <Pressable style={s.saveNameBtn} onPress={() => { restorePurchases().catch(() => undefined); }}>
+        <Text style={s.saveNameText}>{t('paywall.restore')}</Text>
+      </Pressable>
+      {/* Development builds only (__DEV__): preview each founder state. */}
+      {!!setDebugStatus && (
+        <View style={{ marginTop: 16 }}>
+          <Text style={s.accessPreview}>{t('premium.debugTitle')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+            {(['none', 'freeFounder', 'paidFounder'] as const).map(value => (
+              <Pressable key={value} style={s.saveNameBtn} onPress={() => setDebugStatus(value)}>
+                <Text style={s.saveNameText}>{value}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
     </Card>
   );
 }
@@ -598,6 +621,11 @@ const s = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     lineHeight: 22,
+  },
+  founderBadge: {
+    alignSelf: 'flex-start', color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.4,
+    borderWidth: 1, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 7, paddingVertical: 3, marginBottom: 6,
+    overflow: 'hidden',
   },
   accessTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 10 },
   accessPreview: { color: colors.teal, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 12 },

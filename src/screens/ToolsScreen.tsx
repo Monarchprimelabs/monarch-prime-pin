@@ -17,17 +17,16 @@ import {
   saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
-import { UpgradeScreen } from './UpgradeScreen';
+import { PaywallProvider } from '../lib/paywall';
 import { ProtocolsTool } from './ProtocolsScreen';
 import { VialsTool } from './VialsScreen';
-import { useEntitlements } from '../lib/entitlements';
 import { usePremium } from '../lib/usePremium';
-import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 import { exportInjectionsCsv } from '../lib/exportData';
 import { hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
 import { localDateISO } from '../lib/dates';
+import { notifyPositiveMoment } from '../lib/reviewPrompt';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -67,12 +66,9 @@ function isValidTime(value: string): boolean {
 }
 
 export function ToolsScreen() {
-  const [active, setActive] = useState<ToolId | 'upgrade' | null>(null);
+  const [active, setActive] = useState<ToolId | null>(null);
   const [exporting, setExporting] = useState(false);
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
   const { t } = useI18n();
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const { allows } = usePremium();
   // Protocols and Vials replace Schedule, Inventory and Templates. The old
   // tools stay reachable only for people who already have entries in them,
@@ -90,6 +86,7 @@ export function ToolsScreen() {
     setExporting(true);
     try {
       const { count } = await exportInjectionsCsv();
+      if (count > 0) notifyPositiveMoment('export');
       if (count === 0) {
         Alert.alert(t('tools.exportNothingTitle'), t('tools.exportNothingBody'));
       }
@@ -105,7 +102,7 @@ export function ToolsScreen() {
       runExport();
       return;
     }
-    setActive(tool.pro && !canUsePro ? 'upgrade' : tool.id);
+    setActive(tool.id);
   };
 
   return (
@@ -132,7 +129,6 @@ export function ToolsScreen() {
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
-                {!!tool.pro && !canUsePro && <Text style={s.proBadge}>PRO</Text>}
                 {tool.id === 'protocols' && !allows('unlimitedActivePlans') && <Text style={s.freeBadge}>{t('tools.twoFree')}</Text>}
               </View>
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
@@ -142,14 +138,16 @@ export function ToolsScreen() {
         ))}
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
-        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
-        {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
-        {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
-        {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
-        {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
-        {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
-        {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
-        {active === 'upgrade' && <UpgradeScreen onClose={() => setActive(null)} />}
+        {/* Sheets inside this modal open their paywall from here: iOS can't present over a modal from the root. */}
+        <PaywallProvider>
+          {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
+          {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
+          {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
+          {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
+          {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
+          {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
+          {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
+        </PaywallProvider>
       </SafeAreaProvider></Modal>
     </SafeAreaView>
   );

@@ -19,6 +19,7 @@ import { heatColors } from '../theme';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import { useI18n } from '../lib/i18n';
 import { HealthPoint, readHealthBodyFat, readHealthSteps, readHealthWeights } from '../lib/health';
+import { notifyPositiveMoment } from '../lib/reviewPrompt';
 
 export function AnalyticsScreen() {
   const wide = useWideLayout();
@@ -188,7 +189,8 @@ export function AnalyticsScreen() {
 
   const shareReport = async () => {
     try {
-      await Share.share({ message: reportText, title: t('reports.dialogTitle', { month: monthLabel }) });
+      const shared = await Share.share({ message: reportText, title: t('reports.dialogTitle', { month: monthLabel }) });
+      if (shared.action === Share.sharedAction) notifyPositiveMoment('export');
     } catch (e: any) {
       Alert.alert(t('reports.shareFailed'), e?.message || t('common.tryAgain'));
     }
@@ -236,6 +238,7 @@ export function AnalyticsScreen() {
       const canShare = await Sharing.isAvailableAsync();
       if (!canShare) throw new Error('Sharing is not available on this device.');
       await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: t('reports.dialogTitle', { month: monthLabel }), UTI: 'com.adobe.pdf' });
+      notifyPositiveMoment('export');
     } catch (e: any) {
       Alert.alert(t('reports.pdfFailed'), e?.message || t('common.tryAgain'));
     } finally {

@@ -20,6 +20,8 @@ export const V2_KEYS = new Set([
   '@mpp/founder_status_v1',
   '@mpp/founder_sheet_shown_v1',
   '@mpp/subscription_cache_v1',
+  '@mpp/paywall_auto_v1',
+  '@mpp/review_last_at_v1',
 ]);
 
 export function has1xData(keys: readonly string[]): boolean {

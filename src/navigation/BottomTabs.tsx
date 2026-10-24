@@ -11,21 +11,16 @@ import { LogInjectionScreen } from '../screens/LogInjectionScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
-import { UpgradeScreen } from '../screens/UpgradeScreen';
-import { useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 import { adoptLegacyPhotos } from '../lib/storage';
+import { FounderSheetHost } from '../components/FounderSheet';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
 export function BottomTabs() {
   const { t } = useI18n();
   const [active, setActive] = React.useState<TabId>('home');
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const [pendingOccurrence, setPendingOccurrence] = React.useState<string | null>(null);
 
   // Protocol reminders are a rolling window: rebuild it whenever the app
@@ -108,6 +103,7 @@ export function BottomTabs() {
           <Ionicons name="add" size={32} color={colors.actionText} />
         </Pressable>
       </SafeAreaView>
+      <FounderSheetHost />
     </View>
   );
 }

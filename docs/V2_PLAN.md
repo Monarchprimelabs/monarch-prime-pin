@@ -95,3 +95,32 @@ M1-M9 as in the handoff, in that order, small commits, checks after each:
 tsc, Jest (UTC, New York, Tokyo), heat, i18n. StoreKit-session tests and the
 paywall UI test run on a Mac through Codex. Rough size: M1-M4 is the core
 (about a week of sessions); M6-M7 are the largest.
+
+## 8. Build notes
+
+- **Price history:** the owner confirms the app was always a free download
+  (free, then free with the 5-log limit, then the $9.99 Lifetime Pro). So
+  `PAID_APP_FREE_DATE` stays unset and the date check never matches. The
+  `paid-app` grants 1.x already saved on devices are still honored, and those
+  users count as paid founders. `docs/app-store-phase-2.md` calls 1.0.5 a paid
+  download; App Store Connect wins.
+- **M4 paywall:** `src/screens/PaywallScreen.tsx` replaces `UpgradeScreen`.
+  Prices come only from the store (`displayPrice`); trial wording and the
+  trial timeline appear only when `isEligibleForIntroOfferIOS` says so;
+  renewal terms, Restore, Redeem Code, Terms, Privacy (once
+  `PRIVACY_URL` is set) and Manage Subscription; a close button that's
+  always there. Automatic placements go through `paywallCap.ts` (once a
+  week at most, never mid-log, never after a failed purchase).
+- **Not in M4, and why:**
+  - *Win-back offers:* `expo-iap` accepts a `winBackOffer` on purchase but
+    doesn't expose the eligible offer IDs from renewal info. Apple also shows
+    eligible win-back offers on its own subscription page. The "Welcome back"
+    state waits until the offers exist in App Store Connect (they can only be
+    created after the subscriptions are approved).
+  - *StoreKit messages:* when an app doesn't listen for them, iOS shows
+    billing-issue, price-increase and win-back messages itself. That is the
+    handoff's intent ("don't suppress them"), so nothing is needed; deferring
+    them during log entry isn't possible without a native listener.
+  - *Paywall UI test and StoreKit-session tests:* need Xcode; Codex runs
+    them against `storekit/Products.storekit`. The plan text, frequency caps
+    and review-prompt rules are unit-tested in Jest.

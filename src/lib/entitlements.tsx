@@ -1,5 +1,6 @@
 import React, { createContext, ReactNode, useContext } from 'react';
 import { LEGACY_LIFETIME_ID } from './store/constants';
+import type { Product, ProductSubscription } from 'expo-iap';
 import type { PremiumStatus } from './store/premium';
 
 // Web and tests: no store, every tool open. Mirrors entitlements.native.tsx.
@@ -10,7 +11,11 @@ export const MONETIZATION_ENABLED = false;
 
 export type EntitlementSource = 'free' | 'early-access' | 'legacy-install' | 'paid-app' | 'lifetime' | 'premium';
 
-export type PremiumProducts = { monthly: null; annual: null; lifetime: null };
+export type PremiumProducts = {
+  monthly: ProductSubscription | null;
+  annual: ProductSubscription | null;
+  lifetime: Product | null;
+};
 
 type EntitlementContextValue = {
   loading: boolean;

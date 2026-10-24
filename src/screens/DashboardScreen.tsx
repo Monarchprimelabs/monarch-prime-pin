@@ -22,12 +22,13 @@ import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
 import { TwoColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
 import { usePremium } from '../lib/usePremium';
-import { usePaywall } from '../lib/paywall';
+import { PaywallProvider, usePaywall } from '../lib/paywall';
 import { readHealthSteps } from '../lib/health';
 import { ProtocolsTool } from './ProtocolsScreen';
 import type { PlannedDose } from './LogInjectionScreen';
 import { parseOccurrenceKey, occurrencesBetween } from '../lib/schedule/engine';
 import { withStatus } from '../lib/schedule/status';
+import { notifyPositiveMoment } from '../lib/reviewPrompt';
 
 type Props = {
   onNavigate: (tab: string) => void;
@@ -183,6 +184,8 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
   const completedScheduleCount = schedules.filter(item => item.completedAt).length;
   const wide = useWideLayout();
+  // A 7-day streak is a good moment to ask for a review (60-day cap inside).
+  useEffect(() => { if (stats.streak >= 7) notifyPositiveMoment('streak7'); }, [stats.streak]);
 
   // Opened from a protocol reminder: go straight to logging that dose,
   // unless it's already logged or skipped.
@@ -461,7 +464,9 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </SafeAreaProvider></Modal>
 
       <Modal visible={protocolsOpen} animationType="slide" onRequestClose={() => { setProtocolsOpen(false); refresh(); }}><SafeAreaProvider>
-        <ProtocolsTool onClose={() => { setProtocolsOpen(false); refresh(); }} />
+        <PaywallProvider>
+          <ProtocolsTool onClose={() => { setProtocolsOpen(false); refresh(); }} />
+        </PaywallProvider>
       </SafeAreaProvider></Modal>
 
       <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>
@@ -503,6 +508,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
                   });
                   if (await Sharing.isAvailableAsync()) {
                     await Sharing.shareAsync(uri, { mimeType: 'image/png' });
+                    notifyPositiveMoment('export');
                   } else {
                     Alert.alert(t('share.failed'));
                   }
