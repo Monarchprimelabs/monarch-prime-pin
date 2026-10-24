@@ -544,7 +544,6 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-const KEY_WORKSHEET_INPUTS = '@mpp/worksheet_inputs';
 const U100_MARKINGS = [1, 5, 10, 20, 50];
 // Real U-100 barrels come in 30, 50, and 100 unit sizes; the gauge picks the
 // smallest scale the reading fits on so small readings stay legible.
@@ -563,31 +562,8 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const [targetUnit, setTargetUnit] = useState('mg');
   const [syringe, setSyringe] = useState<SyringeSize>('auto');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const hydrated = useRef(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(KEY_WORKSHEET_INPUTS)
-      .then(raw => {
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (typeof saved.mass === 'string') setSolutionMass(saved.mass);
-        if (saved.unit === 'mg' || saved.unit === 'mcg') setSolutionMassUnit(saved.unit);
-        if (typeof saved.volume === 'string') setLiquidVolume(saved.volume);
-        if (typeof saved.target === 'string') setTargetAmount(saved.target);
-        if (saved.targetUnit === 'mg' || saved.targetUnit === 'mcg') setTargetUnit(saved.targetUnit);
-        if (SYRINGE_SIZES.includes(saved.syringe)) setSyringe(saved.syringe);
-      })
-      .catch(() => undefined)
-      .finally(() => { hydrated.current = true; });
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated.current) return;
-    AsyncStorage.setItem(
-      KEY_WORKSHEET_INPUTS,
-      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume, target: targetAmount, targetUnit, syringe }),
-    ).catch(() => undefined);
-  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit, syringe]);
+  const [showMath, setShowMath] = useState(false);
+  // Fields start empty every time (no saved or suggested values).
 
   const copyText = async (key: string, text: string) => {
     try {
@@ -650,7 +626,12 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   return (
     <ToolShell title={t('tools.worksheet.title')} onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* Permanent, not dismissible (Guideline 1.4.2). */}
         <Notice text={t('tools.notice.worksheet')} />
+        <Pressable onPress={() => setShowMath(v => !v)} style={s.mathToggle} accessibilityRole="button" accessibilityState={{ expanded: showMath }}>
+          <Text style={s.mathToggleText}>{showMath ? t('tools.hideMath') : t('tools.showMath')}</Text>
+        </Pressable>
+        {showMath && <Text style={s.mathText}>{t('tools.mathFormula')}</Text>}
         <Card>
           <CardLabel icon="▱">{t('tools.solutionConc')}</CardLabel>
           <Text style={s.fieldLabel}>{t('tools.totalMass')}</Text>
@@ -904,6 +885,9 @@ const s = StyleSheet.create({
   backText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   toolHeaderTitle: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   scrollContent: { paddingTop: spacing.lg, paddingBottom: 50 },
+  mathToggle: { alignSelf: 'flex-start', marginHorizontal: spacing.xl, marginBottom: 8, minHeight: 36, justifyContent: 'center' },
+  mathToggleText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  mathText: { color: colors.textMuted, fontSize: 13, lineHeight: 20, marginHorizontal: spacing.xl, marginBottom: 12, fontVariant: ['tabular-nums'] },
   notice: { marginHorizontal: spacing.xl, marginBottom: spacing.lg, borderLeftWidth: 3, borderLeftColor: colors.accent, backgroundColor: 'rgba(255,140,0,0.08)', padding: 12 },
   noticeText: { color: colors.text, fontSize: 12, lineHeight: 18 },
   input: { minHeight: 48, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.text, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 10, fontSize: 14 },
