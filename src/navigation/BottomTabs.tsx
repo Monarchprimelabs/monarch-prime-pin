@@ -11,30 +11,39 @@ import { LogInjectionScreen } from '../screens/LogInjectionScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
-import { UpgradeScreen } from '../screens/UpgradeScreen';
-import { useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 import { adoptLegacyPhotos } from '../lib/storage';
+import { FounderSheetHost } from '../components/FounderSheet';
+import { LapsedSheetHost } from '../components/LapsedSheet';
+import { usePremium } from '../lib/usePremium';
+import { setPremiumKnown } from '../lib/notify/store';
+import { recordAppOpen } from '../lib/localMetrics';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
 export function BottomTabs() {
   const { t } = useI18n();
   const [active, setActive] = React.useState<TabId>('home');
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const [pendingOccurrence, setPendingOccurrence] = React.useState<string | null>(null);
+  const { premium } = usePremium();
+
+  // Notification syncs run outside React, so they read the last known
+  // Premium state (monthly report, weekly summary wording).
+  React.useEffect(() => {
+    setPremiumKnown(premium).then(() => syncProtocolReminders()).catch(() => undefined);
+  }, [premium]);
 
   // Protocol reminders are a rolling window: rebuild it whenever the app
   // comes forward, which also re-anchors them after a time zone change.
   React.useEffect(() => {
     syncProtocolReminders().catch(() => undefined);
     adoptLegacyPhotos().catch(() => undefined);
+    recordAppOpen().catch(() => undefined);
     const sub = AppState.addEventListener('change', state => {
-      if (state === 'active') syncProtocolReminders().catch(() => undefined);
+      if (state !== 'active') return;
+      syncProtocolReminders().catch(() => undefined);
+      recordAppOpen().catch(() => undefined);
     });
     const stopTaps = onProtocolReminderTap(key => {
       setActive('home');
@@ -55,7 +64,7 @@ export function BottomTabs() {
         )}
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
-        {active === 'analytics' && (canUsePro ? <AnalyticsScreen /> : <UpgradeScreen />)}
+        {active === 'analytics' && <AnalyticsScreen />}
         {active === 'settings' && <ToolsScreen />}
       </View>
 
@@ -108,6 +117,8 @@ export function BottomTabs() {
           <Ionicons name="add" size={32} color={colors.actionText} />
         </Pressable>
       </SafeAreaView>
+      <FounderSheetHost />
+      <LapsedSheetHost />
     </View>
   );
 }
@@ -178,7 +189,8 @@ const s = StyleSheet.create({
   tabBarSafe: {
     backgroundColor: 'transparent',
   },
-  tabBar: {
+  // On wide windows the five tabs stay grouped in the middle, under the centred log button.
+  tabBar: { width: '100%', maxWidth: 560, alignSelf: 'center',
     flexDirection: 'row',
     paddingVertical: 8,
     paddingHorizontal: 4,

@@ -1,0 +1,6 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "O Monarch Prime Pin lê seu peso, seu percentual de gordura corporal e seus passos e, se você ativar Tendências de saúde, a variabilidade da frequência cardíaca, a frequência cardíaca em repouso, o sono, a glicose no sangue, a massa magra e a cintura, para mostrar suas próprias tendências ao lado dos seus registros, no Início e nos Relatórios. Os dados ficam no seu celular.",
+    "NSHealthUpdateUsageDescription": "O Monarch Prime Pin apenas lê do Apple Saúde e nunca grava nele."
+  }
+}

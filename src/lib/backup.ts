@@ -5,13 +5,14 @@ import { readAsStringAsync } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Injection } from '../data/peptides';
 import {
-  getDoseSkips, getInjections, getInventory, getProtocols, getRecordTemplates, getSchedules, getVials,
+  getDoseSkips, getInjections, getInventory, getLabResults, getProtocols, getRecordTemplates, getSchedules, getVials,
   InventoryItem, RecordTemplate, replaceAllData, ScheduleEntry,
 } from './storage';
 import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
 import { syncProtocolReminders } from './protocolReminders';
 import { PHOTO_SCHEME, readPhotoBase64, writePhotoBase64 } from './photos';
+import type { LabResult } from './labs/types';
 
 // Full local-data backup and restore, free for all users — data portability
 // is never paywalled. Deliberately excludes the Pro entitlement (purchases
@@ -25,9 +26,10 @@ const MAX_PHOTO_BYTES = 60 * 1024 * 1024;
 
 const BACKUP_APP_ID = 'monarch-prime-pin';
 export const KEY_LAST_BACKUP_AT = '@mpp/last_backup_at';
-// v2 adds protocols, dose skips and vials. v1 files still restore (with none).
-const BACKUP_VERSION = 2;
-const READABLE_VERSIONS = [1, 2];
+// v2 adds protocols, dose skips and vials; v3 adds lab results. Older files
+// still restore (with none of the newer collections).
+const BACKUP_VERSION = 3;
+const READABLE_VERSIONS = [1, 2, 3];
 
 export type BackupPayload = {
   app: string;
@@ -40,6 +42,7 @@ export type BackupPayload = {
   protocols: Protocol[];
   doseSkips: DoseSkip[];
   vials: Vial[];
+  labResults: LabResult[];
   /** File name -> base64, for records whose photoUri is mpp-photo:<name>. */
   photos?: Record<string, string>;
 };
@@ -50,13 +53,14 @@ export type BackupCounts = {
   inventory: number;
   templates: number;
   protocols: number;
+  labResults: number;
   photos: number;
   photosSkipped: number;
 };
 
 export async function exportBackup({ includePhotos = false }: { includePhotos?: boolean } = {}): Promise<BackupCounts> {
-  const [injections, schedules, inventory, templates, protocols, doseSkips, vials] = await Promise.all([
-    getInjections(), getSchedules(), getInventory(), getRecordTemplates(), getProtocols(), getDoseSkips(), getVials(),
+  const [injections, schedules, inventory, templates, protocols, doseSkips, vials, labResults] = await Promise.all([
+    getInjections(), getSchedules(), getInventory(), getRecordTemplates(), getProtocols(), getDoseSkips(), getVials(), getLabResults(),
   ]);
 
   const photos: Record<string, string> = {};
@@ -87,6 +91,7 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
     protocols,
     doseSkips,
     vials,
+    labResults,
     ...(includePhotos ? { photos } : {}),
   };
 
@@ -115,6 +120,7 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
     inventory: inventory.length,
     templates: templates.length,
     protocols: protocols.length,
+    labResults: labResults.length,
     photos: Object.keys(photos).length,
     photosSkipped,
   };
@@ -151,6 +157,7 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
     protocols: asArray<Protocol>(parsed.protocols),
     doseSkips: asArray<DoseSkip>(parsed.doseSkips),
     vials: asArray<Vial>(parsed.vials),
+    labResults: asArray<LabResult>(parsed.labResults),
     photos: parsed.photos && typeof parsed.photos === 'object' && !Array.isArray(parsed.photos)
       ? Object.fromEntries(Object.entries(parsed.photos).filter(([, v]) => typeof v === 'string')) as Record<string, string>
       : undefined,
@@ -164,6 +171,7 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
       inventory: payload.inventory.length,
       templates: payload.templates.length,
       protocols: payload.protocols.length,
+      labResults: payload.labResults.length,
       photos: Object.keys(payload.photos ?? {}).length,
       photosSkipped: 0,
     },
@@ -191,6 +199,7 @@ export async function restoreBackup(payload: BackupPayload): Promise<void> {
     protocols: payload.protocols,
     doseSkips: payload.doseSkips,
     vials: payload.vials,
+    labResults: payload.labResults,
   });
   // Protocol reminders are rebuilt from the restored plans on this device.
   await syncProtocolReminders().catch(() => undefined);

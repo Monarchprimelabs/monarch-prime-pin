@@ -7,6 +7,9 @@ import { addDays, localDay } from './schedule/days';
 import { occurrencesBetween } from './schedule/engine';
 import { planReminders, REMINDER_WINDOW_DAYS, VIAL_ALERT_CAP } from './schedule/reminderPlan';
 import { planVialAlerts } from './vials/alerts';
+import { syncExtraNotifications } from './notify/scheduler';
+import { getNotifyPrefs } from './notify/store';
+import { recordNotificationAction } from './localMetrics';
 import { getDoseSkips, getInjections, getProtocols, getVials, KEY_REMINDER_IDS } from './storage';
 
 // Protocol reminders and vial alerts: a rolling window of one-off local
@@ -16,6 +19,19 @@ import { getDoseSkips, getInjections, getProtocols, getVials, KEY_REMINDER_IDS }
 
 const CHANNEL_ID = 'protocol-reminders';
 const RENEW_ID = 'mpp-protocol|renew';
+const CATEGORY_ID = 'plan-reminder';
+const SNOOZE_PREFIX = 'mpp-snooze|';
+const SNOOZE_MS = 60 * 60 * 1000;
+
+// "Log it" and "Snooze 1 h" on plan reminders. Both open the app: Expo can't
+// reliably run JS for a background action, and a snooze that silently fails
+// is worse than a quick app open.
+async function setPlanCategory(): Promise<void> {
+  await Notifications.setNotificationCategoryAsync(CATEGORY_ID, [
+    { identifier: 'log', buttonTitle: translateNow('notify.actionLog'), options: { opensAppToForeground: true } },
+    { identifier: 'snooze', buttonTitle: translateNow('notify.actionSnooze'), options: { opensAppToForeground: true } },
+  ]).catch(() => undefined);
+}
 
 export type ReminderSyncResult = { scheduled: number; permission: 'granted' | 'denied' | 'not-needed' };
 
@@ -23,7 +39,11 @@ let running: Promise<ReminderSyncResult> | null = null;
 
 export function syncProtocolReminders(options: { askPermission?: boolean } = {}): Promise<ReminderSyncResult> {
   // Serialise: two quick saves must not interleave cancel/schedule calls.
-  const next = (running ?? Promise.resolve(null)).catch(() => null).then(() => runSync(options));
+  const next = (running ?? Promise.resolve(null)).catch(() => null).then(async () => {
+    const result = await runSync(options);
+    await syncExtraNotifications().catch(() => undefined);
+    return result;
+  });
   running = next;
   return next;
 }
@@ -39,11 +59,21 @@ async function readIds(): Promise<string[]> {
 }
 
 async function runSync({ askPermission }: { askPermission?: boolean }): Promise<ReminderSyncResult> {
-  const [protocols, injections, skips, vials] = await Promise.all([getProtocols(), getInjections(), getDoseSkips(), getVials()]);
+  const [protocols, injections, skips, vials, prefs] = await Promise.all([getProtocols(), getInjections(), getDoseSkips(), getVials(), getNotifyPrefs()]);
   const now = new Date();
   const logged = new Set(injections.map(r => r.occurrenceKey).filter((k): k is string => !!k));
   const { reminders, truncated } = planReminders(protocols, logged, skips, now);
-  const vialAlerts = planVialAlerts(vials, protocols, injections, skips, now).slice(0, VIAL_ALERT_CAP);
+  const vialAlerts = prefs.vialLow ? planVialAlerts(vials, protocols, injections, skips, now).slice(0, VIAL_ALERT_CAP) : [];
+
+  // Drop snoozed reminders for entries that have since been logged or skipped.
+  const skipped = new Set(skips.map(skip => skip.occurrenceKey));
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  for (const n of scheduled) {
+    const key = n.content.data?.occurrenceKey;
+    if (n.identifier.startsWith(SNOOZE_PREFIX) && typeof key === 'string' && (logged.has(key) || skipped.has(key))) {
+      await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => undefined);
+    }
+  }
 
   for (const id of await readIds()) {
     await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
@@ -64,6 +94,7 @@ async function runSync({ askPermission }: { askPermission?: boolean }): Promise<
     });
   }
   const channelId = Platform.OS === 'android' ? CHANNEL_ID : undefined;
+  await setPlanCategory();
 
   const ids: string[] = [];
   for (const reminder of reminders) {
@@ -74,6 +105,7 @@ async function runSync({ askPermission }: { askPermission?: boolean }): Promise<
         title: translateNow('proto.notifTitle'),
         body: translateNow('proto.notifBody', { time: formatClockTime(time) }),
         data: { occurrenceKey: reminder.occurrenceKey },
+        categoryIdentifier: CATEGORY_ID,
       },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminder.fireAt, channelId },
     });
@@ -115,7 +147,6 @@ async function runSync({ askPermission }: { askPermission?: boolean }): Promise<
   return { scheduled: reminders.length + vialAlerts.length, permission: 'granted' };
 }
 
-/** Calls back with the occurrence key when the user taps a protocol reminder. */
 /**
  * Fire one reminder in a few seconds, with the same channel and wording as
  * real ones, so the user can check notifications reach their lock screen.
@@ -148,6 +179,21 @@ export async function sendTestReminder(seconds = 5): Promise<'sent' | 'denied'> 
 
 const handledResponses = new Set<string>();
 
+async function snooze(request: Notifications.NotificationRequest, occurrenceKey: string): Promise<void> {
+  const fireAt = new Date(Date.now() + SNOOZE_MS);
+  await Notifications.scheduleNotificationAsync({
+    identifier: `${SNOOZE_PREFIX}${occurrenceKey}`,
+    content: {
+      title: request.content.title ?? translateNow('proto.notifTitle'),
+      body: request.content.body ?? '',
+      data: { occurrenceKey },
+      categoryIdentifier: CATEGORY_ID,
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireAt, channelId: Platform.OS === 'android' ? CHANNEL_ID : undefined },
+  });
+}
+
+/** Calls back with the occurrence key when the user taps a protocol reminder or its "Log it" action. */
 export function onProtocolReminderTap(handler: (occurrenceKey: string) => void): () => void {
   const pick = (response: Notifications.NotificationResponse | null) => {
     const key = response?.notification.request.content.data?.occurrenceKey;
@@ -156,6 +202,12 @@ export function onProtocolReminderTap(handler: (occurrenceKey: string) => void):
     const responseId = `${response!.notification.request.identifier}@${response!.notification.date}`;
     if (handledResponses.has(responseId)) return;
     handledResponses.add(responseId);
+    const action = response!.actionIdentifier === 'snooze' ? 'snooze' : response!.actionIdentifier === 'log' ? 'logIt' : 'open';
+    recordNotificationAction(action).catch(() => undefined);
+    if (response!.actionIdentifier === 'snooze') {
+      snooze(response!.notification.request, key).catch(() => undefined);
+      return;
+    }
     handler(key);
   };
   Notifications.getLastNotificationResponseAsync().then(pick).catch(() => undefined);
