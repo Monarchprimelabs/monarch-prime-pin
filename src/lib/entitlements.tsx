@@ -31,6 +31,8 @@ type EntitlementContextValue = {
   restorePurchases: () => Promise<boolean>;
   openRedeemCode: () => Promise<void>;
   manageSubscriptions: () => Promise<void>;
+  subscriptionProductId: string | null;
+  lapsed: boolean;
 };
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
@@ -54,6 +56,8 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
     restorePurchases: async () => false,
     openRedeemCode: unavailable,
     manageSubscriptions: unavailable,
+    subscriptionProductId: null,
+    lapsed: false,
   };
 
   return <EntitlementContext.Provider value={value}>{children}</EntitlementContext.Provider>;

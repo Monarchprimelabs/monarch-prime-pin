@@ -23,6 +23,8 @@ import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '
 import { usePaywall } from '../lib/paywall';
 import { useFounder } from '../lib/founders';
 import { NotificationSettings } from '../components/NotificationSettings';
+import { ActivityCard } from '../components/ActivityCard';
+import { PREMIUM_ANNUAL_ID, PREMIUM_MONTHLY_ID } from '../lib/store/constants';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
@@ -60,7 +62,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'rem' && <RemindersTab />}
-        {tab === 'acc' && <AccessTab />}
+        {tab === 'acc' && <><AccessTab /><ActivityCard /></>}
         {tab === 'leg' && <LegalTab />}
       </ScrollView>
     </SafeAreaView>
@@ -451,7 +453,7 @@ function RemindersTab() {
 }
 
 function AccessTab() {
-  const { premium, monetizationEnabled, restorePurchases } = useEntitlements();
+  const { premium, monetizationEnabled, restorePurchases, manageSubscriptions, purchase, subscriptionProductId } = useEntitlements();
   const { status: founder, setDebugStatus } = useFounder();
   const { openPaywall } = usePaywall();
   const { t, dateLocale } = useI18n();
@@ -480,10 +482,24 @@ function AccessTab() {
       {!monetizationEnabled && (
         <Text style={s.accessPreview}>{t('access.earlyNote')}</Text>
       )}
-      <Pressable style={s.saveNameBtn} onPress={() => openPaywall({ kind: 'settings' })}>
-        <Text style={s.saveNameText}>{t('premium.seePremium')}</Text>
-      </Pressable>
-      <Pressable style={s.saveNameBtn} onPress={() => { restorePurchases().catch(() => undefined); }}>
+      {premium.source === 'subscription' ? (
+        <>
+          {subscriptionProductId === PREMIUM_MONTHLY_ID && (
+            // Same subscription group: the App Store handles the change.
+            <Pressable style={s.saveNameBtn} onPress={() => { purchase(PREMIUM_ANNUAL_ID).catch(() => undefined); }}>
+              <Text style={s.saveNameText}>{t('paywall.switchAnnual')}</Text>
+            </Pressable>
+          )}
+          <Pressable style={[s.saveNameBtn, { marginTop: spacing.md }]} onPress={() => { manageSubscriptions().catch(() => undefined); }}>
+            <Text style={s.saveNameText}>{t('paywall.manage')}</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Pressable style={s.saveNameBtn} onPress={() => openPaywall({ kind: 'settings' })}>
+          <Text style={s.saveNameText}>{t('premium.seePremium')}</Text>
+        </Pressable>
+      )}
+      <Pressable style={[s.saveNameBtn, { marginTop: spacing.md }]} onPress={() => { restorePurchases().catch(() => undefined); }}>
         <Text style={s.saveNameText}>{t('paywall.restore')}</Text>
       </Pressable>
       {/* Development builds only (__DEV__): preview each founder state. */}

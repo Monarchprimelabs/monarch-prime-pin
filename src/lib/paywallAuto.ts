@@ -7,10 +7,13 @@ const KEY_HISTORY = '@mpp/paywall_auto_v1';
 // purchase failed in this session.
 let loggingInProgress = false;
 let purchaseFailed = false;
+// A founder or lapsed sheet is up: don't stack an automatic paywall on it.
+let sheetOpen = false;
 
 export function setLoggingInProgress(value: boolean) { loggingInProgress = value; }
 export function markPurchaseFailed() { purchaseFailed = true; }
 export function purchaseFailedThisSession() { return purchaseFailed; }
+export function setSheetOpen(value: boolean) { sheetOpen = value; }
 
 async function readHistory(): Promise<AutoHistory> {
   try {
@@ -25,7 +28,7 @@ async function readHistory(): Promise<AutoHistory> {
 export async function claimAutoPaywall(placement: AutoPlacement, premium: boolean, month?: string): Promise<boolean> {
   const history = await readHistory();
   const now = Date.now();
-  if (!canAutoShow(placement, { history, now, premium, loggingInProgress, purchaseFailedThisSession: purchaseFailed, month })) {
+  if (!canAutoShow(placement, { history, now, premium, loggingInProgress: loggingInProgress || sheetOpen, purchaseFailedThisSession: purchaseFailed, month })) {
     return false;
   }
   await AsyncStorage.setItem(KEY_HISTORY, JSON.stringify(recordAutoShow(history, placement, now, month)));

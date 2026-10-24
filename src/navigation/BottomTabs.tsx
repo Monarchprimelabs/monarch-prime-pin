@@ -15,8 +15,10 @@ import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 import { adoptLegacyPhotos } from '../lib/storage';
 import { FounderSheetHost } from '../components/FounderSheet';
+import { LapsedSheetHost } from '../components/LapsedSheet';
 import { usePremium } from '../lib/usePremium';
 import { setPremiumKnown } from '../lib/notify/store';
+import { recordAppOpen } from '../lib/localMetrics';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
@@ -37,8 +39,11 @@ export function BottomTabs() {
   React.useEffect(() => {
     syncProtocolReminders().catch(() => undefined);
     adoptLegacyPhotos().catch(() => undefined);
+    recordAppOpen().catch(() => undefined);
     const sub = AppState.addEventListener('change', state => {
-      if (state === 'active') syncProtocolReminders().catch(() => undefined);
+      if (state !== 'active') return;
+      syncProtocolReminders().catch(() => undefined);
+      recordAppOpen().catch(() => undefined);
     });
     const stopTaps = onProtocolReminderTap(key => {
       setActive('home');
@@ -113,6 +118,7 @@ export function BottomTabs() {
         </Pressable>
       </SafeAreaView>
       <FounderSheetHost />
+      <LapsedSheetHost />
     </View>
   );
 }

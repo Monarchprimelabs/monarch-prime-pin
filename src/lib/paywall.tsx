@@ -5,6 +5,7 @@ import type { Feature } from './featureGate';
 import type { AutoPlacement } from './paywallCap';
 import { claimAutoPaywall } from './paywallAuto';
 import { useEntitlements } from './entitlements';
+import { recordPaywallShown } from './localMetrics';
 
 /** Where the paywall was opened from (docs/PRIME_PIN_V2_HANDOFF.md, PAYWALL). */
 export type PaywallPlacement =
@@ -21,16 +22,25 @@ type PaywallContextValue = {
   maybeAutoPaywall: (placement: AutoPlacement, month?: string) => Promise<void>;
 };
 
+/** "lockedFeature:labResults", "monthlyRecap"... for the on-device counters. */
+export function placementName(placement: PaywallPlacement): string {
+  return placement.kind === 'lockedFeature' ? `lockedFeature:${placement.feature}` : placement.kind;
+}
+
 const PaywallContext = createContext<PaywallContextValue | null>(null);
 
 /** Hosts the one paywall modal, so any screen can open it. */
 export function PaywallProvider({ children }: { children: ReactNode }) {
   const { hasPro } = useEntitlements();
   const [placement, setPlacement] = useState<PaywallPlacement | null>(null);
-  const openPaywall = useCallback((next: PaywallPlacement) => setPlacement(next), []);
+  const show = useCallback((next: PaywallPlacement) => {
+    recordPaywallShown(placementName(next)).catch(() => undefined);
+    setPlacement(next);
+  }, []);
+  const openPaywall = useCallback((next: PaywallPlacement) => show(next), [show]);
   const maybeAutoPaywall = useCallback(async (next: AutoPlacement, month?: string) => {
-    if (await claimAutoPaywall(next, hasPro, month)) setPlacement({ kind: next });
-  }, [hasPro]);
+    if (await claimAutoPaywall(next, hasPro, month)) show({ kind: next });
+  }, [hasPro, show]);
   const value = useMemo(() => ({ openPaywall, maybeAutoPaywall }), [openPaywall, maybeAutoPaywall]);
   // Required lazily: the screen's StyleSheets must load after the theme.
   const { PaywallScreen } = require('../screens/PaywallScreen');
@@ -39,7 +49,7 @@ export function PaywallProvider({ children }: { children: ReactNode }) {
       {children}
       <Modal visible={!!placement} animationType="slide" onRequestClose={() => setPlacement(null)}>
         <SafeAreaProvider>
-          {placement && <PaywallScreen onClose={() => setPlacement(null)} />}
+          {placement && <PaywallScreen placement={placement} onClose={() => setPlacement(null)} />}
         </SafeAreaProvider>
       </Modal>
     </PaywallContext.Provider>

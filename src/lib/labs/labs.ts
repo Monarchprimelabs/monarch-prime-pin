@@ -60,3 +60,13 @@ export function parseLabNumber(text: string): number | null {
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : null;
 }
+
+/**
+ * Lab results access: Premium gets everything; after Premium ends, saved
+ * results stay viewable and exportable (read-only); with none saved, the
+ * Labs entry opens the paywall.
+ */
+export function labsAccess(allowed: boolean, resultCount: number): 'full' | 'readOnly' | 'paywall' {
+  if (allowed) return 'full';
+  return resultCount > 0 ? 'readOnly' : 'paywall';
+}

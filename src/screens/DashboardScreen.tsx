@@ -80,7 +80,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
   const [heatWindow, setHeatWindow] = useState<number | undefined>(undefined); // days; undefined = All
   const { allows } = usePremium();
-  const { openPaywall } = usePaywall();
+  const { openPaywall, maybeAutoPaywall } = usePaywall();
   // The last 7 and 30 days are free; 90 days and All are Premium.
   const windowLocked = (days?: number) => (days === undefined || days > 30) && !allows('fullHistoryHeatmap');
   // Without full history the map opens on the last 30 days.
@@ -98,6 +98,17 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
     AsyncStorage.getItem(KEY_LAST_BACKUP_AT).then(setLastBackupAt).catch(() => setLastBackupAt(null));
   };
   useEffect(() => { refresh(); }, []);
+
+  // Once ever, within the automatic-paywall caps: history now reaches past
+  // the free 30-day map.
+  const fullHistory = allows('fullHistoryHeatmap');
+  useEffect(() => {
+    if (fullHistory || injections.length === 0) return;
+    const cutoff = localDateISO(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+    if (!injections.some(record => record.date < cutoff)) return;
+    const timer = setTimeout(() => { maybeAutoPaywall('heatmapBeyond30Days').catch(() => undefined); }, 2500);
+    return () => clearTimeout(timer);
+  }, [fullHistory, injections, maybeAutoPaywall]);
   // Coming back to the app (often the next day) reloads records and
   // re-renders, so the heat map reflects today's decay, not the last load's.
   useEffect(() => {

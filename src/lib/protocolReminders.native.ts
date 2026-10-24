@@ -9,6 +9,7 @@ import { planReminders, REMINDER_WINDOW_DAYS, VIAL_ALERT_CAP } from './schedule/
 import { planVialAlerts } from './vials/alerts';
 import { syncExtraNotifications } from './notify/scheduler';
 import { getNotifyPrefs } from './notify/store';
+import { recordNotificationAction } from './localMetrics';
 import { getDoseSkips, getInjections, getProtocols, getVials, KEY_REMINDER_IDS } from './storage';
 
 // Protocol reminders and vial alerts: a rolling window of one-off local
@@ -201,6 +202,8 @@ export function onProtocolReminderTap(handler: (occurrenceKey: string) => void):
     const responseId = `${response!.notification.request.identifier}@${response!.notification.date}`;
     if (handledResponses.has(responseId)) return;
     handledResponses.add(responseId);
+    const action = response!.actionIdentifier === 'snooze' ? 'snooze' : response!.actionIdentifier === 'log' ? 'logIt' : 'open';
+    recordNotificationAction(action).catch(() => undefined);
     if (response!.actionIdentifier === 'snooze') {
       snooze(response!.notification.request, key).catch(() => undefined);
       return;

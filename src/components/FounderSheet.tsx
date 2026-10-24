@@ -7,6 +7,7 @@ import { useI18n } from '../lib/i18n';
 import { usePaywall } from '../lib/paywall';
 import { notifyPositiveMoment } from '../lib/reviewPrompt';
 import { FOUNDER_CODE } from '../lib/store/constants';
+import { setSheetOpen } from '../lib/paywallAuto';
 import { colors, radius, spacing } from '../theme';
 
 const KEY_SHOWN = '@mpp/founder_sheet_shown_v1';
@@ -32,6 +33,8 @@ export function FounderSheetHost() {
     }).catch(() => undefined);
     return () => { active = false; };
   }, [loading, status]);
+
+  useEffect(() => { setSheetOpen(visible); }, [visible]);
 
   if (!visible) return null;
   const paid = status === 'paidFounder';

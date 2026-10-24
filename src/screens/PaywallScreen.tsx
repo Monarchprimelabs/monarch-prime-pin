@@ -9,6 +9,8 @@ import { useFounder } from '../lib/founders';
 import { useI18n } from '../lib/i18n';
 import { planCopy, PlanId } from '../lib/paywallCopy';
 import { markPurchaseFailed } from '../lib/paywallAuto';
+import { PaywallPlacement, placementName } from '../lib/paywall';
+import { recordPaywallPurchased } from '../lib/localMetrics';
 import { FOUNDER_CODE, PREMIUM_ANNUAL_ID, PREMIUM_LIFETIME_ID, PREMIUM_MONTHLY_ID, PRIVACY_URL, TERMS_URL } from '../lib/store/constants';
 import { isPaidFounderSource } from '../lib/store/premium';
 import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
@@ -25,13 +27,20 @@ const FEATURE_KEYS = [
   'paywall.f.labs', 'paywall.f.insights', 'paywall.f.health', 'paywall.f.weekly',
 ];
 
+/** One line saying why this paywall opened on its own. */
+const CONTEXT_KEY: Partial<Record<PaywallPlacement['kind'], string>> = {
+  monthlyRecap: 'paywall.contextMonthly',
+  heatmapBeyond30Days: 'paywall.contextHeatmap',
+  lapsed: 'paywall.contextLapsed',
+};
+
 const PRODUCT_ID: Record<PlanId, string> = { annual: PREMIUM_ANNUAL_ID, monthly: PREMIUM_MONTHLY_ID, lifetime: PREMIUM_LIFETIME_ID };
 
 const isCancellation = (error: any) =>
   error?.code === 'E_USER_CANCELLED' || error?.code === 'USER_CANCELLED' || error?.code === 'user-cancelled'
   || /cancel/i.test(error?.message || '');
 
-export function PaywallScreen({ onClose }: { onClose?: () => void }) {
+export function PaywallScreen({ onClose, placement }: { onClose?: () => void; placement?: PaywallPlacement }) {
   const { t, dateLocale } = useI18n();
   const {
     premium, products, trialEligible, monetizationEnabled, loading,
@@ -65,6 +74,7 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
         .catch(() => undefined);
     }
     startedTrial.current = null;
+    recordPaywallPurchased(placement ? placementName(placement) : 'unknown').catch(() => undefined);
     hapticSuccess();
     Alert.alert(t('paywall.purchasedTitle'), t('paywall.purchasedBody'));
     onClose?.();
@@ -151,6 +161,7 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
       </View>
       <ScrollView contentContainerStyle={s.content}>
         <Text style={s.title}>{t('paywall.title')}</Text>
+        {placement && CONTEXT_KEY[placement.kind] && <Text style={s.context}>{t(CONTEXT_KEY[placement.kind]!)}</Text>}
         {(founder === 'freeFounder' || founder === 'paidFounder') && <Text style={s.founderBadge}>{t('founder.badge')}</Text>}
 
         {paidFounder && (
@@ -287,6 +298,7 @@ export function PaywallScreen({ onClose }: { onClose?: () => void }) {
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
+  context: { color: colors.textMuted, fontSize: 14, lineHeight: 20, paddingHorizontal: spacing.xl, marginTop: 8 },
   remindRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: 6 },
   closeBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

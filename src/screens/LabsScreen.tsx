@@ -18,6 +18,7 @@ import type { LabResult } from '../lib/labs/types';
 import { exportLabCsv } from '../lib/exportData';
 import { notifyPositiveMoment } from '../lib/reviewPrompt';
 import { syncLabReminders } from '../lib/labReminders';
+import { usePaywall } from '../lib/paywall';
 
 // Lab results (Premium). The user types values and the reference range from
 // their own report; the app only charts them. The one statement it makes is
@@ -25,8 +26,13 @@ import { syncLabReminders } from '../lib/labReminders';
 
 type Screen = { kind: 'list' } | { kind: 'marker'; marker: string } | { kind: 'edit'; result: LabResult | null };
 
-export function LabsTool({ onClose }: { onClose: () => void }) {
+/**
+ * readOnly: Premium ended but results exist. They stay viewable, chartable
+ * and exportable; adding, editing and lab reminders lock again.
+ */
+export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; readOnly?: boolean }) {
   const { t } = useI18n();
+  const { openPaywall } = usePaywall();
   const [results, setResults] = useState<LabResult[]>([]);
   const [logDates, setLogDates] = useState<string[]>([]);
   const [view, setView] = useState<Screen>({ kind: 'list' });
@@ -39,6 +45,9 @@ export function LabsTool({ onClose }: { onClose: () => void }) {
     getNextLabDate().then(setNextLab).catch(() => undefined);
   };
   useEffect(refresh, []);
+  useEffect(() => {
+    if (readOnly) syncLabReminders({ allowed: false }).catch(() => undefined);
+  }, [readOnly]);
 
   const chooseNextLab = async (date: string | null) => {
     setNextLab(date);
@@ -86,9 +95,11 @@ export function LabsTool({ onClose }: { onClose: () => void }) {
                   <Text style={kit.listMeta}>{result.date}{result.panelName ? ` · ${result.panelName}` : ''}{rangeLine(result, t)}</Text>
                   {!!result.notes && <Text style={kit.listMeta}>{result.notes}</Text>}
                   <View style={kit.itemActions}>
-                    <Pressable style={kit.smallBtn} onPress={() => setView({ kind: 'edit', result })} accessibilityRole="button">
-                      <Text style={kit.smallBtnText}>{t('history.edit')}</Text>
-                    </Pressable>
+                    {!readOnly && (
+                      <Pressable style={kit.smallBtn} onPress={() => setView({ kind: 'edit', result })} accessibilityRole="button">
+                        <Text style={kit.smallBtnText}>{t('history.edit')}</Text>
+                      </Pressable>
+                    )}
                     <Pressable
                       style={kit.smallBtn}
                       accessibilityRole="button"
@@ -116,13 +127,22 @@ export function LabsTool({ onClose }: { onClose: () => void }) {
       <Disclaimer />
       <ShellHeader title={t('labs.title')} backLabel={t('settings.backToTools')} onBack={onClose} />
       <ScrollView contentContainerStyle={kit.scrollContent}>
-        <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
-          <Pressable style={kit.primaryBtn} onPress={() => setView({ kind: 'edit', result: null })} accessibilityRole="button">
-            <Text style={kit.primaryBtnText}>{t('labs.add')}</Text>
-          </Pressable>
-        </View>
+        {readOnly ? (
+          <Card>
+            <Text style={kit.listMeta}>{t('lapsed.labsNote')}</Text>
+            <Pressable style={[kit.primaryBtn, { marginTop: spacing.md }]} onPress={() => openPaywall({ kind: 'labsTab' })} accessibilityRole="button">
+              <Text style={kit.primaryBtnText}>{t('lapsed.resubscribe')}</Text>
+            </Pressable>
+          </Card>
+        ) : (
+          <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
+            <Pressable style={kit.primaryBtn} onPress={() => setView({ kind: 'edit', result: null })} accessibilityRole="button">
+              <Text style={kit.primaryBtnText}>{t('labs.add')}</Text>
+            </Pressable>
+          </View>
+        )}
 
-        <Card>
+        {!readOnly && <Card>
           <Text style={s.label}>{t('labs.nextLab')}</Text>
           <View style={s.nextRow}>
             <Pressable style={[kit.smallBtn, { flex: 1 }]} onPress={() => setPickingNext(true)} accessibilityRole="button">
@@ -150,7 +170,7 @@ export function LabsTool({ onClose }: { onClose: () => void }) {
               }}
             />
           )}
-        </Card>
+        </Card>}
 
         <Card>
           {markers.length === 0 ? (

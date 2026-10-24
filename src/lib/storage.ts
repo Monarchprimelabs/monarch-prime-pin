@@ -5,6 +5,7 @@ import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
 import { adoptLegacyPhoto, PHOTO_SCHEME } from './photos';
 import type { LabResult } from './labs/types';
+import { recordEntryLogged } from './localMetrics';
 
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
@@ -135,6 +136,7 @@ export async function getInjections(): Promise<Injection[]> {
 
 export async function saveInjection(inj: Omit<Injection, 'id'>): Promise<Injection> {
   const newInj: Injection = { ...inj, id: Date.now().toString() };
+  recordEntryLogged().catch(() => undefined);
 
   if (SUPABASE_CONFIGURED && supabase) {
     const user = await getUser();

@@ -15,6 +15,8 @@ const KEY_ENTITLEMENT = '@mpp/pro_entitlement';
 const KEY_FREEMIUM_SEEN = '@mpp/freemium_seen';
 /** Last known subscription, so Premium keeps working offline until it expires. */
 const KEY_SUBSCRIPTION_CACHE = '@mpp/subscription_cache_v1';
+/** Set once a subscription was active here, so its end can be told apart from never subscribing. */
+const KEY_HAD_SUBSCRIPTION = '@mpp/had_subscription_v1';
 const LEGACY_STORAGE_KEYS = [
   '@mpp/user',
   '@mpp/onboarding_done',
@@ -75,6 +77,10 @@ type EntitlementContextValue = {
   restorePurchases: () => Promise<boolean>;
   openRedeemCode: () => Promise<void>;
   manageSubscriptions: () => Promise<void>;
+  /** The active subscription's product ID, for "Switch to annual". */
+  subscriptionProductId: string | null;
+  /** A subscription was active on this device and Premium has now ended (checked with the store, not offline). */
+  lapsed: boolean;
 };
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
@@ -145,6 +151,8 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
   const [legacyProduct, setLegacyProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<PremiumProducts>({ monthly: null, annual: null, lifetime: null });
   const [trialEligible, setTrialEligible] = useState<boolean | null>(null);
+  const [subscriptionProductId, setSubscriptionProductId] = useState<string | null>(null);
+  const [lapsed, setLapsed] = useState(false);
   const storedRef = useRef<StoredEntitlement | null>(null);
 
   const saveGrant = async (source: StoredEntitlement['source']) => {
@@ -181,9 +189,12 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
     if (status.source === 'paidApp') await saveGrant('paid-app');
     if (status.source === 'subscription' && store.subscription) {
       await AsyncStorage.setItem(KEY_SUBSCRIPTION_CACHE, JSON.stringify(store.subscription));
+      await AsyncStorage.setItem(KEY_HAD_SUBSCRIPTION, '1');
     } else {
       await AsyncStorage.removeItem(KEY_SUBSCRIPTION_CACHE);
     }
+    setSubscriptionProductId(status.source === 'subscription' ? store.subscription?.productId ?? null : null);
+    setLapsed(status.source === 'none' && (await AsyncStorage.getItem(KEY_HAD_SUBSCRIPTION)) === '1');
     setPremium(status);
     return status;
   };
@@ -333,8 +344,10 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
     restorePurchases,
     openRedeemCode,
     manageSubscriptions,
+    subscriptionProductId,
+    lapsed: MONETIZATION_ENABLED && lapsed,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [loading, premium, legacyProduct, products, trialEligible]);
+  }), [loading, premium, legacyProduct, products, trialEligible, subscriptionProductId, lapsed]);
 
   return <EntitlementContext.Provider value={value}>{children}</EntitlementContext.Provider>;
 }

@@ -28,10 +28,23 @@ import { HealthTrendsCard } from '../components/HealthTrends';
 export function AnalyticsScreen() {
   const wide = useWideLayout();
   const { allows } = usePremium();
-  const { openPaywall } = usePaywall();
+  const { openPaywall, maybeAutoPaywall } = usePaywall();
   const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
+
+  // In the first week of a month, free users who logged last month may see
+  // the monthlyRecap paywall once that month (within the weekly cap).
+  const pdfAllowed = allows('monthlyPDF');
+  useEffect(() => {
+    const now = new Date();
+    if (pdfAllowed || now.getDate() > 7) return;
+    const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, '0')}`;
+    if (!injections.some(record => record.date.startsWith(lastMonth))) return;
+    const timer = setTimeout(() => { maybeAutoPaywall('monthlyRecap', lastMonth).catch(() => undefined); }, 2500);
+    return () => clearTimeout(timer);
+  }, [pdfAllowed, injections, maybeAutoPaywall]);
   const [sleepByDay, setSleepByDay] = useState<Record<string, number> | undefined>(undefined);
   const [planData, setPlanData] = useState<{ protocols: Protocol[]; skips: DoseSkip[]; vials: Vial[] }>({ protocols: [], skips: [], vials: [] });
   useEffect(() => {

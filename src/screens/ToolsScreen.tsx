@@ -12,7 +12,7 @@ import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
 import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
-  getInventory, getRecordTemplates, getSchedules,
+  getInventory, getRecordTemplates, getLabResults, getSchedules,
   InventoryItem, RecordTemplate, saveInventoryItem, saveRecordTemplate,
   saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
@@ -20,6 +20,7 @@ import { SettingsScreen } from './SettingsScreen';
 import { PaywallProvider, usePaywall } from '../lib/paywall';
 import { PremiumBadge } from '../components/PremiumLock';
 import { LabsTool } from './LabsScreen';
+import { labsAccess } from '../lib/labs/labs';
 import { ProtocolsTool } from './ProtocolsScreen';
 import { VialsTool } from './VialsScreen';
 import { usePremium } from '../lib/usePremium';
@@ -79,8 +80,12 @@ export function ToolsScreen() {
   // tools stay reachable only for people who already have entries in them,
   // so nothing anyone saved disappears.
   const [legacyCounts, setLegacyCounts] = useState<Record<string, number>>({});
-  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates()])
-    .then(([schedules, inventory, templates]) => setLegacyCounts({ schedule: schedules.length, inventory: inventory.length, templates: templates.length }))
+  const [labCount, setLabCount] = useState(0);
+  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates(), getLabResults()])
+    .then(([schedules, inventory, templates, labs]) => {
+      setLegacyCounts({ schedule: schedules.length, inventory: inventory.length, templates: templates.length });
+      setLabCount(labs.length);
+    })
     .catch(() => undefined);
   useEffect(() => { loadLegacyCounts(); }, []);
   const currentTools = TOOLS.filter(tool => !LEGACY_TOOLS.includes(tool.id));
@@ -107,7 +112,8 @@ export function ToolsScreen() {
       runExport();
       return;
     }
-    if (tool.id === 'labs' && !allows('labResults')) { openPaywall({ kind: 'labsTab' }); return; }
+    // After Premium ends, saved lab results stay viewable and exportable.
+    if (tool.id === 'labs' && labsAccess(allows('labResults'), labCount) === 'paywall') { openPaywall({ kind: 'labsTab' }); return; }
     setActive(tool.id);
   };
 
@@ -149,7 +155,7 @@ export function ToolsScreen() {
         <PaywallProvider>
           {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
           {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
-          {active === 'labs' && <LabsTool onClose={() => setActive(null)} />}
+          {active === 'labs' && <LabsTool onClose={() => setActive(null)} readOnly={labsAccess(allows('labResults'), labCount) === 'readOnly'} />}
           {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
           {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
           {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
