@@ -4,6 +4,7 @@ import React from 'react';
 import { Image, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { loadTheme } from './src/theme';
+import { snapshotFounderEvidence } from './src/lib/founderEvidence';
 
 // The saved theme must be applied before any screen module is evaluated,
 // because StyleSheets capture theme values at import time. The app tree is
@@ -13,7 +14,12 @@ export default function App() {
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
-    loadTheme().finally(() => setReady(true));
+    // The founder check must see storage exactly as 1.x left it, so it runs
+    // before anything else in 2.0 reads or writes a key.
+    snapshotFounderEvidence()
+      .catch(() => undefined)
+      .then(loadTheme)
+      .finally(() => setReady(true));
   }, []);
 
   React.useEffect(() => {

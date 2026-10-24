@@ -72,7 +72,8 @@
           "NSHealthUpdateUsageDescription": "Monarch Prime Pin only reads from Apple Health and never writes to it.",
           "background": false
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
