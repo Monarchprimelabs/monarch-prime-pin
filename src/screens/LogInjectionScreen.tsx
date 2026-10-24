@@ -18,9 +18,6 @@ import { getInjectionSiteIds, lastLoggedBySite } from '../lib/sites';
 import { daysBetween } from '../lib/schedule/days';
 import { keepPhoto, photoDisplayUri } from '../lib/photos';
 import { HealthPoint, readHealthWeights } from '../lib/health';
-import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
-import { UpgradeScreen } from './UpgradeScreen';
 import { notifySuccessfulSave } from '../lib/reviewPrompt';
 import { hapticSuccess, hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
@@ -58,8 +55,6 @@ type TimeChoice =
   | { kind: 'custom' };
 
 export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initialInjection, prefillFrom, planned, onCancel }: LogInjectionScreenProps) {
-  const { hasPro, monetizationEnabled } = useEntitlements();
-  const { user } = useAuth();
   const { t, dateLocale } = useI18n();
   const seedRecord = initialInjection ?? prefillFrom ?? null;
   const today = localDateISO();
@@ -103,8 +98,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [customMinute, setCustomMinute] = useState(seedTime.slice(3, 5));
   const [customMeridiem, setCustomMeridiem] = useState<'AM' | 'PM'>(seedHour >= 12 ? 'PM' : 'AM');
   const [saving, setSaving] = useState(false);
-  const [freeLogCount, setFreeLogCount] = useState<number | null>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [vials, setVials] = useState<Vial[]>([]);
   const [vialId, setVialId] = useState<string | undefined>(initialInjection?.vialId);
   const [vialTouched, setVialTouched] = useState(!!initialInjection);
@@ -122,25 +115,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const lastBySite = lastLoggedBySite(history, logDate, initialInjection?.id);
   // Latest Apple Health weight on or before the record's day, if any.
   const healthWeight = [...healthWeights].reverse().find(point => point.date <= logDate);
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const wide = useWideLayout();
-  const freeTrialActive = monetizationEnabled && !canUsePro && !isEditing;
-  const freeLogsRemaining = freeLogCount === null
-    ? FREE_INJECTION_LIMIT
-    : Math.max(0, FREE_INJECTION_LIMIT - freeLogCount);
-
-  useEffect(() => {
-    let active = true;
-    if (!freeTrialActive) {
-      setFreeLogCount(null);
-      return () => { active = false; };
-    }
-    getInjections()
-      .then(records => { if (active) setFreeLogCount(records.length); })
-      .catch(() => { if (active) setFreeLogCount(0); });
-    return () => { active = false; };
-  }, [freeTrialActive]);
-
   // Vials to draw from: active ones, plus the record's own when editing.
   useEffect(() => {
     let alive = true;
@@ -299,21 +274,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
       }
     }
 
-    let freeTrialSaveNumber: number | null = null;
-    if (freeTrialActive) {
-      try {
-        const existing = await getInjections();
-        if (existing.length >= FREE_INJECTION_LIMIT) {
-          setFreeLogCount(existing.length);
-          setUpgradeOpen(true);
-          return;
-        }
-        freeTrialSaveNumber = existing.length + 1;
-      } catch (e: any) {
-        Alert.alert(t('log.accessCheckFailed'), e?.message || t('common.tryAgain'));
-        return;
-      }
-    }
 
     setSaving(true);
     try {
@@ -359,16 +319,8 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
       // A logged planned dose drops its pending reminder.
       if (record.occurrenceKey || record.vialId || initialInjection?.vialId) syncProtocolReminders().catch(() => undefined);
 
-      const freeLogsLeftAfterSave = freeTrialSaveNumber ? FREE_INJECTION_LIMIT - freeTrialSaveNumber : 0;
-      const savedMessage = isEditing
-        ? t('log.updatedBody')
-        : freeTrialSaveNumber
-          ? freeTrialSaveNumber >= FREE_INJECTION_LIMIT
-            ? t('log.freeSavedLast', { price: LIFETIME_PRO_PRICE_LABEL })
-            : freeLogsLeftAfterSave === 1
-              ? t('log.freeSavedOne')
-              : t('log.freeSavedMany', { n: freeLogsLeftAfterSave })
-          : t('log.savedBody');
+      // Logging is never limited (2.0): every save is a normal save.
+      const savedMessage = isEditing ? t('log.updatedBody') : t('log.savedBody');
 
       hapticSuccess();
       if (!isEditing) {
@@ -482,10 +434,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
     }
   };
 
-  if (freeTrialActive && freeLogCount !== null && freeLogCount >= FREE_INJECTION_LIMIT) {
-    return <UpgradeScreen onClose={onCancel || onDone} />;
-  }
-
   // The body map sits beside the form on wide windows (iPad, open iPhone Duo).
   const siteCard = (
     <Card>
@@ -552,17 +500,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             </Pressable>
           </View>
         )}
-        {freeTrialActive && freeLogCount !== null && (
-          <Card style={s.trialCard}>
-            <CardLabel icon="◆">{t('log.freeTrialLabel')}</CardLabel>
-            <Text style={s.trialTitle}>
-              {t('log.freeTrialTitle', { n: freeLogsRemaining, max: FREE_INJECTION_LIMIT })}
-            </Text>
-            <Text style={s.trialBody}>
-              {t('log.freeTrialBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-            </Text>
-          </Card>
-        )}
 
         {wide ? (
           <TwoColumn
@@ -583,11 +520,11 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
                 </Pressable>
                 {hasTemplates && <Pressable
                   style={s.templateBtn}
-                  onPress={freeTrialActive ? () => setUpgradeOpen(true) : openTemplates}
+                  onPress={openTemplates}
                   accessibilityRole="button"
                   accessibilityLabel="Use a saved record template"
                 >
-                  <Text style={s.templateBtnText}>{freeTrialActive ? t('log.unlockTemplates') : t('log.useTemplate')}</Text>
+                  <Text style={s.templateBtnText}>{t('log.useTemplate')}</Text>
                 </Pressable>}
               </View>
 
@@ -854,11 +791,11 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
               </Pressable>
               {hasTemplates && <Pressable
                 style={s.templateBtn}
-                onPress={freeTrialActive ? () => setUpgradeOpen(true) : openTemplates}
+                onPress={openTemplates}
                 accessibilityRole="button"
                 accessibilityLabel="Use a saved record template"
               >
-                <Text style={s.templateBtnText}>{freeTrialActive ? t('log.unlockTemplates') : t('log.useTemplate')}</Text>
+                <Text style={s.templateBtnText}>{t('log.useTemplate')}</Text>
               </Pressable>}
             </View>
 
@@ -1143,9 +1080,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             )}
           </SafeAreaView>
         </View>
-      </SafeAreaProvider></Modal>
-      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}><SafeAreaProvider>
-        <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
       </SafeAreaProvider></Modal>
     </SafeAreaView>
   );

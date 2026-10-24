@@ -12,7 +12,6 @@ import { Injection } from '../data/peptides';
 import { getInjectionSiteIds } from '../lib/sites';
 import { buildHeatEntries, bandsByZone, getHeatHalfLife, DEFAULT_HALF_LIFE_DAYS, HEAT_BAND_ORDER, HeatBand } from '../lib/heat';
 import { useI18n } from '../lib/i18n';
-import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { KEY_LAST_BACKUP_AT } from '../lib/backup';
@@ -22,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
 import { TwoColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
+import { usePremium } from '../lib/usePremium';
+import { usePaywall } from '../lib/paywall';
 import { readHealthSteps } from '../lib/health';
 import { ProtocolsTool } from './ProtocolsScreen';
 import type { PlannedDose } from './LogInjectionScreen';
@@ -52,7 +53,6 @@ function getGreetingName(fallback: string, name?: string, email?: string) {
 
 export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHandled }: Props) {
   const { user } = useAuth();
-  const { hasPro, monetizationEnabled } = useEntitlements();
   const { t, dateLocale } = useI18n();
   const [view, setView] = useState<'front' | 'back'>('front');
   const [injections, setInjections] = useState<Injection[]>([]);
@@ -78,6 +78,12 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [lastBackupAt, setLastBackupAt] = useState<string | null | undefined>(undefined);
   const [halfLife, setHalfLife] = useState(DEFAULT_HALF_LIFE_DAYS);
   const [heatWindow, setHeatWindow] = useState<number | undefined>(undefined); // days; undefined = All
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
+  // The last 7 and 30 days are free; 90 days and All are Premium.
+  const windowLocked = (days?: number) => (days === undefined || days > 30) && !allows('fullHistoryHeatmap');
+  // Without full history the map opens on the last 30 days.
+  const shownWindow = windowLocked(heatWindow) ? 30 : heatWindow;
 
   const refresh = () => {
     getHeatHalfLife().then(setHalfLife);
@@ -169,14 +175,13 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   // Heat depends on the calendar day, not the render — dayKey keeps the memo
   // stable within a day and rolls it over at local midnight.
   const dayKey = new Date().toDateString();
-  const siteBands = useMemo(() => bandsByZone(heatEntries, Date.now(), halfLife, heatWindow),
+  const siteBands = useMemo(() => bandsByZone(heatEntries, Date.now(), halfLife, shownWindow),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [heatEntries, halfLife, heatWindow, dayKey]);
+    [heatEntries, halfLife, shownWindow, dayKey]);
   const nextSchedule = useMemo(() => schedules
     .filter(item => !item.completedAt && new Date(`${item.date}T${item.time}:00`).getTime() >= Date.now())
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0], [schedules]);
   const completedScheduleCount = schedules.filter(item => item.completedAt).length;
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const wide = useWideLayout();
 
   // Opened from a protocol reminder: go straight to logging that dose,
@@ -196,8 +201,6 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingOccurrenceKey]);
 
-  const freeTrialActive = monetizationEnabled && !canUsePro;
-  const freeLogsRemaining = Math.max(0, FREE_INJECTION_LIMIT - stats.total);
 
   const heat = (
     <Card>
@@ -212,11 +215,13 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
         ] as { days?: number; label: string }[]).map(option => (
           <Pressable
             key={option.label}
-            onPress={() => setHeatWindow(option.days)}
-            style={[s.windowBtn, heatWindow === option.days && s.windowBtnActive]}
+            onPress={() => (windowLocked(option.days)
+              ? openPaywall({ kind: 'lockedFeature', feature: 'fullHistoryHeatmap' })
+              : setHeatWindow(option.days))}
+            style={[s.windowBtn, shownWindow === option.days && s.windowBtnActive]}
           >
-            <Text style={[s.windowBtnText, heatWindow === option.days && s.windowBtnTextActive]}>
-              {option.label}
+            <Text style={[s.windowBtnText, shownWindow === option.days && s.windowBtnTextActive]}>
+              {windowLocked(option.days) ? '🔒 ' : ''}{option.label}
             </Text>
           </Pressable>
         ))}
@@ -272,24 +277,8 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
                 </Text>
               )}
 
-              {freeTrialActive && (
-                <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.unlockEyebrow}>{t('log.freeTrialLabel')}</Text>
-                    <Text style={s.unlockTitle}>
-                      {freeLogsRemaining > 0
-                        ? (freeLogsRemaining === 1 ? t('dash.freeLogsLeftOne') : t('dash.freeLogsLeftMany', { n: freeLogsRemaining }))
-                        : t('dash.unlockNeeded')}
-                    </Text>
-                    <Text style={s.unlockBody}>
-                      {t('dash.unlockBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-                    </Text>
-                  </View>
-                  <Text style={s.unlockChev}>›</Text>
-                </Pressable>
-              )}
 
-              {canUsePro && nextSchedule && (
+              {nextSchedule && (
                 <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
                   <View style={{ flex: 1 }}>
                     <Text style={s.scheduleEyebrow}>{t('dash.nextScheduled')}</Text>
@@ -402,24 +391,8 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
               </Pressable>
             </View>
 
-            {freeTrialActive && (
-              <Pressable style={s.unlockCard} onPress={() => onNavigate('analytics')}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.unlockEyebrow}>{t('log.freeTrialLabel')}</Text>
-                  <Text style={s.unlockTitle}>
-                    {freeLogsRemaining > 0
-                      ? (freeLogsRemaining === 1 ? t('dash.freeLogsLeftOne') : t('dash.freeLogsLeftMany', { n: freeLogsRemaining }))
-                      : t('dash.unlockNeeded')}
-                  </Text>
-                  <Text style={s.unlockBody}>
-                    {t('dash.unlockBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-                  </Text>
-                </View>
-                <Text style={s.unlockChev}>›</Text>
-              </Pressable>
-            )}
 
-            {canUsePro && nextSchedule && (
+            {nextSchedule && (
               <Pressable style={s.scheduleCard} onPress={() => onNavigate('settings')}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.scheduleEyebrow}>{t('dash.nextScheduled')}</Text>
@@ -488,11 +461,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </SafeAreaProvider></Modal>
 
       <Modal visible={protocolsOpen} animationType="slide" onRequestClose={() => { setProtocolsOpen(false); refresh(); }}><SafeAreaProvider>
-        <ProtocolsTool
-          onClose={() => { setProtocolsOpen(false); refresh(); }}
-          canUsePro={canUsePro}
-          onUpgrade={() => { setProtocolsOpen(false); onNavigate('analytics'); }}
-        />
+        <ProtocolsTool onClose={() => { setProtocolsOpen(false); refresh(); }} />
       </SafeAreaProvider></Modal>
 
       <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>

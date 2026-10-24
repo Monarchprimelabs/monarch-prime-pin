@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
 import { ReadableScrollView as ScrollView, readableColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
+import { usePremium } from '../lib/usePremium';
+import { usePaywall } from '../lib/paywall';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
@@ -10,9 +12,6 @@ import { getInjectionSiteIds } from '../lib/sites';
 import { useI18n } from '../lib/i18n';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
-import { UpgradeScreen } from './UpgradeScreen';
-import { useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
 import { PlannedDoseCard, PlanData, loadPlan, toPlannedDose } from '../components/TodayPlan';
 import type { PlannedDose } from './LogInjectionScreen';
 import { occurrencesBetween } from '../lib/schedule/engine';
@@ -22,8 +21,6 @@ import { syncProtocolReminders } from '../lib/protocolReminders';
 import { localDateISO } from '../lib/dates';
 import { photoDisplayUri } from '../lib/photos';
 
-const PRO_TABS = new Set(['calendar', 'photos']);
-
 export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
   const [injections, setInjections] = useState<Injection[]>([]);
@@ -31,11 +28,7 @@ export function HistoryScreen() {
   const [plannedLog, setPlannedLog] = useState<PlannedDose | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<Injection | null>(null);
   const [editingRecord, setEditingRecord] = useState<Injection | null>(null);
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
   const { t, dateLocale } = useI18n();
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const wide = useWideLayout();
 
   const refresh = async () => {
@@ -73,19 +66,18 @@ export function HistoryScreen() {
         {(['log', 'calendar', 'photos'] as const).map(tabId => (
           <Pressable
             key={tabId}
-            onPress={() => (PRO_TABS.has(tabId) && !canUsePro ? setShowUpgrade(true) : setTab(tabId))}
+            onPress={() => setTab(tabId)}
             style={[s.subTab, tab === tabId && s.subTabActive]}
           >
             <Text style={[s.subTabText, tab === tabId && s.subTabTextActive]}>
               {tabId === 'log' ? t('history.tabLog') : tabId === 'calendar' ? t('history.tabCalendar') : t('history.tabPhotos')}
-              {PRO_TABS.has(tabId) && !canUsePro ? ' 🔒' : ''}
             </Text>
           </Pressable>
         ))}
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
-        {tab === 'calendar' && canUsePro && (
+        {tab === 'calendar' && (
           <CalendarView
             injections={injections}
             onLogForDate={(date) => setBackdateFor(date)}
@@ -93,12 +85,9 @@ export function HistoryScreen() {
             onOpen={setSelectedRecord}
           />
         )}
-        {tab === 'photos' && canUsePro && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
+        {tab === 'photos' && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
       </ScrollView>
 
-      <Modal visible={showUpgrade} animationType="slide" onRequestClose={() => setShowUpgrade(false)}><SafeAreaProvider>
-        <UpgradeScreen onClose={() => setShowUpgrade(false)} />
-      </SafeAreaProvider></Modal>
 
       <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}><SafeAreaProvider>
         {backdateFor && (
@@ -452,6 +441,8 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
   const { t, dateLocale } = useI18n();
   const photos = injections.filter(i => i.photoUri);
   const [compareMode, setCompareMode] = useState(false);
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const comparePair = compareIds
     .map(id => photos.find(p => p.id === id))
@@ -473,10 +464,13 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
       {photos.length >= 2 && (
         <Pressable
           style={s.compareToggle}
-          onPress={() => { setCompareMode(current => !current); setCompareIds([]); }}
+          onPress={() => {
+            if (!allows('progressPhotoCompare')) { openPaywall({ kind: 'lockedFeature', feature: 'progressPhotoCompare' }); return; }
+            setCompareMode(current => !current); setCompareIds([]);
+          }}
         >
           <Text style={s.compareToggleText}>
-            {compareMode ? t('history.compareCancel') : t('history.compare')}
+            {compareMode ? t('history.compareCancel') : `${allows('progressPhotoCompare') ? '' : '🔒 '}${t('history.compare')}`}
           </Text>
         </Pressable>
       )}

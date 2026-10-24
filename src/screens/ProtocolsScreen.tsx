@@ -17,6 +17,8 @@ import type { Vial } from '../lib/vials/types';
 import { sendTestReminder, syncProtocolReminders } from '../lib/protocolReminders';
 import { endProtocol, revisionOn, reviseProtocol } from '../lib/schedule/engine';
 import { canStartProtocol } from '../lib/freeTier';
+import { usePremium } from '../lib/usePremium';
+import { usePaywall } from '../lib/paywall';
 import { addDays } from '../lib/schedule/days';
 import {
   Cycle, DOSE_UNITS, DoseUnit, Frequency, Protocol, ProtocolRevision, Weekday,
@@ -77,16 +79,11 @@ function toTimeString(value: Date): string {
 // ============================================================
 // PROTOCOL LIST (S13)
 // ============================================================
-type ProtocolsToolProps = {
-  onClose: () => void;
-  /** False on the free plan, which allows one active protocol. */
-  canUsePro?: boolean;
-  /** Opens the Lifetime Pro screen when a free user starts a second protocol. */
-  onUpgrade?: () => void;
-};
-
-export function ProtocolsTool({ onClose, canUsePro = true, onUpgrade }: ProtocolsToolProps) {
+export function ProtocolsTool({ onClose }: { onClose: () => void }) {
   const { t, dateLocale } = useI18n();
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
+  const unlimitedPlans = allows('unlimitedActivePlans');
   const [items, setItems] = useState<Protocol[]>([]);
   const [editing, setEditing] = useState<Protocol | 'new' | null>(null);
 
@@ -98,13 +95,13 @@ export function ProtocolsTool({ onClose, canUsePro = true, onUpgrade }: Protocol
   const ended = items.filter(p => p.status === 'ended');
 
   const startNew = () => {
-    if (canStartProtocol(active.length, canUsePro)) {
+    if (canStartProtocol(active.length, unlimitedPlans)) {
       setEditing('new');
       return;
     }
-    Alert.alert(t('proto.freeLimitTitle'), t('proto.freeLimitBody'), [
+    Alert.alert(t('proto.freeLimitTitle2'), t('proto.freeLimitBody2'), [
       { text: t('common.cancel'), style: 'cancel' },
-      ...(onUpgrade ? [{ text: t('proto.seePro'), onPress: onUpgrade }] : []),
+      { text: t('proto.seePremium'), onPress: () => openPaywall({ kind: 'thirdPlan' }) },
     ]);
   };
 
@@ -199,7 +196,7 @@ export function ProtocolsTool({ onClose, canUsePro = true, onUpgrade }: Protocol
           <Pressable style={s.primaryBtn} onPress={startNew} accessibilityRole="button">
             <Text style={s.primaryBtnText}>{t('proto.new')}</Text>
           </Pressable>
-          {!canUsePro && <Text style={s.freeNote}>{t('proto.freeNote')}</Text>}
+          {!unlimitedPlans && <Text style={s.freeNote}>{t('proto.freeNote2')}</Text>}
           <Pressable
             style={s.testBtn}
             accessibilityRole="button"

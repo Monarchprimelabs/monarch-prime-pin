@@ -21,6 +21,7 @@ import { UpgradeScreen } from './UpgradeScreen';
 import { ProtocolsTool } from './ProtocolsScreen';
 import { VialsTool } from './VialsScreen';
 import { useEntitlements } from '../lib/entitlements';
+import { usePremium } from '../lib/usePremium';
 import { useAuth } from '../lib/auth';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 import { exportInjectionsCsv } from '../lib/exportData';
@@ -41,13 +42,13 @@ type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | '
 const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
-  // One active protocol is free (src/lib/freeTier.ts); the tool enforces it.
+  // Two active protocols are free (src/lib/freeTier.ts); the tool enforces it.
   { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent },
-  { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary, pro: true },
-  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary, pro: true },
-  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent, pro: true },
-  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary, pro: true },
-  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: colors.accent, pro: true },
+  { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary },
+  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary },
+  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent },
+  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary },
+  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: colors.accent },
   { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub', tint: colors.primary },
   { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub', tint: colors.accent },
 ];
@@ -72,6 +73,7 @@ export function ToolsScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
   const canUsePro = hasPro || !!user?.isDeveloper;
+  const { allows } = usePremium();
   // Protocols and Vials replace Schedule, Inventory and Templates. The old
   // tools stay reachable only for people who already have entries in them,
   // so nothing anyone saved disappears.
@@ -131,7 +133,7 @@ export function ToolsScreen() {
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
                 {!!tool.pro && !canUsePro && <Text style={s.proBadge}>PRO</Text>}
-                {tool.id === 'protocols' && !canUsePro && <Text style={s.freeBadge}>{t('tools.oneFree')}</Text>}
+                {tool.id === 'protocols' && !allows('unlimitedActivePlans') && <Text style={s.freeBadge}>{t('tools.twoFree')}</Text>}
               </View>
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
             </View>
@@ -140,7 +142,7 @@ export function ToolsScreen() {
         ))}
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
-        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} canUsePro={canUsePro} onUpgrade={() => setActive('upgrade')} />}
+        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
         {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
         {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
         {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}

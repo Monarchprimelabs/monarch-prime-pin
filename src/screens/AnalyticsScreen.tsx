@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Alert, Pressable, ScrollView, Share, View, Text, StyleSheet } from 'react-native';
 import { TwoColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
+import { usePremium } from '../lib/usePremium';
+import { usePaywall } from '../lib/paywall';
+import { PremiumLockCard } from '../components/PremiumLock';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Circle as SvgCircle, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import * as Print from 'expo-print';
@@ -19,6 +22,8 @@ import { HealthPoint, readHealthBodyFat, readHealthSteps, readHealthWeights } fr
 
 export function AnalyticsScreen() {
   const wide = useWideLayout();
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
   const { t, dateLocale } = useI18n();
   const [injections, setInjections] = useState<Injection[]>([]);
   useEffect(() => { getInjections().then(setInjections); }, []);
@@ -191,6 +196,7 @@ export function AnalyticsScreen() {
 
   const [buildingPdf, setBuildingPdf] = useState(false);
   const sharePdfReport = async () => {
+    if (!allows('monthlyPDF')) { openPaywall({ kind: 'lockedFeature', feature: 'monthlyPDF' }); return; }
     if (buildingPdf) return;
     setBuildingPdf(true);
     try {
@@ -264,21 +270,25 @@ export function AnalyticsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Share monthly summary as PDF"
                 >
-                  <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : t('reports.sharePdf')}</Text>
+                  <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : `${allows('monthlyPDF') ? '' : '🔒 '}${t('reports.sharePdf')}`}</Text>
                 </Pressable>
               </Card>
-              <Card>
-                <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
-                <Text style={s.sub}>{t('reports.last8')}</Text>
-                <View style={s.barChart}>
-                  {weeks.map((v, i) => (
-                    <View key={i} style={s.barCol}>
-                      <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
-                      <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
-                    </View>
-                  ))}
-                </View>
-              </Card>
+              {allows('advancedAnalytics') ? (
+                <Card>
+                  <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
+                  <Text style={s.sub}>{t('reports.last8')}</Text>
+                  <View style={s.barChart}>
+                    {weeks.map((v, i) => (
+                      <View key={i} style={s.barCol}>
+                        <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
+                        <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </Card>
+              ) : (
+                <PremiumLockCard feature="advancedAnalytics" title={t('reports.weeklyLabel')} />
+              )}
 
               <Card>
                 <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
@@ -395,56 +405,58 @@ export function AnalyticsScreen() {
                 ))}
               </Card>
 
-              {compoundOptions.length > 0 && (
-                <Card>
-                  <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
-                  <View style={s.chipRow}>
-                    {compoundOptions.map(name => (
-                      <Pressable
-                        key={name}
-                        onPress={() => setDoseCompound(name)}
-                        style={[s.chip, activeCompound === name && s.chipActive]}
-                      >
-                        <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  {!doseChart || doseChart.count === 0 ? (
-                    <Text style={s.empty}>{t('reports.noDoses')}</Text>
-                  ) : !doseChart.points ? (
-                    <Text style={s.empty}>
-                      {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
-                    </Text>
-                  ) : (
-                    <>
-                      <View style={s.weightSummaryRow}>
-                        <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
-                        <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
-                      </View>
-                      <Svg viewBox="0 0 200 60" width="100%" height={90}>
-                        <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                        <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                        <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
-                        <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
-                        <Polyline
-                          points={doseChart.polyline}
-                          fill="none"
-                          stroke={colors.teal}
-                          strokeWidth="1.5"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                        />
-                        {doseChart.points.map((point, index) => (
-                          <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
-                        ))}
-                      </Svg>
-                      <Text style={s.weightRangeNote}>
-                        {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
+              {compoundOptions.length > 0 && (allows('perCompoundCharts') ? (
+                  <Card>
+                    <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
+                    <View style={s.chipRow}>
+                      {compoundOptions.map(name => (
+                        <Pressable
+                          key={name}
+                          onPress={() => setDoseCompound(name)}
+                          style={[s.chip, activeCompound === name && s.chipActive]}
+                        >
+                          <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    {!doseChart || doseChart.count === 0 ? (
+                      <Text style={s.empty}>{t('reports.noDoses')}</Text>
+                    ) : !doseChart.points ? (
+                      <Text style={s.empty}>
+                        {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
                       </Text>
-                    </>
-                  )}
-                </Card>
-              )}
+                    ) : (
+                      <>
+                        <View style={s.weightSummaryRow}>
+                          <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
+                          <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
+                        </View>
+                        <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                          <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                          <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                          <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
+                          <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
+                          <Polyline
+                            points={doseChart.polyline}
+                            fill="none"
+                            stroke={colors.teal}
+                            strokeWidth="1.5"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                          />
+                          {doseChart.points.map((point, index) => (
+                            <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
+                          ))}
+                        </Svg>
+                        <Text style={s.weightRangeNote}>
+                          {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
+                        </Text>
+                      </>
+                    )}
+                  </Card>
+                ) : (
+                  <PremiumLockCard feature="perCompoundCharts" title={t('reports.doseHistory')} />
+                ))}
 
               {symptomRanks.length > 0 && (
                 <Card>
@@ -505,21 +517,25 @@ export function AnalyticsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Share monthly summary as PDF"
               >
-                <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : t('reports.sharePdf')}</Text>
+                <Text style={s.pdfBtnText}>{buildingPdf ? t('reports.preparingPdf') : `${allows('monthlyPDF') ? '' : '🔒 '}${t('reports.sharePdf')}`}</Text>
               </Pressable>
             </Card>
-            <Card>
-              <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
-              <Text style={s.sub}>{t('reports.last8')}</Text>
-              <View style={s.barChart}>
-                {weeks.map((v, i) => (
-                  <View key={i} style={s.barCol}>
-                    <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
-                    <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
-                  </View>
-                ))}
-              </View>
-            </Card>
+            {allows('advancedAnalytics') ? (
+              <Card>
+                <CardLabel icon="📊">{t('reports.weeklyLabel')}</CardLabel>
+                <Text style={s.sub}>{t('reports.last8')}</Text>
+                <View style={s.barChart}>
+                  {weeks.map((v, i) => (
+                    <View key={i} style={s.barCol}>
+                      <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
+                      <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
+                    </View>
+                  ))}
+                </View>
+              </Card>
+            ) : (
+              <PremiumLockCard feature="advancedAnalytics" title={t('reports.weeklyLabel')} />
+            )}
 
             <Card>
               <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
@@ -634,56 +650,58 @@ export function AnalyticsScreen() {
               ))}
             </Card>
 
-            {compoundOptions.length > 0 && (
-              <Card>
-                <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
-                <View style={s.chipRow}>
-                  {compoundOptions.map(name => (
-                    <Pressable
-                      key={name}
-                      onPress={() => setDoseCompound(name)}
-                      style={[s.chip, activeCompound === name && s.chipActive]}
-                    >
-                      <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                {!doseChart || doseChart.count === 0 ? (
-                  <Text style={s.empty}>{t('reports.noDoses')}</Text>
-                ) : !doseChart.points ? (
-                  <Text style={s.empty}>
-                    {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
-                  </Text>
-                ) : (
-                  <>
-                    <View style={s.weightSummaryRow}>
-                      <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
-                      <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
-                    </View>
-                    <Svg viewBox="0 0 200 60" width="100%" height={90}>
-                      <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                      <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                      <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
-                      <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
-                      <Polyline
-                        points={doseChart.polyline}
-                        fill="none"
-                        stroke={colors.teal}
-                        strokeWidth="1.5"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                      {doseChart.points.map((point, index) => (
-                        <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
-                      ))}
-                    </Svg>
-                    <Text style={s.weightRangeNote}>
-                      {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
+            {compoundOptions.length > 0 && (allows('perCompoundCharts') ? (
+                <Card>
+                  <CardLabel icon="📈">{t('reports.doseHistory')}</CardLabel>
+                  <View style={s.chipRow}>
+                    {compoundOptions.map(name => (
+                      <Pressable
+                        key={name}
+                        onPress={() => setDoseCompound(name)}
+                        style={[s.chip, activeCompound === name && s.chipActive]}
+                      >
+                        <Text style={[s.chipText, activeCompound === name && s.chipTextActive]} numberOfLines={1}>{name}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {!doseChart || doseChart.count === 0 ? (
+                    <Text style={s.empty}>{t('reports.noDoses')}</Text>
+                  ) : !doseChart.points ? (
+                    <Text style={s.empty}>
+                      {t('reports.doseLatestOnly', { dose: formatDose(doseChart.latest) })}
                     </Text>
-                  </>
-                )}
-              </Card>
-            )}
+                  ) : (
+                    <>
+                      <View style={s.weightSummaryRow}>
+                        <Text style={s.weightLatest}>{formatDose(doseChart.latest)}</Text>
+                        <Text style={s.weightDelta}>{t('reports.doseLatest')}</Text>
+                      </View>
+                      <Svg viewBox="0 0 200 60" width="100%" height={90}>
+                        <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                        <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
+                        <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.max)}</SvgText>
+                        <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{formatDose(doseChart.min)}</SvgText>
+                        <Polyline
+                          points={doseChart.polyline}
+                          fill="none"
+                          stroke={colors.teal}
+                          strokeWidth="1.5"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {doseChart.points.map((point, index) => (
+                          <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.teal} />
+                        ))}
+                      </Svg>
+                      <Text style={s.weightRangeNote}>
+                        {t('reports.doseRange', { n: doseChart.count, name: activeCompound ?? '' })}
+                      </Text>
+                    </>
+                  )}
+                </Card>
+              ) : (
+                <PremiumLockCard feature="perCompoundCharts" title={t('reports.doseHistory')} />
+              ))}
 
             {symptomRanks.length > 0 && (
               <Card>

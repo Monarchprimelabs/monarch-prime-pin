@@ -55,7 +55,7 @@ export function BottomTabs() {
         )}
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
-        {active === 'analytics' && (canUsePro ? <AnalyticsScreen /> : <UpgradeScreen />)}
+        {active === 'analytics' && <AnalyticsScreen />}
         {active === 'settings' && <ToolsScreen />}
       </View>
 

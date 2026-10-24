@@ -1,8 +1,9 @@
-// Free users get one active protocol, with its reminders and the Today plan,
-// so they see the daily loop work before deciding on Lifetime Pro. Ended
-// protocols don't count: ending one frees the slot. Editing never blocks.
-export const FREE_PROTOCOL_LIMIT = 1;
+import { FREE_ACTIVE_PLANS } from './featureGate';
 
-export function canStartProtocol(activeCount: number, canUsePro: boolean): boolean {
-  return canUsePro || activeCount < FREE_PROTOCOL_LIMIT;
+// Free users get 2 active protocols, with reminders and the Today plan.
+// Ended protocols don't count: ending one frees a slot. Editing never blocks.
+export const FREE_PROTOCOL_LIMIT = FREE_ACTIVE_PLANS;
+
+export function canStartProtocol(activeCount: number, unlimited: boolean): boolean {
+  return unlimited || activeCount < FREE_PROTOCOL_LIMIT;
 }
