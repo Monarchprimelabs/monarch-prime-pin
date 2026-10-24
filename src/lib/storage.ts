@@ -4,6 +4,7 @@ import { Injection } from '../data/peptides';
 import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
 import { adoptLegacyPhoto, PHOTO_SCHEME } from './photos';
+import type { LabResult } from './labs/types';
 
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
@@ -14,6 +15,8 @@ const KEY_TEMPLATES = '@mpp/templates';
 const KEY_PROTOCOLS = '@mpp/protocols';
 const KEY_DOSE_SKIPS = '@mpp/dose_skips';
 const KEY_VIALS = '@mpp/vials';
+const KEY_LAB_RESULTS = '@mpp/lab_results';
+export const KEY_NEXT_LAB_DATE = '@mpp/next_lab_date';
 export const KEY_REMINDER_IDS = '@mpp/reminder_map';
 
 export type ScheduleRepeat = 'once' | 'daily' | 'weekly';
@@ -308,6 +311,28 @@ export async function deleteVial(id: string): Promise<void> {
   }
 }
 
+// ----- LAB RESULTS (Premium) -----
+export const getLabResults = () => getLocalList<LabResult>(KEY_LAB_RESULTS);
+export async function saveLabResult(result: LabResult): Promise<LabResult> {
+  const current = await getLabResults();
+  const exists = current.some(value => value.id === result.id);
+  await setLocalList(KEY_LAB_RESULTS, exists ? current.map(value => value.id === result.id ? result : value) : [result, ...current]);
+  return result;
+}
+export async function deleteLabResult(id: string): Promise<void> {
+  await setLocalList(KEY_LAB_RESULTS, (await getLabResults()).filter(item => item.id !== id));
+}
+export const newLabResultId = () => `lab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** The user's next lab date (YYYY-MM-DD), for lab reminders. */
+export async function getNextLabDate(): Promise<string | null> {
+  return (await AsyncStorage.getItem(KEY_NEXT_LAB_DATE)) || null;
+}
+export async function setNextLabDate(date: string | null): Promise<void> {
+  if (date) await AsyncStorage.setItem(KEY_NEXT_LAB_DATE, date);
+  else await AsyncStorage.removeItem(KEY_NEXT_LAB_DATE);
+}
+
 // ----- PHOTO UPLOAD -----
 // In offline mode the local URI from expo-image-picker is fine —
 // it persists across app launches because it's in app sandbox storage.
@@ -354,6 +379,8 @@ export async function clearLocalData(): Promise<void> {
     KEY_PROTOCOLS,
     KEY_DOSE_SKIPS,
     KEY_VIALS,
+    KEY_LAB_RESULTS,
+    KEY_NEXT_LAB_DATE,
     KEY_REMINDER_IDS,
   ]);
 }
@@ -368,6 +395,7 @@ export async function replaceAllData(data: {
   protocols: Protocol[];
   doseSkips: DoseSkip[];
   vials: Vial[];
+  labResults: LabResult[];
 }): Promise<void> {
   await AsyncStorage.multiSet([
     [KEY_INJECTIONS, JSON.stringify(data.injections)],
@@ -377,5 +405,6 @@ export async function replaceAllData(data: {
     [KEY_PROTOCOLS, JSON.stringify(data.protocols)],
     [KEY_DOSE_SKIPS, JSON.stringify(data.doseSkips)],
     [KEY_VIALS, JSON.stringify(data.vials)],
+    [KEY_LAB_RESULTS, JSON.stringify(data.labResults)],
   ]);
 }

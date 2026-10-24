@@ -17,7 +17,9 @@ import {
   saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
-import { PaywallProvider } from '../lib/paywall';
+import { PaywallProvider, usePaywall } from '../lib/paywall';
+import { PremiumBadge } from '../components/PremiumLock';
+import { LabsTool } from './LabsScreen';
 import { ProtocolsTool } from './ProtocolsScreen';
 import { VialsTool } from './VialsScreen';
 import { usePremium } from '../lib/usePremium';
@@ -36,7 +38,7 @@ function animateListChange(): void {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
-type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
+type ToolId = 'protocols' | 'vials' | 'labs' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
 
@@ -44,6 +46,8 @@ const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: strin
   // Two active protocols are free (src/lib/freeTier.ts); the tool enforces it.
   { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent },
   { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary },
+  // Premium: stays visible with a lock for free users (2.5.19).
+  { id: 'labs', icon: 'pulse-outline', titleKey: 'labs.title', subKey: 'labs.toolSub', tint: colors.teal },
   { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary },
   { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent },
   { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary },
@@ -70,6 +74,7 @@ export function ToolsScreen() {
   const [exporting, setExporting] = useState(false);
   const { t } = useI18n();
   const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
   // Protocols and Vials replace Schedule, Inventory and Templates. The old
   // tools stay reachable only for people who already have entries in them,
   // so nothing anyone saved disappears.
@@ -102,6 +107,7 @@ export function ToolsScreen() {
       runExport();
       return;
     }
+    if (tool.id === 'labs' && !allows('labResults')) { openPaywall({ kind: 'labsTab' }); return; }
     setActive(tool.id);
   };
 
@@ -129,6 +135,7 @@ export function ToolsScreen() {
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
+                {tool.id === 'labs' && !allows('labResults') && <PremiumBadge />}
                 {tool.id === 'protocols' && !allows('unlimitedActivePlans') && <Text style={s.freeBadge}>{t('tools.twoFree')}</Text>}
               </View>
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
@@ -142,6 +149,7 @@ export function ToolsScreen() {
         <PaywallProvider>
           {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
           {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
+          {active === 'labs' && <LabsTool onClose={() => setActive(null)} />}
           {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
           {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
           {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
