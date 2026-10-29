@@ -8,6 +8,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Disclaimer, Header, Card, CardLabel, ViewPill } from '../components/UI';
 import { BodyDiagram } from '../components/BodyDiagram';
+import { TwoColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
 import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
 import { PEPTIDES, ALL_ZONES, Injection, Peptide, Severity, SIDE_EFFECT_TAGS, TIME_PERIODS, TimePeriod, formatClockTime } from '../data/peptides';
 import { getInjections, getInventory, getProtocols, getRecordTemplates, getVials, RecordTemplate, saveInjection, updateInjection, updateInventoryItem, uploadPhoto } from '../lib/storage';
@@ -16,9 +18,6 @@ import { getInjectionSiteIds, lastLoggedBySite } from '../lib/sites';
 import { daysBetween } from '../lib/schedule/days';
 import { keepPhoto, photoDisplayUri } from '../lib/photos';
 import { HealthPoint, readHealthWeights } from '../lib/health';
-import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
-import { UpgradeScreen } from './UpgradeScreen';
 import { notifySuccessfulSave } from '../lib/reviewPrompt';
 import { hapticSuccess, hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
@@ -56,8 +55,6 @@ type TimeChoice =
   | { kind: 'custom' };
 
 export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initialInjection, prefillFrom, planned, onCancel }: LogInjectionScreenProps) {
-  const { hasPro, monetizationEnabled } = useEntitlements();
-  const { user } = useAuth();
   const { t, dateLocale } = useI18n();
   const seedRecord = initialInjection ?? prefillFrom ?? null;
   const today = localDateISO();
@@ -101,8 +98,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [customMinute, setCustomMinute] = useState(seedTime.slice(3, 5));
   const [customMeridiem, setCustomMeridiem] = useState<'AM' | 'PM'>(seedHour >= 12 ? 'PM' : 'AM');
   const [saving, setSaving] = useState(false);
-  const [freeLogCount, setFreeLogCount] = useState<number | null>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [vials, setVials] = useState<Vial[]>([]);
   const [vialId, setVialId] = useState<string | undefined>(initialInjection?.vialId);
   const [vialTouched, setVialTouched] = useState(!!initialInjection);
@@ -120,24 +115,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const lastBySite = lastLoggedBySite(history, logDate, initialInjection?.id);
   // Latest Apple Health weight on or before the record's day, if any.
   const healthWeight = [...healthWeights].reverse().find(point => point.date <= logDate);
-  const canUsePro = hasPro || !!user?.isDeveloper;
-  const freeTrialActive = monetizationEnabled && !canUsePro && !isEditing;
-  const freeLogsRemaining = freeLogCount === null
-    ? FREE_INJECTION_LIMIT
-    : Math.max(0, FREE_INJECTION_LIMIT - freeLogCount);
-
-  useEffect(() => {
-    let active = true;
-    if (!freeTrialActive) {
-      setFreeLogCount(null);
-      return () => { active = false; };
-    }
-    getInjections()
-      .then(records => { if (active) setFreeLogCount(records.length); })
-      .catch(() => { if (active) setFreeLogCount(0); });
-    return () => { active = false; };
-  }, [freeTrialActive]);
-
+  const wide = useWideLayout();
   // Vials to draw from: active ones, plus the record's own when editing.
   useEffect(() => {
     let alive = true;
@@ -296,21 +274,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
       }
     }
 
-    let freeTrialSaveNumber: number | null = null;
-    if (freeTrialActive) {
-      try {
-        const existing = await getInjections();
-        if (existing.length >= FREE_INJECTION_LIMIT) {
-          setFreeLogCount(existing.length);
-          setUpgradeOpen(true);
-          return;
-        }
-        freeTrialSaveNumber = existing.length + 1;
-      } catch (e: any) {
-        Alert.alert(t('log.accessCheckFailed'), e?.message || t('common.tryAgain'));
-        return;
-      }
-    }
 
     setSaving(true);
     try {
@@ -356,16 +319,8 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
       // A logged planned dose drops its pending reminder.
       if (record.occurrenceKey || record.vialId || initialInjection?.vialId) syncProtocolReminders().catch(() => undefined);
 
-      const freeLogsLeftAfterSave = freeTrialSaveNumber ? FREE_INJECTION_LIMIT - freeTrialSaveNumber : 0;
-      const savedMessage = isEditing
-        ? t('log.updatedBody')
-        : freeTrialSaveNumber
-          ? freeTrialSaveNumber >= FREE_INJECTION_LIMIT
-            ? t('log.freeSavedLast', { price: LIFETIME_PRO_PRICE_LABEL })
-            : freeLogsLeftAfterSave === 1
-              ? t('log.freeSavedOne')
-              : t('log.freeSavedMany', { n: freeLogsLeftAfterSave })
-          : t('log.savedBody');
+      // Logging is never limited (2.0): every save is a normal save.
+      const savedMessage = isEditing ? t('log.updatedBody') : t('log.savedBody');
 
       hapticSuccess();
       if (!isEditing) {
@@ -479,15 +434,51 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
     }
   };
 
-  if (freeTrialActive && freeLogCount !== null && freeLogCount >= FREE_INJECTION_LIMIT) {
-    return <UpgradeScreen onClose={onCancel || onDone} />;
-  }
+  // The body map sits beside the form on wide windows (iPad, open iPhone Duo).
+  const siteCard = (
+    <Card>
+      <Text style={s.cardLabel}>{t('log.site')}</Text>
+      <ViewPill view={view} setView={setView} />
+      <BodyDiagram view={view} mode="select" selected={selected} onZoneTap={toggle} />
+      <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
+      {selected.length > 0 && (
+        <View style={s.lastUsedBox}>
+          {selected.map(id => {
+            const last = lastBySite[id];
+            const days = last ? daysBetween(last.date, logDate) : null;
+            return (
+              <Text key={id} style={s.lastUsedText}>
+                {t('zone.' + id)}: {last === undefined
+                  ? t('log.lastNever')
+                  : days === 0
+                    ? t('log.lastSameDay')
+                    : days === 1 ? t('log.lastOneDay') : t('log.lastDays', { n: days ?? 0 })}
+              </Text>
+            );
+          })}
+        </View>
+      )}
+      {selected.length > 0 && (
+        <View style={s.chips}>
+          {selected.map(id => {
+            const z = ALL_ZONES.find(x => x.id === id);
+            return (
+              <Pressable key={id} style={s.chip} onPress={() => toggle(id)}>
+                <Text style={s.chipText}>{t('zoneShort.' + id)} ×</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </Card>
+  );
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <ScrollView contentContainerStyle={{ paddingBottom: 124 }} keyboardShouldPersistTaps="handled">
         <Header
+          columns="two"
           title={isEditing ? t('log.titleEdit') : t('log.titleNew')}
           subtitle={
             (initialDate
@@ -509,321 +500,552 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             </Pressable>
           </View>
         )}
-        {freeTrialActive && freeLogCount !== null && (
-          <Card style={s.trialCard}>
-            <CardLabel icon="◆">{t('log.freeTrialLabel')}</CardLabel>
-            <Text style={s.trialTitle}>
-              {t('log.freeTrialTitle', { n: freeLogsRemaining, max: FREE_INJECTION_LIMIT })}
-            </Text>
-            <Text style={s.trialBody}>
-              {t('log.freeTrialBody', { max: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-            </Text>
-          </Card>
-        )}
 
-        {/* Peptide selector */}
-        <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
-          <Pressable
-            style={s.peptideBtn}
-            onPress={() => setPicker(true)}
-            accessibilityRole="button"
-            accessibilityLabel={peptide ? `Selected compound: ${peptide.name}. Change selection` : 'Select compound'}
-          >
-            <Text style={peptide ? s.peptideName : s.peptidePlaceholder}>
-              {peptide ? peptide.name : t('log.selectPeptide')}
-            </Text>
-            <Text style={s.chev}>›</Text>
-          </Pressable>
-          {hasTemplates && <Pressable
-            style={s.templateBtn}
-            onPress={freeTrialActive ? () => setUpgradeOpen(true) : openTemplates}
-            accessibilityRole="button"
-            accessibilityLabel="Use a saved record template"
-          >
-            <Text style={s.templateBtnText}>{freeTrialActive ? t('log.unlockTemplates') : t('log.useTemplate')}</Text>
-          </Pressable>}
-        </View>
-
-        {/* Dose */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.dose')}</Text>
-          <View style={s.doseRow}>
-            <TextInput
-              placeholder="0"
-              placeholderTextColor={colors.textFaint}
-              value={dose}
-              onChangeText={setDose}
-              keyboardType="numeric"
-              style={s.doseInput}
-            />
-          </View>
-          {/* Four units don't fit beside the field, so they get their own row. */}
-          <View style={[s.unitToggle, s.doseUnits]}>
-            {DOSE_UNITS.map(u => (
-              <Pressable
-                key={u}
-                onPress={() => handleUnitChange(u)}
-                style={[s.unitBtn, s.doseUnitBtn, unit === u && s.unitBtnActive]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: unit === u }}
-              >
-                <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>{u}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Card>
-
-        {vials.length > 0 && (
-          <Card>
-            <Text style={s.cardLabel}>{t('vial.drawFrom')}</Text>
-            <View style={s.timeChips}>
-              <Pressable
-                onPress={() => { setVialTouched(true); setVialId(undefined); }}
-                style={[s.timeChip, !vialId && s.timeChipActive]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: !vialId }}
-              >
-                <Text style={[s.timeChipText, !vialId && s.timeChipTextActive]}>{t('proto.noVial')}</Text>
-              </Pressable>
-              {vials.map(vial => (
+        {wide ? (
+          <TwoColumn
+            leftFlex={1.15}
+            left={<>
+              {/* Peptide selector */}
+              <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
                 <Pressable
-                  key={vial.id}
-                  onPress={() => { setVialTouched(true); setVialId(vial.id); }}
-                  style={[s.timeChip, vialId === vial.id && s.timeChipActive]}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: vialId === vial.id }}
-                >
-                  <Text style={[s.timeChipText, vialId === vial.id && s.timeChipTextActive]}>{vial.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Card>
-        )}
-
-        {/* Time */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.time')}</Text>
-          <View style={s.timeChips}>
-            <Pressable
-              onPress={() => { hapticTap(); setTimeChoice({ kind: 'now' }); }}
-              style={[s.timeChip, timeChoice.kind === 'now' && s.timeChipActive]}
-              accessibilityRole="button"
-              accessibilityLabel="Record the current time"
-            >
-              <Text style={[s.timeChipText, timeChoice.kind === 'now' && s.timeChipTextActive]}>{t('log.timeNow')}</Text>
-            </Pressable>
-            {TIME_PERIODS.map(period => {
-              const active = timeChoice.kind === 'period' && timeChoice.period === period.id;
-              return (
-                <Pressable
-                  key={period.id}
-                  onPress={() => { hapticTap(); setTimeChoice({ kind: 'period', period: period.id }); }}
-                  style={[s.timeChip, active && s.timeChipActive]}
+                  style={s.peptideBtn}
+                  onPress={() => setPicker(true)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Record time as ${period.label}`}
+                  accessibilityLabel={peptide ? `Selected compound: ${peptide.name}. Change selection` : 'Select compound'}
                 >
-                  <Text style={[s.timeChipText, active && s.timeChipTextActive]}>{t('period.' + period.id)}</Text>
+                  <Text style={peptide ? s.peptideName : s.peptidePlaceholder}>
+                    {peptide ? peptide.name : t('log.selectPeptide')}
+                  </Text>
+                  <Text style={s.chev}>›</Text>
                 </Pressable>
-              );
-            })}
-            <Pressable
-              onPress={() => { hapticTap(); setTimeChoice({ kind: 'custom' }); }}
-              style={[s.timeChip, timeChoice.kind === 'custom' && s.timeChipActive]}
-              accessibilityRole="button"
-              accessibilityLabel="Enter an exact time"
-            >
-              <Text style={[s.timeChipText, timeChoice.kind === 'custom' && s.timeChipTextActive]}>{t('log.timeExact')}</Text>
-            </Pressable>
-          </View>
-          {timeChoice.kind === 'custom' && (
-            <View style={s.customTimeRow}>
-              <TextInput
-                value={customHour}
-                onChangeText={value => setCustomHour(value.replace(/[^0-9]/g, ''))}
-                keyboardType="number-pad"
-                maxLength={2}
-                style={s.customTimeInput}
-                accessibilityLabel="Hour"
-              />
-              <Text style={s.customTimeColon}>:</Text>
-              <TextInput
-                value={customMinute}
-                onChangeText={value => setCustomMinute(value.replace(/[^0-9]/g, ''))}
-                keyboardType="number-pad"
-                maxLength={2}
-                style={s.customTimeInput}
-                accessibilityLabel="Minutes"
-              />
-              <View style={s.unitToggle}>
-                {(['AM', 'PM'] as const).map(m => (
+                {hasTemplates && <Pressable
+                  style={s.templateBtn}
+                  onPress={openTemplates}
+                  accessibilityRole="button"
+                  accessibilityLabel="Use a saved record template"
+                >
+                  <Text style={s.templateBtnText}>{t('log.useTemplate')}</Text>
+                </Pressable>}
+              </View>
+
+              {/* Dose */}
+              <Card>
+                <Text style={s.cardLabel}>{t('log.dose')}</Text>
+                <View style={s.doseRow}>
+                  <TextInput
+                    placeholder="0"
+                    placeholderTextColor={colors.textFaint}
+                    value={dose}
+                    onChangeText={setDose}
+                    keyboardType="numeric"
+                    style={s.doseInput}
+                  />
+                </View>
+                {/* Four units don't fit beside the field, so they get their own row. */}
+                <View style={[s.unitToggle, s.doseUnits]}>
+                  {DOSE_UNITS.map(u => (
+                    <Pressable
+                      key={u}
+                      onPress={() => handleUnitChange(u)}
+                      style={[s.unitBtn, s.doseUnitBtn, unit === u && s.unitBtnActive]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: unit === u }}
+                    >
+                      <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>{u}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </Card>
+
+              {vials.length > 0 && (
+                <Card>
+                  <Text style={s.cardLabel}>{t('vial.drawFrom')}</Text>
+                  <View style={s.timeChips}>
+                    <Pressable
+                      onPress={() => { setVialTouched(true); setVialId(undefined); }}
+                      style={[s.timeChip, !vialId && s.timeChipActive]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: !vialId }}
+                    >
+                      <Text style={[s.timeChipText, !vialId && s.timeChipTextActive]}>{t('proto.noVial')}</Text>
+                    </Pressable>
+                    {vials.map(vial => (
+                      <Pressable
+                        key={vial.id}
+                        onPress={() => { setVialTouched(true); setVialId(vial.id); }}
+                        style={[s.timeChip, vialId === vial.id && s.timeChipActive]}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: vialId === vial.id }}
+                      >
+                        <Text style={[s.timeChipText, vialId === vial.id && s.timeChipTextActive]}>{vial.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </Card>
+              )}
+
+              {/* Time */}
+              <Card>
+                <Text style={s.cardLabel}>{t('log.time')}</Text>
+                <View style={s.timeChips}>
                   <Pressable
-                    key={m}
-                    onPress={() => setCustomMeridiem(m)}
-                    style={[s.unitBtn, customMeridiem === m && s.unitBtnActive]}
+                    onPress={() => { hapticTap(); setTimeChoice({ kind: 'now' }); }}
+                    style={[s.timeChip, timeChoice.kind === 'now' && s.timeChipActive]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Record the current time"
                   >
-                    <Text style={[s.unitBtnText, customMeridiem === m && s.unitBtnTextActive]}>{m}</Text>
+                    <Text style={[s.timeChipText, timeChoice.kind === 'now' && s.timeChipTextActive]}>{t('log.timeNow')}</Text>
+                  </Pressable>
+                  {TIME_PERIODS.map(period => {
+                    const active = timeChoice.kind === 'period' && timeChoice.period === period.id;
+                    return (
+                      <Pressable
+                        key={period.id}
+                        onPress={() => { hapticTap(); setTimeChoice({ kind: 'period', period: period.id }); }}
+                        style={[s.timeChip, active && s.timeChipActive]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Record time as ${period.label}`}
+                      >
+                        <Text style={[s.timeChipText, active && s.timeChipTextActive]}>{t('period.' + period.id)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable
+                    onPress={() => { hapticTap(); setTimeChoice({ kind: 'custom' }); }}
+                    style={[s.timeChip, timeChoice.kind === 'custom' && s.timeChipActive]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Enter an exact time"
+                  >
+                    <Text style={[s.timeChipText, timeChoice.kind === 'custom' && s.timeChipTextActive]}>{t('log.timeExact')}</Text>
+                  </Pressable>
+                </View>
+                {timeChoice.kind === 'custom' && (
+                  <View style={s.customTimeRow}>
+                    <TextInput
+                      value={customHour}
+                      onChangeText={value => setCustomHour(value.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      style={s.customTimeInput}
+                      accessibilityLabel="Hour"
+                    />
+                    <Text style={s.customTimeColon}>:</Text>
+                    <TextInput
+                      value={customMinute}
+                      onChangeText={value => setCustomMinute(value.replace(/[^0-9]/g, ''))}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      style={s.customTimeInput}
+                      accessibilityLabel="Minutes"
+                    />
+                    <View style={s.unitToggle}>
+                      {(['AM', 'PM'] as const).map(m => (
+                        <Pressable
+                          key={m}
+                          onPress={() => setCustomMeridiem(m)}
+                          style={[s.unitBtn, customMeridiem === m && s.unitBtnActive]}
+                        >
+                          <Text style={[s.unitBtnText, customMeridiem === m && s.unitBtnTextActive]}>{m}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                <Text style={s.timeHint}>
+                  {timeChoice.kind === 'now'
+                    ? t('log.timeHintNow', { time: formatClockTime(new Date().toTimeString().slice(0, 5)) })
+                    : timeChoice.kind === 'period'
+                      ? t('log.timeHintPeriod', { label: t('period.' + timeChoice.period) })
+                      : t('log.timeHintExact')}
+                </Text>
+              </Card>
+
+              {/* Side effects */}
+              <Card>
+                <Text style={s.cardLabel}>{t('log.sideEffects')}</Text>
+                <View style={s.sevRow}>
+                  {([
+                    { v: 'none' as const, label: t('sev.none'), c: sevColors.none },
+                    { v: 'mild' as const, label: t('sev.mild'), c: sevColors.mild },
+                    { v: 'mod'  as const, label: t('sev.mod'), c: sevColors.mod },
+                    { v: 'sev'  as const, label: t('sev.sev'), c: sevColors.sev },
+                  ]).map(s2 => (
+                    <Pressable
+                      key={s2.v}
+                      onPress={() => setSev(s2.v)}
+                      style={[
+                        s.sevBtn,
+                        sev === s2.v && { borderColor: s2.c, backgroundColor: s2.c + '15' },
+                      ]}
+                    >
+                      <Text style={[s.sevBtnText, sev === s2.v && { color: s2.c }]}>{s2.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {sev !== 'none' && (
+                  <View style={s.symptomWrap}>
+                    {SIDE_EFFECT_TAGS.map(tag => {
+                      const active = symptoms.includes(tag);
+                      return (
+                        <Pressable
+                          key={tag}
+                          onPress={() => toggleSymptom(tag)}
+                          style={[s.symptomChip, active && s.symptomChipActive]}
+                        >
+                          <Text style={[s.symptomChipText, active && s.symptomChipTextActive]}>{t('symptom.' + tag)}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+              </Card>
+
+              {/* Photo */}
+              <Card>
+                <Text style={s.cardLabel}>{t('log.photo')}</Text>
+                <Pressable style={s.photoArea} onPress={pickPhoto}>
+                  {photoUri ? (
+                    <>
+                      <Image source={{ uri: photoDisplayUri(photoUri) }} style={s.photoImg} />
+                      <Pressable
+                        onPress={() => setPhotoUri(null)}
+                        style={s.photoRemove}
+                      >
+                        <Text style={s.photoRemoveText}>{t('log.photoRemove')}</Text>
+                      </Pressable>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={{ fontSize: 32 }}>📷</Text>
+                      <Text style={s.photoText}>{t('log.photoTap')}</Text>
+                    </>
+                  )}
+                </Pressable>
+              </Card>
+
+              {/* Weight */}
+              <Card>
+                <Text style={s.cardLabel}>{t('log.weight')}</Text>
+                <TextInput
+                  placeholder={t('log.weightPlaceholder')}
+                  placeholderTextColor={colors.textFaint}
+                  value={weight}
+                  onChangeText={setWeight}
+                  keyboardType="numeric"
+                  style={s.textInput}
+                />
+                {!!healthWeight && weight !== String(healthWeight.value) && (
+                  <Pressable
+                    style={[s.timeChip, { alignSelf: 'flex-start', marginTop: 10 }]}
+                    onPress={() => { hapticTap(); setWeight(String(healthWeight.value)); }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={s.timeChipText}>
+                      {t('health.useWeight', { w: healthWeight.value, date: new Date(healthWeight.date + 'T12:00:00').toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+                    </Text>
+                  </Pressable>
+                )}
+              </Card>
+
+              {/* Notes */}
+              <Card>
+                <Text style={s.cardLabel}>{t('log.notes')}</Text>
+                <TextInput
+                  placeholder={t('log.notesPlaceholder')}
+                  placeholderTextColor={colors.textFaint}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  style={s.notes}
+                />
+              </Card>
+
+              <View style={{ paddingHorizontal: spacing.xl }}>
+                <Pressable
+                  style={s.submit}
+                  onPress={handleSave}
+                  disabled={saving}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: saving }}
+                >
+                  <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
+                </Pressable>
+              </View>
+            </>}
+            right={siteCard}
+          />
+        ) : (
+          <>
+            {/* Peptide selector */}
+            <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
+              <Pressable
+                style={s.peptideBtn}
+                onPress={() => setPicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel={peptide ? `Selected compound: ${peptide.name}. Change selection` : 'Select compound'}
+              >
+                <Text style={peptide ? s.peptideName : s.peptidePlaceholder}>
+                  {peptide ? peptide.name : t('log.selectPeptide')}
+                </Text>
+                <Text style={s.chev}>›</Text>
+              </Pressable>
+              {hasTemplates && <Pressable
+                style={s.templateBtn}
+                onPress={openTemplates}
+                accessibilityRole="button"
+                accessibilityLabel="Use a saved record template"
+              >
+                <Text style={s.templateBtnText}>{t('log.useTemplate')}</Text>
+              </Pressable>}
+            </View>
+
+            {/* Dose */}
+            <Card>
+              <Text style={s.cardLabel}>{t('log.dose')}</Text>
+              <View style={s.doseRow}>
+                <TextInput
+                  placeholder="0"
+                  placeholderTextColor={colors.textFaint}
+                  value={dose}
+                  onChangeText={setDose}
+                  keyboardType="numeric"
+                  style={s.doseInput}
+                />
+              </View>
+              {/* Four units don't fit beside the field, so they get their own row. */}
+              <View style={[s.unitToggle, s.doseUnits]}>
+                {DOSE_UNITS.map(u => (
+                  <Pressable
+                    key={u}
+                    onPress={() => handleUnitChange(u)}
+                    style={[s.unitBtn, s.doseUnitBtn, unit === u && s.unitBtnActive]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: unit === u }}
+                  >
+                    <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>{u}</Text>
                   </Pressable>
                 ))}
               </View>
-            </View>
-          )}
-          <Text style={s.timeHint}>
-            {timeChoice.kind === 'now'
-              ? t('log.timeHintNow', { time: formatClockTime(new Date().toTimeString().slice(0, 5)) })
-              : timeChoice.kind === 'period'
-                ? t('log.timeHintPeriod', { label: t('period.' + timeChoice.period) })
-                : t('log.timeHintExact')}
-          </Text>
-        </Card>
+            </Card>
 
-        {/* Site */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.site')}</Text>
-          <ViewPill view={view} setView={setView} />
-          <BodyDiagram view={view} mode="select" selected={selected} onZoneTap={toggle} />
-          <Text style={s.anteriorLabel}>{view === 'front' ? t('log.anterior') : t('log.posterior')}</Text>
-          {selected.length > 0 && (
-            <View style={s.lastUsedBox}>
-              {selected.map(id => {
-                const last = lastBySite[id];
-                const days = last ? daysBetween(last.date, logDate) : null;
-                return (
-                  <Text key={id} style={s.lastUsedText}>
-                    {t('zone.' + id)}: {last === undefined
-                      ? t('log.lastNever')
-                      : days === 0
-                        ? t('log.lastSameDay')
-                        : days === 1 ? t('log.lastOneDay') : t('log.lastDays', { n: days ?? 0 })}
-                  </Text>
-                );
-              })}
-            </View>
-          )}
-          {selected.length > 0 && (
-            <View style={s.chips}>
-              {selected.map(id => {
-                const z = ALL_ZONES.find(x => x.id === id);
-                return (
-                  <Pressable key={id} style={s.chip} onPress={() => toggle(id)}>
-                    <Text style={s.chipText}>{t('zoneShort.' + id)} ×</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </Card>
-
-        {/* Side effects */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.sideEffects')}</Text>
-          <View style={s.sevRow}>
-            {([
-              { v: 'none' as const, label: t('sev.none'), c: sevColors.none },
-              { v: 'mild' as const, label: t('sev.mild'), c: sevColors.mild },
-              { v: 'mod'  as const, label: t('sev.mod'), c: sevColors.mod },
-              { v: 'sev'  as const, label: t('sev.sev'), c: sevColors.sev },
-            ]).map(s2 => (
-              <Pressable
-                key={s2.v}
-                onPress={() => setSev(s2.v)}
-                style={[
-                  s.sevBtn,
-                  sev === s2.v && { borderColor: s2.c, backgroundColor: s2.c + '15' },
-                ]}
-              >
-                <Text style={[s.sevBtnText, sev === s2.v && { color: s2.c }]}>{s2.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {sev !== 'none' && (
-            <View style={s.symptomWrap}>
-              {SIDE_EFFECT_TAGS.map(tag => {
-                const active = symptoms.includes(tag);
-                return (
+            {vials.length > 0 && (
+              <Card>
+                <Text style={s.cardLabel}>{t('vial.drawFrom')}</Text>
+                <View style={s.timeChips}>
                   <Pressable
-                    key={tag}
-                    onPress={() => toggleSymptom(tag)}
-                    style={[s.symptomChip, active && s.symptomChipActive]}
+                    onPress={() => { setVialTouched(true); setVialId(undefined); }}
+                    style={[s.timeChip, !vialId && s.timeChipActive]}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: !vialId }}
                   >
-                    <Text style={[s.symptomChipText, active && s.symptomChipTextActive]}>{t('symptom.' + tag)}</Text>
+                    <Text style={[s.timeChipText, !vialId && s.timeChipTextActive]}>{t('proto.noVial')}</Text>
                   </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </Card>
-
-        {/* Photo */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.photo')}</Text>
-          <Pressable style={s.photoArea} onPress={pickPhoto}>
-            {photoUri ? (
-              <>
-                <Image source={{ uri: photoDisplayUri(photoUri) }} style={s.photoImg} />
-                <Pressable
-                  onPress={() => setPhotoUri(null)}
-                  style={s.photoRemove}
-                >
-                  <Text style={s.photoRemoveText}>{t('log.photoRemove')}</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text style={{ fontSize: 32 }}>📷</Text>
-                <Text style={s.photoText}>{t('log.photoTap')}</Text>
-              </>
+                  {vials.map(vial => (
+                    <Pressable
+                      key={vial.id}
+                      onPress={() => { setVialTouched(true); setVialId(vial.id); }}
+                      style={[s.timeChip, vialId === vial.id && s.timeChipActive]}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: vialId === vial.id }}
+                    >
+                      <Text style={[s.timeChipText, vialId === vial.id && s.timeChipTextActive]}>{vial.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </Card>
             )}
-          </Pressable>
-        </Card>
 
-        {/* Weight */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.weight')}</Text>
-          <TextInput
-            placeholder={t('log.weightPlaceholder')}
-            placeholderTextColor={colors.textFaint}
-            value={weight}
-            onChangeText={setWeight}
-            keyboardType="numeric"
-            style={s.textInput}
-          />
-          {!!healthWeight && weight !== String(healthWeight.value) && (
-            <Pressable
-              style={[s.timeChip, { alignSelf: 'flex-start', marginTop: 10 }]}
-              onPress={() => { hapticTap(); setWeight(String(healthWeight.value)); }}
-              accessibilityRole="button"
-            >
-              <Text style={s.timeChipText}>
-                {t('health.useWeight', { w: healthWeight.value, date: new Date(healthWeight.date + 'T12:00:00').toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+            {/* Time */}
+            <Card>
+              <Text style={s.cardLabel}>{t('log.time')}</Text>
+              <View style={s.timeChips}>
+                <Pressable
+                  onPress={() => { hapticTap(); setTimeChoice({ kind: 'now' }); }}
+                  style={[s.timeChip, timeChoice.kind === 'now' && s.timeChipActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Record the current time"
+                >
+                  <Text style={[s.timeChipText, timeChoice.kind === 'now' && s.timeChipTextActive]}>{t('log.timeNow')}</Text>
+                </Pressable>
+                {TIME_PERIODS.map(period => {
+                  const active = timeChoice.kind === 'period' && timeChoice.period === period.id;
+                  return (
+                    <Pressable
+                      key={period.id}
+                      onPress={() => { hapticTap(); setTimeChoice({ kind: 'period', period: period.id }); }}
+                      style={[s.timeChip, active && s.timeChipActive]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Record time as ${period.label}`}
+                    >
+                      <Text style={[s.timeChipText, active && s.timeChipTextActive]}>{t('period.' + period.id)}</Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => { hapticTap(); setTimeChoice({ kind: 'custom' }); }}
+                  style={[s.timeChip, timeChoice.kind === 'custom' && s.timeChipActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Enter an exact time"
+                >
+                  <Text style={[s.timeChipText, timeChoice.kind === 'custom' && s.timeChipTextActive]}>{t('log.timeExact')}</Text>
+                </Pressable>
+              </View>
+              {timeChoice.kind === 'custom' && (
+                <View style={s.customTimeRow}>
+                  <TextInput
+                    value={customHour}
+                    onChangeText={value => setCustomHour(value.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    style={s.customTimeInput}
+                    accessibilityLabel="Hour"
+                  />
+                  <Text style={s.customTimeColon}>:</Text>
+                  <TextInput
+                    value={customMinute}
+                    onChangeText={value => setCustomMinute(value.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    style={s.customTimeInput}
+                    accessibilityLabel="Minutes"
+                  />
+                  <View style={s.unitToggle}>
+                    {(['AM', 'PM'] as const).map(m => (
+                      <Pressable
+                        key={m}
+                        onPress={() => setCustomMeridiem(m)}
+                        style={[s.unitBtn, customMeridiem === m && s.unitBtnActive]}
+                      >
+                        <Text style={[s.unitBtnText, customMeridiem === m && s.unitBtnTextActive]}>{m}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+              <Text style={s.timeHint}>
+                {timeChoice.kind === 'now'
+                  ? t('log.timeHintNow', { time: formatClockTime(new Date().toTimeString().slice(0, 5)) })
+                  : timeChoice.kind === 'period'
+                    ? t('log.timeHintPeriod', { label: t('period.' + timeChoice.period) })
+                    : t('log.timeHintExact')}
               </Text>
-            </Pressable>
-          )}
-        </Card>
+            </Card>
 
-        {/* Notes */}
-        <Card>
-          <Text style={s.cardLabel}>{t('log.notes')}</Text>
-          <TextInput
-            placeholder={t('log.notesPlaceholder')}
-            placeholderTextColor={colors.textFaint}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            style={s.notes}
-          />
-        </Card>
+            {siteCard}
 
-        <View style={{ paddingHorizontal: spacing.xl }}>
-          <Pressable
-            style={s.submit}
-            onPress={handleSave}
-            disabled={saving}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: saving }}
-          >
-            <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
-          </Pressable>
-        </View>
+            {/* Side effects */}
+            <Card>
+              <Text style={s.cardLabel}>{t('log.sideEffects')}</Text>
+              <View style={s.sevRow}>
+                {([
+                  { v: 'none' as const, label: t('sev.none'), c: sevColors.none },
+                  { v: 'mild' as const, label: t('sev.mild'), c: sevColors.mild },
+                  { v: 'mod'  as const, label: t('sev.mod'), c: sevColors.mod },
+                  { v: 'sev'  as const, label: t('sev.sev'), c: sevColors.sev },
+                ]).map(s2 => (
+                  <Pressable
+                    key={s2.v}
+                    onPress={() => setSev(s2.v)}
+                    style={[
+                      s.sevBtn,
+                      sev === s2.v && { borderColor: s2.c, backgroundColor: s2.c + '15' },
+                    ]}
+                  >
+                    <Text style={[s.sevBtnText, sev === s2.v && { color: s2.c }]}>{s2.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {sev !== 'none' && (
+                <View style={s.symptomWrap}>
+                  {SIDE_EFFECT_TAGS.map(tag => {
+                    const active = symptoms.includes(tag);
+                    return (
+                      <Pressable
+                        key={tag}
+                        onPress={() => toggleSymptom(tag)}
+                        style={[s.symptomChip, active && s.symptomChipActive]}
+                      >
+                        <Text style={[s.symptomChipText, active && s.symptomChipTextActive]}>{t('symptom.' + tag)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </Card>
+
+            {/* Photo */}
+            <Card>
+              <Text style={s.cardLabel}>{t('log.photo')}</Text>
+              <Pressable style={s.photoArea} onPress={pickPhoto}>
+                {photoUri ? (
+                  <>
+                    <Image source={{ uri: photoDisplayUri(photoUri) }} style={s.photoImg} />
+                    <Pressable
+                      onPress={() => setPhotoUri(null)}
+                      style={s.photoRemove}
+                    >
+                      <Text style={s.photoRemoveText}>{t('log.photoRemove')}</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <Text style={{ fontSize: 32 }}>📷</Text>
+                    <Text style={s.photoText}>{t('log.photoTap')}</Text>
+                  </>
+                )}
+              </Pressable>
+            </Card>
+
+            {/* Weight */}
+            <Card>
+              <Text style={s.cardLabel}>{t('log.weight')}</Text>
+              <TextInput
+                placeholder={t('log.weightPlaceholder')}
+                placeholderTextColor={colors.textFaint}
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="numeric"
+                style={s.textInput}
+              />
+              {!!healthWeight && weight !== String(healthWeight.value) && (
+                <Pressable
+                  style={[s.timeChip, { alignSelf: 'flex-start', marginTop: 10 }]}
+                  onPress={() => { hapticTap(); setWeight(String(healthWeight.value)); }}
+                  accessibilityRole="button"
+                >
+                  <Text style={s.timeChipText}>
+                    {t('health.useWeight', { w: healthWeight.value, date: new Date(healthWeight.date + 'T12:00:00').toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
+                  </Text>
+                </Pressable>
+              )}
+            </Card>
+
+            {/* Notes */}
+            <Card>
+              <Text style={s.cardLabel}>{t('log.notes')}</Text>
+              <TextInput
+                placeholder={t('log.notesPlaceholder')}
+                placeholderTextColor={colors.textFaint}
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                style={s.notes}
+              />
+            </Card>
+
+            <View style={{ paddingHorizontal: spacing.xl }}>
+              <Pressable
+                style={s.submit}
+                onPress={handleSave}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: saving }}
+              >
+                <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Peptide picker modal */}
@@ -858,9 +1080,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             )}
           </SafeAreaView>
         </View>
-      </SafeAreaProvider></Modal>
-      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}><SafeAreaProvider>
-        <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
       </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
@@ -1129,7 +1348,7 @@ const s = StyleSheet.create({
   submitText: { color: colors.actionText, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
 
   sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
-  sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.scrim },
+  sheetBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.bgSheet,
     borderTopLeftRadius: 20, borderTopRightRadius: 20,

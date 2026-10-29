@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { MannequinFront } from './Mannequin';
 import { SHARE_PALETTE as P, withAlpha } from '../theme';
@@ -187,7 +187,7 @@ export function ProgressCard({ format, stats, asOf, t }: Props) {
           <View style={s.rule} />
           <View style={s.footer}>
             <Text style={s.cta} numberOfLines={1} allowFontScaling={false}>{t('share.ctaTitle')}</Text>
-            <Text style={s.ctaSub} allowFontScaling={false}>{t('share.ctaSub')}</Text>
+            <Text style={s.ctaSub} allowFontScaling={false}>{t(Platform.OS === 'android' ? 'share.ctaSubAndroid' : 'share.ctaSub')}</Text>
           </View>
           <Text style={s.compliance} allowFontScaling={false}>{t('share.compliance')}</Text>
         </View>
@@ -215,7 +215,7 @@ const s = StyleSheet.create({
   heroLabel: { color: P.text, fontSize: 11, fontWeight: '800', letterSpacing: 4, marginTop: 4 },
 
   ringRow: { alignItems: 'flex-start' },
-  ringCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   ringValue: { color: P.ink, fontSize: 40, fontWeight: '900', letterSpacing: -1 },
   ringLabel: { color: P.muted, fontSize: 9, fontWeight: '800', letterSpacing: 2.6, marginTop: 2 },
 

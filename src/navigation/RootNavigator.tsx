@@ -7,10 +7,12 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { BottomTabs } from './BottomTabs';
 import { colors } from '../theme';
 import { useEntitlements } from '../lib/entitlements';
+import { usePaywall } from '../lib/paywall';
 
 export function RootNavigator() {
   const { user, loading } = useAuth();
   const { loading: entitlementLoading } = useEntitlements();
+  const { maybeAutoPaywall } = usePaywall();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
 
@@ -37,7 +39,11 @@ export function RootNavigator() {
 
   if (!onboardingDone) {
     return (
-      <OnboardingScreen onDone={() => setOnboardingDone(true)} />
+      <OnboardingScreen onDone={() => {
+        setOnboardingDone(true);
+        // A soft, dismissible paywall once, at the end of onboarding.
+        maybeAutoPaywall('onboardingEnd').catch(() => undefined);
+      }} />
     );
   }
 

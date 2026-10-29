@@ -5,19 +5,24 @@ import { readAsStringAsync } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Injection } from '../data/peptides';
 import {
-  getDoseSkips, getInjections, getInventory, getProtocols, getRecordTemplates, getSchedules, getVials,
+  getDoseSkips, getInjections, getInventory, getLabReports, getLabResults, getProtocols, getRecordTemplates, getSchedules, getVials,
   InventoryItem, RecordTemplate, replaceAllData, ScheduleEntry,
 } from './storage';
 import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
 import { syncProtocolReminders } from './protocolReminders';
 import { PHOTO_SCHEME, readPhotoBase64, writePhotoBase64 } from './photos';
+import type { LabReport, LabResult } from './labs/types';
+import { readReportFileBase64, writeReportFileBase64 } from './labs/reportFiles';
+import { reportsNewestFirst, restoreReports } from './labs/reports';
 
 // Full local-data backup and restore, free for all users — data portability
 // is never paywalled. Deliberately excludes the Pro entitlement (purchases
 // restore through the App Store) and funnel counters. Photos are optional:
 // when included they travel inside the JSON as base64, up to
 // MAX_PHOTO_BYTES; without them, photo references are stripped on restore.
+// Saved lab report pages count as photos here: they travel with them, share
+// the same cap, and a report with no pages in the backup isn't restored.
 
 // Large enough for a few hundred phone photos, small enough to stay under
 // the memory a JSON string can use on an older iPhone.
@@ -25,9 +30,11 @@ const MAX_PHOTO_BYTES = 60 * 1024 * 1024;
 
 const BACKUP_APP_ID = 'monarch-prime-pin';
 export const KEY_LAST_BACKUP_AT = '@mpp/last_backup_at';
-// v2 adds protocols, dose skips and vials. v1 files still restore (with none).
-const BACKUP_VERSION = 2;
-const READABLE_VERSIONS = [1, 2];
+// v2 adds protocols, dose skips and vials; v3 adds lab results; v4 adds lab
+// reports. Older files
+// still restore (with none of the newer collections).
+const BACKUP_VERSION = 4;
+const READABLE_VERSIONS = [1, 2, 3, 4];
 
 export type BackupPayload = {
   app: string;
@@ -40,8 +47,12 @@ export type BackupPayload = {
   protocols: Protocol[];
   doseSkips: DoseSkip[];
   vials: Vial[];
+  labResults: LabResult[];
+  labReports: LabReport[];
   /** File name -> base64, for records whose photoUri is mpp-photo:<name>. */
   photos?: Record<string, string>;
+  /** File name -> base64, for report pages stored as mpp-labfile:<name>. */
+  labFiles?: Record<string, string>;
 };
 
 export type BackupCounts = {
@@ -50,13 +61,16 @@ export type BackupCounts = {
   inventory: number;
   templates: number;
   protocols: number;
+  labResults: number;
+  labReports: number;
   photos: number;
   photosSkipped: number;
 };
 
 export async function exportBackup({ includePhotos = false }: { includePhotos?: boolean } = {}): Promise<BackupCounts> {
-  const [injections, schedules, inventory, templates, protocols, doseSkips, vials] = await Promise.all([
-    getInjections(), getSchedules(), getInventory(), getRecordTemplates(), getProtocols(), getDoseSkips(), getVials(),
+  const [injections, schedules, inventory, templates, protocols, doseSkips, vials, labResults, allReports] = await Promise.all([
+    getInjections(), getSchedules(), getInventory(), getRecordTemplates(), getProtocols(), getDoseSkips(), getVials(), getLabResults(),
+    getLabReports(),
   ]);
 
   const photos: Record<string, string> = {};
@@ -76,6 +90,22 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
     }
   }
 
+  // Report pages share the photo cap, newest report first. Without photos,
+  // reports are left out entirely: their pages are the whole record.
+  const labFiles: Record<string, string> = {};
+  const labReports: LabReport[] = [];
+  if (includePhotos) {
+    for (const report of reportsNewestFirst(allReports)) {
+      const pages = await Promise.all(report.files.map(f => readReportFileBase64(f.ref).catch(() => null)));
+      const size = pages.reduce((sum, page) => sum + (page?.base64.length ?? 0), 0);
+      if (pages.some(page => !page)) continue;
+      if (photoBytes + size > MAX_PHOTO_BYTES) { photosSkipped += 1; continue; }
+      pages.forEach(page => { labFiles[page!.name] = page!.base64; });
+      photoBytes += size;
+      labReports.push(report);
+    }
+  }
+
   const payload: BackupPayload = {
     app: BACKUP_APP_ID,
     backupVersion: BACKUP_VERSION,
@@ -87,7 +117,9 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
     protocols,
     doseSkips,
     vials,
-    ...(includePhotos ? { photos } : {}),
+    labResults,
+    labReports,
+    ...(includePhotos ? { photos, labFiles } : {}),
   };
 
   const stamp = payload.exportedAt.slice(0, 10);
@@ -115,6 +147,8 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
     inventory: inventory.length,
     templates: templates.length,
     protocols: protocols.length,
+    labResults: labResults.length,
+    labReports: labReports.length,
     photos: Object.keys(photos).length,
     photosSkipped,
   };
@@ -151,6 +185,11 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
     protocols: asArray<Protocol>(parsed.protocols),
     doseSkips: asArray<DoseSkip>(parsed.doseSkips),
     vials: asArray<Vial>(parsed.vials),
+    labResults: asArray<LabResult>(parsed.labResults),
+    labReports: asArray<LabReport>(parsed.labReports),
+    labFiles: parsed.labFiles && typeof parsed.labFiles === 'object' && !Array.isArray(parsed.labFiles)
+      ? Object.fromEntries(Object.entries(parsed.labFiles).filter(([, v]) => typeof v === 'string')) as Record<string, string>
+      : undefined,
     photos: parsed.photos && typeof parsed.photos === 'object' && !Array.isArray(parsed.photos)
       ? Object.fromEntries(Object.entries(parsed.photos).filter(([, v]) => typeof v === 'string')) as Record<string, string>
       : undefined,
@@ -164,6 +203,8 @@ export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts
       inventory: payload.inventory.length,
       templates: payload.templates.length,
       protocols: payload.protocols.length,
+      labResults: payload.labResults.length,
+      labReports: payload.labReports.length,
       photos: Object.keys(payload.photos ?? {}).length,
       photosSkipped: 0,
     },
@@ -191,6 +232,8 @@ export async function restoreBackup(payload: BackupPayload): Promise<void> {
     protocols: payload.protocols,
     doseSkips: payload.doseSkips,
     vials: payload.vials,
+    labResults: payload.labResults,
+    labReports: restoreReports(payload.labReports, payload.labFiles, writeReportFileBase64),
   });
   // Protocol reminders are rebuilt from the restored plans on this device.
   await syncProtocolReminders().catch(() => undefined);

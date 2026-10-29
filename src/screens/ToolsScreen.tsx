@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, LayoutAnimation, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, UIManager, View,
+  Alert, LayoutAnimation, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, UIManager, View,
 } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -11,21 +12,24 @@ import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
 import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
-  getInventory, getRecordTemplates, getSchedules,
+  getInventory, getRecordTemplates, getLabReports, getLabResults, getSchedules,
   InventoryItem, RecordTemplate, saveInventoryItem, saveRecordTemplate,
   saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
 import { SettingsScreen } from './SettingsScreen';
-import { UpgradeScreen } from './UpgradeScreen';
+import { PaywallProvider, usePaywall } from '../lib/paywall';
+import { PremiumBadge } from '../components/PremiumLock';
+import { LabsTool } from './LabsScreen';
+import { labsAccess } from '../lib/labs/labs';
 import { ProtocolsTool } from './ProtocolsScreen';
 import { VialsTool } from './VialsScreen';
-import { useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
+import { usePremium } from '../lib/usePremium';
 import { cancelLocalReminder, scheduleLocalReminder } from '../lib/notifications';
 import { exportInjectionsCsv } from '../lib/exportData';
 import { hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
 import { localDateISO } from '../lib/dates';
+import { notifyPositiveMoment } from '../lib/reviewPrompt';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,17 +39,20 @@ function animateListChange(): void {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
-type ToolId = 'protocols' | 'vials' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
+type ToolId = 'protocols' | 'vials' | 'labs' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
-  { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent, pro: true },
-  { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary, pro: true },
-  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary, pro: true },
-  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent, pro: true },
-  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary, pro: true },
-  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: colors.accent, pro: true },
+  // Two active protocols are free (src/lib/freeTier.ts); the tool enforces it.
+  { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent },
+  { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary },
+  // Premium: stays visible with a lock for free users (2.5.19).
+  { id: 'labs', icon: 'pulse-outline', titleKey: 'labs.title', subKey: 'labs.toolSub', tint: colors.teal },
+  { id: 'conversion', icon: 'calculator-outline', titleKey: 'tools.worksheet.title', subKey: 'tools.worksheet.sub', tint: colors.primary },
+  { id: 'schedule', icon: 'calendar-outline', titleKey: 'tools.schedule.title', subKey: 'tools.schedule.sub', tint: colors.accent },
+  { id: 'inventory', icon: 'cube-outline', titleKey: 'tools.inventory.title', subKey: 'tools.inventory.sub', tint: colors.primary },
+  { id: 'templates', icon: 'document-text-outline', titleKey: 'templates.title', subKey: 'tools.templates.sub', tint: colors.accent },
   { id: 'export', icon: 'share-outline', titleKey: 'tools.export.title', subKey: 'tools.export.sub', tint: colors.primary },
   { id: 'settings', icon: 'settings-outline', titleKey: 'tools.settings.title', subKey: 'tools.settings.sub', tint: colors.accent },
 ];
@@ -64,18 +71,22 @@ function isValidTime(value: string): boolean {
 }
 
 export function ToolsScreen() {
-  const [active, setActive] = useState<ToolId | 'upgrade' | null>(null);
+  const [active, setActive] = useState<ToolId | null>(null);
   const [exporting, setExporting] = useState(false);
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
   const { t } = useI18n();
-  const canUsePro = hasPro || !!user?.isDeveloper;
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
   // Protocols and Vials replace Schedule, Inventory and Templates. The old
   // tools stay reachable only for people who already have entries in them,
   // so nothing anyone saved disappears.
   const [legacyCounts, setLegacyCounts] = useState<Record<string, number>>({});
-  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates()])
-    .then(([schedules, inventory, templates]) => setLegacyCounts({ schedule: schedules.length, inventory: inventory.length, templates: templates.length }))
+  const [labCount, setLabCount] = useState(0);
+  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates(), getLabResults(), getLabReports()])
+    .then(([schedules, inventory, templates, labs, reports]) => {
+      setLegacyCounts({ schedule: schedules.length, inventory: inventory.length, templates: templates.length });
+      // Saved reports count too: after Premium ends they stay viewable.
+      setLabCount(labs.length + reports.length);
+    })
     .catch(() => undefined);
   useEffect(() => { loadLegacyCounts(); }, []);
   const currentTools = TOOLS.filter(tool => !LEGACY_TOOLS.includes(tool.id));
@@ -86,6 +97,7 @@ export function ToolsScreen() {
     setExporting(true);
     try {
       const { count } = await exportInjectionsCsv();
+      if (count > 0) notifyPositiveMoment('export');
       if (count === 0) {
         Alert.alert(t('tools.exportNothingTitle'), t('tools.exportNothingBody'));
       }
@@ -101,11 +113,13 @@ export function ToolsScreen() {
       runExport();
       return;
     }
-    setActive(tool.pro && !canUsePro ? 'upgrade' : tool.id);
+    // After Premium ends, saved lab results stay viewable and exportable.
+    if (tool.id === 'labs' && labsAccess(allows('labResults'), labCount) === 'paywall') { openPaywall({ kind: 'labsTab' }); return; }
+    setActive(tool.id);
   };
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
       <Header title={t('tools.title')} subtitle={t('tools.subtitle')} />
       <ScrollView contentContainerStyle={s.pageContent}>
@@ -128,7 +142,8 @@ export function ToolsScreen() {
             <View style={{ flex: 1 }}>
               <View style={s.toolTitleRow}>
                 <Text style={s.toolTitle}>{t(tool.titleKey)}</Text>
-                {!!tool.pro && !canUsePro && <Text style={s.proBadge}>PRO</Text>}
+                {tool.id === 'labs' && !allows('labResults') && <PremiumBadge />}
+                {tool.id === 'protocols' && !allows('unlimitedActivePlans') && <Text style={s.freeBadge}>{t('tools.twoFree')}</Text>}
               </View>
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
             </View>
@@ -137,14 +152,17 @@ export function ToolsScreen() {
         ))}
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
-        {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
-        {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
-        {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
-        {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
-        {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
-        {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
-        {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
-        {active === 'upgrade' && <UpgradeScreen onClose={() => setActive(null)} />}
+        {/* Sheets inside this modal open their paywall from here: iOS can't present over a modal from the root. */}
+        <PaywallProvider>
+          {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
+          {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
+          {active === 'labs' && <LabsTool onClose={() => setActive(null)} readOnly={labsAccess(allows('labResults'), labCount) === 'readOnly'} />}
+          {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
+          {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
+          {active === 'templates' && <TemplatesTool onClose={() => setActive(null)} />}
+          {active === 'conversion' && <ConversionTool onClose={() => setActive(null)} />}
+          {active === 'settings' && <SettingsScreen onClose={() => setActive(null)} />}
+        </PaywallProvider>
       </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
@@ -541,7 +559,6 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   );
 }
 
-const KEY_WORKSHEET_INPUTS = '@mpp/worksheet_inputs';
 const U100_MARKINGS = [1, 5, 10, 20, 50];
 // Real U-100 barrels come in 30, 50, and 100 unit sizes; the gauge picks the
 // smallest scale the reading fits on so small readings stay legible.
@@ -560,31 +577,8 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   const [targetUnit, setTargetUnit] = useState('mg');
   const [syringe, setSyringe] = useState<SyringeSize>('auto');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const hydrated = useRef(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(KEY_WORKSHEET_INPUTS)
-      .then(raw => {
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (typeof saved.mass === 'string') setSolutionMass(saved.mass);
-        if (saved.unit === 'mg' || saved.unit === 'mcg') setSolutionMassUnit(saved.unit);
-        if (typeof saved.volume === 'string') setLiquidVolume(saved.volume);
-        if (typeof saved.target === 'string') setTargetAmount(saved.target);
-        if (saved.targetUnit === 'mg' || saved.targetUnit === 'mcg') setTargetUnit(saved.targetUnit);
-        if (SYRINGE_SIZES.includes(saved.syringe)) setSyringe(saved.syringe);
-      })
-      .catch(() => undefined)
-      .finally(() => { hydrated.current = true; });
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated.current) return;
-    AsyncStorage.setItem(
-      KEY_WORKSHEET_INPUTS,
-      JSON.stringify({ mass: solutionMass, unit: solutionMassUnit, volume: liquidVolume, target: targetAmount, targetUnit, syringe }),
-    ).catch(() => undefined);
-  }, [solutionMass, solutionMassUnit, liquidVolume, targetAmount, targetUnit, syringe]);
+  const [showMath, setShowMath] = useState(false);
+  // Fields start empty every time (no saved or suggested values).
 
   const copyText = async (key: string, text: string) => {
     try {
@@ -647,7 +641,12 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
   return (
     <ToolShell title={t('tools.worksheet.title')} onClose={onClose}>
       <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* Permanent, not dismissible (Guideline 1.4.2). */}
         <Notice text={t('tools.notice.worksheet')} />
+        <Pressable onPress={() => setShowMath(v => !v)} style={s.mathToggle} accessibilityRole="button" accessibilityState={{ expanded: showMath }}>
+          <Text style={s.mathToggleText}>{showMath ? t('tools.hideMath') : t('tools.showMath')}</Text>
+        </Pressable>
+        {showMath && <Text style={s.mathText}>{t('tools.mathFormula')}</Text>}
         <Card>
           <CardLabel icon="▱">{t('tools.solutionConc')}</CardLabel>
           <Text style={s.fieldLabel}>{t('tools.totalMass')}</Text>
@@ -892,6 +891,7 @@ const s = StyleSheet.create({
   },
   toolTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   toolTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  freeBadge: { color: colors.teal, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.teal, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   proBadge: { color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1, borderWidth: 1, borderColor: colors.accent, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   toolSub: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   chev: { color: colors.primary, fontSize: 25, marginLeft: 8 },
@@ -900,6 +900,9 @@ const s = StyleSheet.create({
   backText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   toolHeaderTitle: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   scrollContent: { paddingTop: spacing.lg, paddingBottom: 50 },
+  mathToggle: { alignSelf: 'flex-start', marginHorizontal: spacing.xl, marginBottom: 8, minHeight: 36, justifyContent: 'center' },
+  mathToggleText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  mathText: { color: colors.textMuted, fontSize: 13, lineHeight: 20, marginHorizontal: spacing.xl, marginBottom: 12, fontVariant: ['tabular-nums'] },
   notice: { marginHorizontal: spacing.xl, marginBottom: spacing.lg, borderLeftWidth: 3, borderLeftColor: colors.accent, backgroundColor: 'rgba(255,140,0,0.08)', padding: 12 },
   noticeText: { color: colors.text, fontSize: 12, lineHeight: 18 },
   input: { minHeight: 48, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, color: colors.text, paddingHorizontal: 13, paddingVertical: 11, marginBottom: 10, fontSize: 14 },

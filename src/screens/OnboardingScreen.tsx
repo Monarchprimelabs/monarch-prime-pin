@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView,
-  useWindowDimensions,
+  View, Text, StyleSheet, Pressable, useWindowDimensions,
 } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
@@ -72,7 +72,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+    <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
       {step === 0 ? (
         <WelcomeStep onStart={() => setStep(1)} />
       ) : (

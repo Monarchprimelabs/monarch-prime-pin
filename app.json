@@ -2,26 +2,27 @@
   "expo": {
     "name": "Monarch Prime Pin",
     "slug": "monarch-prime-pin",
-    "version": "1.8.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#050810"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "com.monarchprime.pin",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your log entries.",
+        "NSPhotoLibraryUsageDescription": "Monarch Prime Pin uses your photo library to attach progress photos to your log entries and to save photos of your lab reports.",
         "NSPhotoLibraryAddUsageDescription": "Monarch Prime Pin saves progress photos to your photo library.",
-        "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your log entries.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "Monarch Prime Pin uses your camera to capture progress photos for your log entries and to photograph your lab reports.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {
@@ -37,7 +38,9 @@
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -47,12 +50,12 @@
     "plugins": [
       "./plugins/with-local-notifications-only",
       "expo-notifications",
-      "react-native-iap",
+      "expo-iap",
       [
         "expo-image-picker",
         {
-          "photosPermission": "Monarch Prime Pin accesses your photos to attach progress photos to your log entries.",
-          "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your log entries."
+          "photosPermission": "Monarch Prime Pin accesses your photos to attach progress photos to your log entries and to save photos of your lab reports.",
+          "cameraPermission": "Monarch Prime Pin uses your camera to capture progress photos for your log entries and to photograph your lab reports."
         }
       ],
       "@react-native-community/datetimepicker",
@@ -60,9 +63,19 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Monarch Prime Pin reads your body weight, body fat percentage and step count to show them next to your records, on Home and in Reports. The data stays on your phone.",
+          "NSHealthShareUsageDescription": "Monarch Prime Pin reads your body weight, body fat percentage and step count, and, if you turn on Health trends, heart rate variability, resting heart rate, sleep, blood glucose, lean body mass and waist, to show your own trends next to your records, on Home and in Reports. The data stays on your phone.",
           "NSHealthUpdateUsageDescription": "Monarch Prime Pin only reads from Apple Health and never writes to it.",
           "background": false
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "backgroundColor": "#050810",
+          "resizeMode": "contain",
+          "imageWidth": 390
         }
       ]
     ],
@@ -71,6 +84,10 @@
         "projectId": "42783ff2-be3c-4272-aed1-59cb6ede2f4e"
       }
     },
-    "owner": "monarchprimelabs"
+    "owner": "monarchprimelabs",
+    "locales": {
+      "es": "./locales/es.json",
+      "pt": "./locales/pt.json"
+    }
   }
 }

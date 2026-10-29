@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Alert, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
+import { ReadableScrollView as ScrollView } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Card, CardLabel, Disclaimer } from '../components/UI';
@@ -15,6 +16,9 @@ import { deleteProtocol, getProtocols, getVials, newProtocolId, saveProtocol } f
 import type { Vial } from '../lib/vials/types';
 import { sendTestReminder, syncProtocolReminders } from '../lib/protocolReminders';
 import { endProtocol, revisionOn, reviseProtocol } from '../lib/schedule/engine';
+import { canStartProtocol } from '../lib/freeTier';
+import { usePremium } from '../lib/usePremium';
+import { usePaywall } from '../lib/paywall';
 import { addDays } from '../lib/schedule/days';
 import {
   Cycle, DOSE_UNITS, DoseUnit, Frequency, Protocol, ProtocolRevision, Weekday,
@@ -77,6 +81,9 @@ function toTimeString(value: Date): string {
 // ============================================================
 export function ProtocolsTool({ onClose }: { onClose: () => void }) {
   const { t, dateLocale } = useI18n();
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
+  const unlimitedPlans = allows('unlimitedActivePlans');
   const [items, setItems] = useState<Protocol[]>([]);
   const [editing, setEditing] = useState<Protocol | 'new' | null>(null);
 
@@ -86,6 +93,17 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
   const today = localDateISO();
   const active = items.filter(p => p.status === 'active');
   const ended = items.filter(p => p.status === 'ended');
+
+  const startNew = () => {
+    if (canStartProtocol(active.length, unlimitedPlans)) {
+      setEditing('new');
+      return;
+    }
+    Alert.alert(t('proto.freeLimitTitle2'), t('proto.freeLimitBody2'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('proto.seePremium'), onPress: () => openPaywall({ kind: 'thirdPlan' }) },
+    ]);
+  };
 
   const confirmEnd = (protocol: Protocol) => {
     Alert.alert(t('proto.endTitle'), t('proto.endBody', { name: protocol.compound }), [
@@ -175,9 +193,10 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
       <ScrollView contentContainerStyle={s.scrollContent}>
         <View style={s.notice}><Text style={s.noticeText}>{t('proto.notice')}</Text></View>
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
-          <Pressable style={s.primaryBtn} onPress={() => setEditing('new')} accessibilityRole="button">
+          <Pressable style={s.primaryBtn} onPress={startNew} accessibilityRole="button">
             <Text style={s.primaryBtnText}>{t('proto.new')}</Text>
           </Pressable>
+          {!unlimitedPlans && <Text style={s.freeNote}>{t('proto.freeNote2')}</Text>}
           <Pressable
             style={s.testBtn}
             accessibilityRole="button"
@@ -580,6 +599,7 @@ function NumberRow({ label, value, setValue }: { label: string; value: string; s
 }
 
 const s = { ...kit, ...StyleSheet.create({
+  freeNote: { color: colors.textMuted, fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 8 },
   testBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   testBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 },
