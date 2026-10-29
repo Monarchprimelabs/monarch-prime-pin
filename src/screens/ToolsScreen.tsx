@@ -12,7 +12,7 @@ import { Card, CardLabel, Disclaimer, Header } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
 import {
   deleteInventoryItem, deleteRecordTemplate, deleteSchedule,
-  getInventory, getRecordTemplates, getLabResults, getSchedules,
+  getInventory, getRecordTemplates, getLabReports, getLabResults, getSchedules,
   InventoryItem, RecordTemplate, saveInventoryItem, saveRecordTemplate,
   saveSchedule, ScheduleEntry, ScheduleRepeat, updateInventoryItem, updateSchedule,
 } from '../lib/storage';
@@ -81,10 +81,11 @@ export function ToolsScreen() {
   // so nothing anyone saved disappears.
   const [legacyCounts, setLegacyCounts] = useState<Record<string, number>>({});
   const [labCount, setLabCount] = useState(0);
-  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates(), getLabResults()])
-    .then(([schedules, inventory, templates, labs]) => {
+  const loadLegacyCounts = () => Promise.all([getSchedules(), getInventory(), getRecordTemplates(), getLabResults(), getLabReports()])
+    .then(([schedules, inventory, templates, labs, reports]) => {
       setLegacyCounts({ schedule: schedules.length, inventory: inventory.length, templates: templates.length });
-      setLabCount(labs.length);
+      // Saved reports count too: after Premium ends they stay viewable.
+      setLabCount(labs.length + reports.length);
     })
     .catch(() => undefined);
   useEffect(() => { loadLegacyCounts(); }, []);

@@ -63,10 +63,10 @@ export function parseLabNumber(text: string): number | null {
 
 /**
  * Lab results access: Premium gets everything; after Premium ends, saved
- * results stay viewable and exportable (read-only); with none saved, the
- * Labs entry opens the paywall.
+ * results and reports stay viewable and exportable (read-only); with none
+ * saved, the Labs entry opens the paywall. savedCount is results + reports.
  */
-export function labsAccess(allowed: boolean, resultCount: number): 'full' | 'readOnly' | 'paywall' {
+export function labsAccess(allowed: boolean, savedCount: number): 'full' | 'readOnly' | 'paywall' {
   if (allowed) return 'full';
-  return resultCount > 0 ? 'readOnly' : 'paywall';
+  return savedCount > 0 ? 'readOnly' : 'paywall';
 }

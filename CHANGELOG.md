@@ -12,7 +12,7 @@ Version 2.0
 - Logging is now unlimited for everyone, free.
 - Two active plans with reminders are free, with one-tap "Log it" and "Snooze 1 h" right from the notification.
 - New optional reminders: unlogged-plan follow-up, low-vial alerts, restock dates, photo check-ins and a Sunday summary. Each has its own switch in Settings, with quiet hours.
-- New Premium (optional): lab results log with charts and lab reminders, summaries of your own entries, expanded Apple Health trends (HRV, resting heart rate, sleep, glucose), full heat map history, per-compound charts, photo compare and monthly PDF reports.
+- New Premium (optional): lab results log with charts and lab reminders, saved lab reports (photos or PDF, kept on your phone), summaries of your own entries, expanded Apple Health trends (HRV, resting heart rate, sleep, glucose), full heat map history, per-compound charts, photo compare and monthly PDF reports.
 - The annual plan includes a 1-week free trial for new subscribers. Monthly and one-time Lifetime options are also available.
 - Worksheet clarified: a math helper for numbers you enter. It does not recommend amounts.
 - Designed for iPad and iPhone Duo.
@@ -26,7 +26,8 @@ Engineering notes:
 - Founder detection before any 2.0 write; Keychain copy.
 - Feature gates in one place (`featureGate.ts`), all visible with a lock.
 - New paywall with placements and caps; review prompts at positive moments.
-- Labs, Insights, Health trends (Premium); notifications with per-type
+- Labs, Insights, Health trends (Premium); saved lab reports (photos or a
+  PDF in Documents/lab-reports, never read or sent; in backups with photos); notifications with per-type
   switches, quiet hours and a daily cap; lapsed-Premium handling;
   on-device activity counters.
 - Expo SDK 58, React Native 0.88; iPad and iPhone Duo layouts.

@@ -4,7 +4,8 @@ import { Injection } from '../data/peptides';
 import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
 import { adoptLegacyPhoto, PHOTO_SCHEME } from './photos';
-import type { LabResult } from './labs/types';
+import type { LabReport, LabResult } from './labs/types';
+import { deleteAllReportFiles, deleteReportFile } from './labs/reportFiles';
 import { recordEntryLogged } from './localMetrics';
 
 const KEY_INJECTIONS = '@mpp/injections';
@@ -17,6 +18,7 @@ const KEY_PROTOCOLS = '@mpp/protocols';
 const KEY_DOSE_SKIPS = '@mpp/dose_skips';
 const KEY_VIALS = '@mpp/vials';
 const KEY_LAB_RESULTS = '@mpp/lab_results';
+const KEY_LAB_REPORTS = '@mpp/lab_reports';
 export const KEY_NEXT_LAB_DATE = '@mpp/next_lab_date';
 export const KEY_REMINDER_IDS = '@mpp/reminder_map';
 
@@ -326,6 +328,24 @@ export async function deleteLabResult(id: string): Promise<void> {
 }
 export const newLabResultId = () => `lab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+// Saved lab reports (photos or a PDF of the user's own report), Premium.
+export const getLabReports = () => getLocalList<LabReport>(KEY_LAB_REPORTS);
+export async function saveLabReport(report: LabReport): Promise<LabReport> {
+  const current = await getLabReports();
+  const previous = current.find(value => value.id === report.id);
+  await setLocalList(KEY_LAB_REPORTS, previous ? current.map(value => value.id === report.id ? report : value) : [report, ...current]);
+  // Pages removed while editing are deleted from the phone.
+  const kept = new Set(report.files.map(f => f.ref));
+  previous?.files.filter(f => !kept.has(f.ref)).forEach(f => deleteReportFile(f.ref));
+  return report;
+}
+export async function deleteLabReport(id: string): Promise<void> {
+  const current = await getLabReports();
+  await setLocalList(KEY_LAB_REPORTS, current.filter(item => item.id !== id));
+  current.find(item => item.id === id)?.files.forEach(f => deleteReportFile(f.ref));
+}
+export const newLabReportId = () => `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 /** The user's next lab date (YYYY-MM-DD), for lab reminders. */
 export async function getNextLabDate(): Promise<string | null> {
   return (await AsyncStorage.getItem(KEY_NEXT_LAB_DATE)) || null;
@@ -382,9 +402,11 @@ export async function clearLocalData(): Promise<void> {
     KEY_DOSE_SKIPS,
     KEY_VIALS,
     KEY_LAB_RESULTS,
+    KEY_LAB_REPORTS,
     KEY_NEXT_LAB_DATE,
     KEY_REMINDER_IDS,
   ]);
+  deleteAllReportFiles();
 }
 
 // Used by backup restore. Overwrites the data collections in one shot;
@@ -398,6 +420,7 @@ export async function replaceAllData(data: {
   doseSkips: DoseSkip[];
   vials: Vial[];
   labResults: LabResult[];
+  labReports: LabReport[];
 }): Promise<void> {
   await AsyncStorage.multiSet([
     [KEY_INJECTIONS, JSON.stringify(data.injections)],
@@ -408,5 +431,6 @@ export async function replaceAllData(data: {
     [KEY_DOSE_SKIPS, JSON.stringify(data.doseSkips)],
     [KEY_VIALS, JSON.stringify(data.vials)],
     [KEY_LAB_RESULTS, JSON.stringify(data.labResults)],
+    [KEY_LAB_REPORTS, JSON.stringify(data.labReports)],
   ]);
 }

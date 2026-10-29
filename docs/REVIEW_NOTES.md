@@ -13,7 +13,7 @@ Delete the founder-code sentence if no FOUNDER offer code is created.
 App Review notes, Monarch Prime Pin 2.0
 
 What changed
-1. New optional Premium subscription (group "Monarch Prime Pin Premium"): monthly, annual with a 1-week free trial for new subscribers, and a one-time Lifetime Premium. Premium adds: a lab results log with charts and lab reminders, on-device summaries of the user's own entries ("Insights"), expanded read-only Apple Health trends (HRV, resting heart rate, sleep, blood glucose, lean body mass, waist), the full-history site heat map (90 days and All), weekly and per-compound history charts, unlimited active plans (2 are free), progress photo compare, and monthly PDF reports.
+1. New optional Premium subscription (group "Monarch Prime Pin Premium"): monthly, annual with a 1-week free trial for new subscribers, and a one-time Lifetime Premium. Premium adds: a lab results log with charts, saved lab reports (photos or PDF) and lab reminders, on-device summaries of the user's own entries ("Insights"), expanded read-only Apple Health trends (HRV, resting heart rate, sleep, blood glucose, lean body mass, waist), the full-history site heat map (90 days and All), weekly and per-compound history charts, unlimited active plans (2 are free), progress photo compare, and monthly PDF reports.
 2. The free tier is more generous: logging is now unlimited for everyone (the previous 5-entry limit is removed). The concentration worksheet, 2 active plans with reminders, vials, calendar, photos, CSV export and backup are free.
 3. Customers who bought the earlier one-time Lifetime Pro unlock (com.monarchprime.pin.pro.lifetime) keep everything and get Premium at no cost, identified by that existing non-consumable purchase through StoreKit 2.
 4. Existing free users ("Founding Members") keep every feature they had in 1.x with no new limits and get a badge. They are identified on device by existing 1.x app data, or by AppTransaction.originalPurchaseDate before the 2.0 release date in the production environment only. A fresh install in the review environment shows the standard new-user experience and paywall.
@@ -22,7 +22,7 @@ What changed
 How to review
 - No account or login. All data is stored on device.
 - Paywall: Tools > Labs (lock icon), any locked chart in Reports, the 90d / All heat-map ranges on Home, or Tools > Settings > Access > See Premium. Restore Purchases, Redeem Code, Terms of Use and Privacy Policy are on the paywall, and the close button is always visible.
-- Lab results: Tools > Labs. Users enter their own values and the reference range printed on their own lab report. The app shows charts only; the one statement it makes is "Outside the reference range you entered". It does not interpret results.
+- Lab results: Tools > Labs. Users enter their own values and the reference range printed on their own lab report. The app shows charts only; the one statement it makes is "Outside the reference range you entered". It does not interpret results. Users can also save their own report as photos or a PDF (Labs > Add Lab Report). The file stays on the device; the app shows it as is and never reads values out of it.
 - Insights are deterministic summaries of the user's own entries (counts, site usage, plan adherence). They contain no recommendations.
 
 Concentration worksheet (Guideline 1.4.2)

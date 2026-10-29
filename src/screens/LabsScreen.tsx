@@ -10,11 +10,13 @@ import { colors, spacing, withAlpha } from '../theme';
 import { useI18n } from '../lib/i18n';
 import { localDateISO, parseLocalDay } from '../lib/dates';
 import {
-  deleteLabResult, getInjections, getLabResults, getNextLabDate, newLabResultId, saveLabResult, setNextLabDate,
+  deleteLabResult, getInjections, getLabReports, getLabResults, getNextLabDate, newLabResultId, saveLabResult, setNextLabDate,
 } from '../lib/storage';
 import { latestByMarker, parseLabNumber, rangeStatus, seriesFor } from '../lib/labs/labs';
 import { suggestMarkers } from '../lib/labs/markers';
-import type { LabResult } from '../lib/labs/types';
+import { reportsNewestFirst } from '../lib/labs/reports';
+import type { LabReport, LabResult } from '../lib/labs/types';
+import { pagesLabel, ReportForm, ReportView } from './LabReports';
 import { exportLabCsv } from '../lib/exportData';
 import { notifyPositiveMoment } from '../lib/reviewPrompt';
 import { syncLabReminders } from '../lib/labReminders';
@@ -23,8 +25,15 @@ import { usePaywall } from '../lib/paywall';
 // Lab results (Premium). The user types values and the reference range from
 // their own report; the app only charts them. The one statement it makes is
 // "Outside the reference range you entered". No interpretation (1.4.1).
+// Saved reports keep the whole report as photos or a PDF (LabReports.tsx).
 
-type Screen = { kind: 'list' } | { kind: 'marker'; marker: string } | { kind: 'edit'; result: LabResult | null };
+type Prefill = { date: string; panelName: string };
+type Screen =
+  | { kind: 'list' }
+  | { kind: 'marker'; marker: string }
+  | { kind: 'edit'; result: LabResult | null; prefill?: Prefill }
+  | { kind: 'report'; report: LabReport }
+  | { kind: 'reportEdit'; report: LabReport | null };
 
 /**
  * readOnly: Premium ended but results exist. They stay viewable, chartable
@@ -34,6 +43,7 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
   const { t } = useI18n();
   const { openPaywall } = usePaywall();
   const [results, setResults] = useState<LabResult[]>([]);
+  const [reports, setReports] = useState<LabReport[]>([]);
   const [logDates, setLogDates] = useState<string[]>([]);
   const [view, setView] = useState<Screen>({ kind: 'list' });
   const [nextLab, setNextLab] = useState<string | null>(null);
@@ -41,6 +51,7 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
 
   const refresh = () => {
     getLabResults().then(setResults).catch(() => setResults([]));
+    getLabReports().then(list => setReports(reportsNewestFirst(list))).catch(() => setReports([]));
     getInjections().then(list => setLogDates([...new Set(list.map(r => r.date))])).catch(() => undefined);
     getNextLabDate().then(setNextLab).catch(() => undefined);
   };
@@ -65,10 +76,35 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
     }
   };
 
+  if (view.kind === 'reportEdit') {
+    return (
+      <ReportForm
+        initial={view.report}
+        onCancel={() => setView(view.report ? { kind: 'report', report: view.report } : { kind: 'list' })}
+        onSaved={() => { refresh(); setView({ kind: 'list' }); }}
+      />
+    );
+  }
+
+  if (view.kind === 'report') {
+    const { report } = view;
+    return (
+      <ReportView
+        report={report}
+        readOnly={readOnly}
+        onBack={() => setView({ kind: 'list' })}
+        onEdit={() => setView({ kind: 'reportEdit', report })}
+        onDeleted={() => { refresh(); setView({ kind: 'list' }); }}
+        onAddResult={() => setView({ kind: 'edit', result: null, prefill: { date: report.date, panelName: report.label } })}
+      />
+    );
+  }
+
   if (view.kind === 'edit') {
     return (
       <LabForm
         initial={view.result}
+        prefill={view.prefill}
         usedMarkers={[...new Set(results.map(r => r.markerName))]}
         onCancel={() => setView({ kind: 'list' })}
         onSaved={() => { refresh(); setView({ kind: 'list' }); }}
@@ -139,6 +175,9 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
             <Pressable style={kit.primaryBtn} onPress={() => setView({ kind: 'edit', result: null })} accessibilityRole="button">
               <Text style={kit.primaryBtnText}>{t('labs.add')}</Text>
             </Pressable>
+            <Pressable style={[kit.smallBtn, { marginTop: spacing.sm }]} onPress={() => setView({ kind: 'reportEdit', report: null })} accessibilityRole="button">
+              <Text style={kit.smallBtnText}>{t('labs.reportAdd')}</Text>
+            </Pressable>
           </View>
         )}
 
@@ -171,6 +210,21 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
             />
           )}
         </Card>}
+
+        {reports.length > 0 && (
+          <Card>
+            <Text style={s.label}>{t('labs.reportsTitle')}</Text>
+            {reports.map(report => (
+              <Pressable key={report.id} style={kit.listItem} onPress={() => setView({ kind: 'report', report })} accessibilityRole="button">
+                <View style={{ flex: 1 }}>
+                  <Text style={kit.listTitle}>{report.label || t('labs.reportUntitled')}</Text>
+                  <Text style={kit.listMeta}>{report.date} · {pagesLabel(report, t)}</Text>
+                </View>
+                <Text style={s.chev}>›</Text>
+              </Pressable>
+            ))}
+          </Card>
+        )}
 
         <Card>
           {markers.length === 0 ? (
@@ -259,16 +313,17 @@ function LabChart({ series, logDates }: { series: LabResult[]; logDates: string[
   );
 }
 
-function LabForm({ initial, usedMarkers, onCancel, onSaved }: {
+function LabForm({ initial, prefill, usedMarkers, onCancel, onSaved }: {
   initial: LabResult | null;
+  prefill?: Prefill;
   usedMarkers: string[];
   onCancel: () => void;
   onSaved: () => void;
 }) {
   const { t } = useI18n();
-  const [date, setDate] = useState(initial?.date ?? localDateISO());
+  const [date, setDate] = useState(initial?.date ?? prefill?.date ?? localDateISO());
   const [picking, setPicking] = useState(false);
-  const [panel, setPanel] = useState(initial?.panelName ?? '');
+  const [panel, setPanel] = useState(initial?.panelName ?? prefill?.panelName ?? '');
   const [marker, setMarker] = useState(initial?.markerName ?? '');
   const [value, setValue] = useState(initial ? String(initial.value) : '');
   const [unit, setUnit] = useState(initial?.unit ?? '');
