@@ -174,6 +174,8 @@ export function Reveal({ children, style, delay }: { children: React.ReactNode; 
   return <Animated.View style={[style, anim]}>{children}</Animated.View>;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 /** A Pressable that springs down a little under the finger, with a light haptic. */
 export function PressableScale({ children, style, scaleTo = 0.965, haptic = true, onPressIn, onPressOut, ...rest }: PressableProps & {
   style?: StyleProp<ViewStyle>;
@@ -185,8 +187,9 @@ export function PressableScale({ children, style, scaleTo = 0.965, haptic = true
   const s = useSharedValue(1);
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
   return (
-    <Pressable
+    <AnimatedPressable
       {...rest}
+      style={[style, animated]}
       onPressIn={e => {
         if (!reduce) s.value = withSpring(scaleTo, { damping: 18, stiffness: 420 });
         if (haptic) hapticTap();
@@ -197,8 +200,8 @@ export function PressableScale({ children, style, scaleTo = 0.965, haptic = true
         onPressOut?.(e);
       }}
     >
-      <Animated.View style={[style, animated]}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }
 
