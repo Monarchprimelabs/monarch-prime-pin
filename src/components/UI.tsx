@@ -3,7 +3,9 @@ import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { colors, spacing, radius, fonts, withAlpha } from '../theme';
 import { useI18n } from '../lib/i18n';
 import { READABLE_MAX_WIDTH, WIDE_MAX_WIDTH, useWideLayout } from '../lib/layout';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 import { GlassSheen, Reveal } from './Glass';
+import { hapticTap } from '../lib/haptics';
 
 const SYMBOL: number = require('../../assets/logo-symbol.png');
 const FULL_LOGO: number = require('../../assets/logo-full.png');
@@ -107,14 +109,26 @@ export function ViewPill({
   setView: (v: 'front' | 'back') => void;
 }) {
   const { t } = useI18n();
+  const reduce = useReducedMotion();
+  const [width, setWidth] = React.useState(0);
+  const x = useSharedValue(view === 'front' ? 0 : 1);
+  React.useEffect(() => {
+    const target = view === 'front' ? 0 : 1;
+    x.value = reduce ? target : withSpring(target, { damping: 17, stiffness: 210 });
+  }, [view, reduce, x]);
+  const half = (width - 6) / 2;
+  const slider = useAnimatedStyle(() => ({ width: half, transform: [{ translateX: x.value * half }] }));
   return (
     <View style={s.viewPillWrap}>
-      <View style={s.viewPill}>
+      <View style={s.viewPill} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
+        {width > 0 && <Animated.View pointerEvents="none" style={[s.viewSlider, slider]} />}
         {(['front', 'back'] as const).map(v => (
           <Pressable
             key={v}
-            onPress={() => setView(v)}
-            style={[s.viewBtn, view === v && s.viewBtnActive]}
+            onPress={() => { if (v !== view) { hapticTap(); setView(v); } }}
+            style={s.viewBtn}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: view === v }}
           >
             <Text style={[s.viewBtnText, view === v && s.viewBtnTextActive]}>
               {v === 'front' ? t('ui.front') : t('ui.back')}
@@ -226,11 +240,15 @@ const s = StyleSheet.create({
   viewPill: {
     flexDirection: 'row',
     backgroundColor: colors.bgPill,
-    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
-    borderRadius: 10, padding: 3,
+    borderWidth: 1, borderColor: colors.glassBorder,
+    borderRadius: 13, padding: 3,
   },
-  viewBtn: { paddingHorizontal: 22, paddingVertical: 8, borderRadius: 8 },
-  viewBtnActive: { backgroundColor: withAlpha(colors.primary, 0.2) },
+  viewBtn: { paddingHorizontal: 26, paddingVertical: 9, borderRadius: 10, minWidth: 92, alignItems: 'center' },
+  viewSlider: {
+    position: 'absolute', top: 3, bottom: 3, left: 3, borderRadius: 10,
+    backgroundColor: withAlpha(colors.primary, 0.24),
+    borderWidth: StyleSheet.hairlineWidth, borderColor: withAlpha(colors.primary, 0.5),
+  },
   viewBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   viewBtnTextActive: { color: colors.white },
 
