@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
-import { ReadableScrollView as ScrollView, readableColumn } from '../components/Columns';
+import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
 import { usePremium } from '../lib/usePremium';
 import { usePaywall } from '../lib/paywall';
@@ -62,21 +62,23 @@ export function HistoryScreen() {
   return (
     <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
-      <Header title={t('history.title')} />
-      <View style={[s.subTabs, readableColumn(wide)]}>
-        {(['log', 'calendar', 'photos'] as const).map(tabId => (
-          <Pressable
-            key={tabId}
-            onPress={() => setTab(tabId)}
-            style={[s.subTab, tab === tabId && s.subTabActive]}
-          >
-            <Text style={[s.subTabText, tab === tabId && s.subTabTextActive]}>
-              {tabId === 'log' ? t('history.tabLog') : tabId === 'calendar' ? t('history.tabCalendar') : t('history.tabPhotos')}
-            </Text>
-          </Pressable>
-        ))}
+      <Header title={t('history.title')} columns="two" />
+      <View style={wideColumn(wide)}>
+        <View style={s.subTabs}>
+          {(['log', 'calendar', 'photos'] as const).map(tabId => (
+            <Pressable
+              key={tabId}
+              onPress={() => setTab(tabId)}
+              style={[s.subTab, tab === tabId && s.subTabActive]}
+            >
+              <Text style={[s.subTabText, tab === tabId && s.subTabTextActive]}>
+                {tabId === 'log' ? t('history.tabLog') : tabId === 'calendar' ? t('history.tabCalendar') : t('history.tabPhotos')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
+      <ScrollView fullWidth contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
         {tab === 'calendar' && (
           <CalendarView
@@ -220,6 +222,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
   const { t, dateLocale } = useI18n();
+  const wide = useWideLayout();
   const recordTime = (r: Injection) => r.timePeriod ? t('period.' + r.timePeriod) : formatClockTime(r.time);
   const [filter, setFilter] = useState<'all' | 'none' | 'mild' | 'mod' | 'sev'>('all');
   const [q, setQ] = useState('');
@@ -229,7 +232,7 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
     return true;
   });
   return (
-    <View style={{ paddingHorizontal: spacing.xl }}>
+    <View style={[{ paddingHorizontal: spacing.xl }, wideColumn(wide)]}>
       <TextInput
         style={s.search}
         placeholder={t('history.search')}
@@ -256,33 +259,37 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
       </View>
       {filtered.length === 0 ? (
         <Text style={s.empty}>{t('history.empty')}</Text>
-      ) : filtered.map(i => (
-        <Pressable
-          key={i.id}
-          onPress={() => onOpen(i)}
-          style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date, dateLocale)}`}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.histName}>{i.peptide}</Text>
-              <Text style={s.histMeta}>{i.date} · {recordTime(i)}</Text>
-              <Text style={s.histMeta}>📍 {i.site}</Text>
-              {i.weight > 0 && <Text style={s.histMeta}>⚖ {i.weight} lbs</Text>}
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.histDose}>{i.dose}{i.unit}</Text>
-              <View style={[s.sevBadge, { backgroundColor: sevColors[i.sev] + '20' }]}>
-                <Text style={[s.sevBadgeText, { color: sevColors[i.sev] }]}>
-                  {t('sev.' + i.sev)}
-                </Text>
+      ) : (
+        <SplitColumns>
+          {filtered.map(i => (
+            <Pressable
+              key={i.id}
+              onPress={() => onOpen(i)}
+              style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date, dateLocale)}`}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.histName}>{i.peptide}</Text>
+                  <Text style={s.histMeta}>{i.date} · {recordTime(i)}</Text>
+                  <Text style={s.histMeta}>📍 {i.site}</Text>
+                  {i.weight > 0 && <Text style={s.histMeta}>⚖ {i.weight} lbs</Text>}
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={s.histDose}>{i.dose}{i.unit}</Text>
+                  <View style={[s.sevBadge, { backgroundColor: sevColors[i.sev] + '20' }]}>
+                    <Text style={[s.sevBadgeText, { color: sevColors[i.sev] }]}>
+                      {t('sev.' + i.sev)}
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-          <Text style={s.viewDetailText}>{t('history.viewDetails')}</Text>
-        </Pressable>
-      ))}
+              <Text style={s.viewDetailText}>{t('history.viewDetails')}</Text>
+            </Pressable>
+          ))}
+        </SplitColumns>
+      )}
     </View>
   );
 }
@@ -355,7 +362,7 @@ function CalendarView({ injections, onLogForDate, onLogPlanned, onOpen }: {
   };
 
   return (
-    <>
+    <SplitColumns mode="lead">
       <Card>
         <View style={s.calHeader}>
           <Pressable onPress={navPrev} style={s.calNav} accessibilityRole="button" accessibilityLabel="Previous month">
@@ -438,7 +445,7 @@ function CalendarView({ injections, onLogForDate, onLogPlanned, onOpen }: {
           </Pressable>
         )}
       </Card>
-    </>
+    </SplitColumns>
   );
 }
 

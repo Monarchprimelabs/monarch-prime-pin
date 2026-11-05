@@ -84,7 +84,7 @@ export function VialsTool({ onClose }: { onClose: () => void }) {
     <SafeAreaView style={s.app}>
       <Disclaimer />
       <ShellHeader title={t('vial.title')} backLabel={t('settings.backToTools')} onBack={onClose} />
-      <ScrollView contentContainerStyle={s.scrollContent}>
+      <ScrollView split contentContainerStyle={s.scrollContent}>
         <View style={s.notice}><Text style={s.noticeText}>{t('vial.notice')}</Text></View>
         <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
           <Pressable style={s.primaryBtn} onPress={() => setEditing('new')} accessibilityRole="button">
@@ -281,7 +281,7 @@ function VialForm({ initial, inventory, onCancel, onSaved }: {
     <SafeAreaView style={s.app}>
       <Disclaimer />
       <ShellHeader title={initial ? t('vial.editTitle') : t('vial.add')} backLabel={t('common.cancel')} onBack={onCancel} />
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Card>
           <CardLabel icon="◆">{t('vial.label')}</CardLabel>
           <CompoundField

@@ -190,7 +190,7 @@ export function ProtocolsTool({ onClose }: { onClose: () => void }) {
     <SafeAreaView style={s.app}>
       <Disclaimer />
       <ShellHeader title={t('proto.title')} backLabel={t('settings.backToTools')} onBack={onClose} />
-      <ScrollView contentContainerStyle={s.scrollContent}>
+      <ScrollView split contentContainerStyle={s.scrollContent}>
         <View style={s.notice}><Text style={s.noticeText}>{t('proto.notice')}</Text></View>
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing.lg }}>
           <Pressable style={s.primaryBtn} onPress={startNew} accessibilityRole="button">
@@ -398,7 +398,7 @@ function ProtocolBuilder({ initial, onCancel, onSaved }: {
     <SafeAreaView style={s.app}>
       <Disclaimer />
       <ShellHeader title={initial ? t('proto.editTitle') : t('proto.new')} backLabel={t('common.cancel')} onBack={onCancel} />
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         {started && <View style={s.notice}><Text style={s.noticeText}>{t('proto.editNotice')}</Text></View>}
 
         <Card>

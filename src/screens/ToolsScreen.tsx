@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, LayoutAnimation, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, UIManager, View,
 } from 'react-native';
-import { ReadableScrollView as ScrollView } from '../components/Columns';
+import { ReadableScrollView as ScrollView, SplitColumns } from '../components/Columns';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -122,8 +122,9 @@ export function ToolsScreen() {
   return (
     <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
-      <Header title={t('tools.title')} subtitle={t('tools.subtitle')} />
-      <ScrollView contentContainerStyle={s.pageContent}>
+      <Header title={t('tools.title')} subtitle={t('tools.subtitle')} columns="two" />
+      <ScrollView fullWidth contentContainerStyle={s.pageContent}>
+        <SplitColumns gap={10}>
         {[...currentTools, ...(legacyTools.length ? ['legacy-header' as const] : []), ...legacyTools].map(tool => tool === 'legacy-header' ? (
           <View key="legacy-header" style={s.legacyHeader}>
             <Text style={s.legacyTitle}>{t('tools.legacyTitle')}</Text>
@@ -151,6 +152,7 @@ export function ToolsScreen() {
             <Text style={s.chev}>›</Text>
           </Pressable>
         ))}
+        </SplitColumns>
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
         <AuroraBackground />
@@ -288,7 +290,7 @@ function ScheduleTool({ onClose }: { onClose: () => void }) {
 
   return (
     <ToolShell title={t('tools.scheduleShell')} onClose={onClose}>
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Notice text={t('tools.notice.schedule')} />
         <Card>
           <CardLabel icon="＋">{t('tools.newEntry')}</CardLabel>
@@ -452,7 +454,7 @@ function InventoryTool({ onClose }: { onClose: () => void }) {
 
   return (
     <ToolShell title={t('tools.inventory.title')} onClose={onClose}>
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Card>
           <CardLabel icon="＋">{t('tools.addInventory')}</CardLabel>
           <Field value={name} setValue={setName} placeholder={t('tools.itemName')} />
@@ -536,7 +538,7 @@ function TemplatesTool({ onClose }: { onClose: () => void }) {
   };
   return (
     <ToolShell title={t('templates.title')} onClose={onClose}>
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         <Notice text={t('tools.notice.templates')} />
         <Card>
           <CardLabel icon="＋">{t('tools.newTemplate')}</CardLabel>
@@ -642,7 +644,7 @@ function ConversionTool({ onClose }: { onClose: () => void }) {
 
   return (
     <ToolShell title={t('tools.worksheet.title')} onClose={onClose}>
-      <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Permanent, not dismissible (Guideline 1.4.2). */}
         <Notice text={t('tools.notice.worksheet')} />
         <Pressable onPress={() => setShowMath(v => !v)} style={s.mathToggle} accessibilityRole="button" accessibilityState={{ expanded: showMath }}>

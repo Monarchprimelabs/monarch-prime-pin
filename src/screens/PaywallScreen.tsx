@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ReadableScrollView as ScrollView } from '../components/Columns';
+import { ReadableScrollView as ScrollView, SplitColumns } from '../components/Columns';
 import { Card, Disclaimer } from '../components/UI';
 import { useEntitlements } from '../lib/entitlements';
 import { useFounder } from '../lib/founders';
@@ -160,7 +160,10 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
           <Text style={s.closeText}>✕</Text>
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView fullWidth contentContainerStyle={s.content}>
+        {/* On wide windows: what Premium includes on the left, the plans on the right. */}
+        <SplitColumns>
+        <View>
         <Text style={s.title}>{t('paywall.title')}</Text>
         {placement && CONTEXT_KEY[placement.kind] && <Text style={s.context}>{t(CONTEXT_KEY[placement.kind]!)}</Text>}
         {(founder === 'freeFounder' || founder === 'paidFounder') && <Text style={s.founderBadge}>{t('founder.badge')}</Text>}
@@ -195,6 +198,8 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
             <Text key={key} style={s.feature}>✓  {t(key)}</Text>
           ))}
         </View>
+        </View>
+        <View>
 
         {showOffers && founder === 'freeFounder' && !!FOUNDER_CODE && (
           <Card style={s.founderCard}>
@@ -292,6 +297,8 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
             <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} accessibilityRole="link"><Text style={s.link}>{t('paywall.privacy')}</Text></Pressable>
           )}
         </View>
+        </View>
+        </SplitColumns>
       </ScrollView>
     </SafeAreaView>
   );

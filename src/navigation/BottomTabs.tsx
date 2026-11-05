@@ -20,6 +20,7 @@ import { AuroraBackground, GlassSurface, PressableScale } from '../components/Gl
 import { LapsedSheetHost } from '../components/LapsedSheet';
 import { usePremium } from '../lib/usePremium';
 import { setPremiumKnown } from '../lib/notify/store';
+import { useFoldLayout } from '../lib/layout';
 import { recordAppOpen } from '../lib/localMetrics';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
@@ -106,6 +107,8 @@ function GlassTabBar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
+  // On the open Duo the bar sits in the left half, clear of the fold.
+  const fold = useFoldLayout();
   const [width, setWidth] = React.useState(0);
   const index = TABS.findIndex(tab => tab.id === active);
   const x = useSharedValue(0);
@@ -119,7 +122,7 @@ function GlassTabBar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
   }, [index, slot, width, reduce, active, x, shown]);
   const pill = useAnimatedStyle(() => ({ width: slot, opacity: shown.value, transform: [{ translateX: x.value }] }));
   return (
-    <View pointerEvents="box-none" style={[s.barHost, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View pointerEvents="box-none" style={[s.barHost, fold && s.barHostFold, { paddingBottom: Math.max(insets.bottom, 12) }]}>
       <GlassSurface style={s.bar} intensity={55}>
         <View style={s.barRow} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
           {width > 0 && <Animated.View style={[s.pillTrack, pill]} pointerEvents="none"><View style={s.pill} /></Animated.View>}
@@ -211,6 +214,7 @@ const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
   // Floating glass capsule; content scrolls underneath it.
   barHost: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 14 },
+  barHostFold: { right: '50%', paddingRight: 28 },
   bar: {
     width: '100%', maxWidth: 520, height: 66, borderRadius: 33,
     shadowColor: '#000', shadowOffset: { width: 0, height: 14 }, shadowOpacity: colors.cardShadow, shadowRadius: 28, elevation: 10,

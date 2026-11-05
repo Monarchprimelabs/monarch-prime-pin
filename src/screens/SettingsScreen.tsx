@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
-import { ReadableScrollView as ScrollView } from '../components/Columns';
+import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -28,41 +29,44 @@ import { PREMIUM_ANNUAL_ID, PREMIUM_MONTHLY_ID } from '../lib/store/constants';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
+  const wide = useWideLayout();
   const { t } = useI18n();
 
   return (
     <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
-      <Header title={t('settings.title')} subtitle="" />
+      <Header title={t('settings.title')} subtitle="" columns="two" />
       {!!onClose && (
-        <View style={s.closeRow}>
+        <View style={[s.closeRow, wideColumn(wide)]}>
           <Pressable style={s.closeBtn} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close settings">
             <Text style={s.closeText}>{t('settings.backToTools')}</Text>
           </Pressable>
         </View>
       )}
 
-      <View style={s.subTabs}>
-        {[
-          { id: 'rem' as const, label: t('settings.tabReminders') },
-          { id: 'acc' as const, label: t('settings.tabAccess') },
-          { id: 'leg' as const, label: t('settings.tabLegal') },
-        ].map(item => (
-          <Pressable
-            key={item.id}
-            onPress={() => setTab(item.id)}
-            style={[s.subTab, tab === item.id && s.subTabActive]}
-          >
-            <Text style={[s.subTabText, tab === item.id && s.subTabTextActive]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={wideColumn(wide)}>
+        <View style={s.subTabs}>
+          {[
+            { id: 'rem' as const, label: t('settings.tabReminders') },
+            { id: 'acc' as const, label: t('settings.tabAccess') },
+            { id: 'leg' as const, label: t('settings.tabLegal') },
+          ].map(item => (
+            <Pressable
+              key={item.id}
+              onPress={() => setTab(item.id)}
+              style={[s.subTab, tab === item.id && s.subTabActive]}
+            >
+              <Text style={[s.subTabText, tab === item.id && s.subTabTextActive]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
+      <ScrollView fullWidth contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'rem' && <RemindersTab />}
-        {tab === 'acc' && <><AccessTab /><ActivityCard /></>}
+        {tab === 'acc' && <SplitColumns><AccessTab /><ActivityCard /></SplitColumns>}
         {tab === 'leg' && <LegalTab />}
       </ScrollView>
     </SafeAreaView>
@@ -273,7 +277,7 @@ function RemindersTab() {
   const canSignOut = !!user && (user.isDeveloper || (SUPABASE_CONFIGURED && !user.isGuest));
 
   return (
-    <>
+    <SplitColumns>
       <Card>
         <CardLabel icon="🌐">{t('settings.languageLabel')}</CardLabel>
         <Text style={s.profileHelp}>
@@ -448,7 +452,7 @@ function RemindersTab() {
           <Text style={s.deleteBtnText}>{t('settings.deleteAccount')}</Text>
         </Pressable>
       </View>
-    </>
+    </SplitColumns>
   );
 }
 
@@ -522,6 +526,7 @@ function AccessTab() {
 function LegalTab() {
   const { t } = useI18n();
   return (
+    <SplitColumns mode="halves">
     <Card>
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
         <Text style={{ fontSize: 18, color: colors.accent, fontWeight: '700' }}>
@@ -538,7 +543,8 @@ function LegalTab() {
       <Text style={s.legalP}>{t('legal.p3')}</Text>
 
       <Text style={s.legalP}>{t('legal.p4')}</Text>
-
+    </Card>
+    <Card>
       <Text style={s.legalP}>{t('legal.ack')}</Text>
 
       <View style={{ paddingLeft: 18 }}>
@@ -554,6 +560,7 @@ function LegalTab() {
 
       <Text style={s.legalFooter}>{t('legal.footer')}</Text>
     </Card>
+    </SplitColumns>
   );
 }
 

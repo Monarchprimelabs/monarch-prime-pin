@@ -118,7 +118,7 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
       <SafeAreaView style={kit.app} edges={['top', 'bottom', 'left', 'right']}>
         <Disclaimer />
         <ShellHeader title={view.marker} backLabel={t('labs.back')} onBack={() => setView({ kind: 'list' })} />
-        <ScrollView contentContainerStyle={kit.scrollContent}>
+        <ScrollView split contentContainerStyle={kit.scrollContent}>
           <Card>
             <LabChart series={series} logDates={logDates} />
             <Text style={s.chartCaption}>{t('labs.chartCaption')}</Text>
@@ -162,7 +162,7 @@ export function LabsTool({ onClose, readOnly = false }: { onClose: () => void; r
     <SafeAreaView style={kit.app} edges={['top', 'bottom', 'left', 'right']}>
       <Disclaimer />
       <ShellHeader title={t('labs.title')} backLabel={t('settings.backToTools')} onBack={onClose} />
-      <ScrollView contentContainerStyle={kit.scrollContent}>
+      <ScrollView split contentContainerStyle={kit.scrollContent}>
         {readOnly ? (
           <Card>
             <Text style={kit.listMeta}>{t('lapsed.labsNote')}</Text>
@@ -357,7 +357,7 @@ function LabForm({ initial, prefill, usedMarkers, onCancel, onSaved }: {
     <SafeAreaView style={kit.app} edges={['top', 'bottom', 'left', 'right']}>
       <Disclaimer />
       <ShellHeader title={initial ? t('labs.editTitle') : t('labs.add')} backLabel={t('common.cancel')} onBack={onCancel} />
-      <ScrollView contentContainerStyle={kit.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={kit.scrollContent} keyboardShouldPersistTaps="handled">
         <Card>
           <Text style={s.label}>{t('labs.date')}</Text>
           <Pressable style={kit.input} onPress={() => setPicking(true)} accessibilityRole="button">

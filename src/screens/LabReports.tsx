@@ -119,7 +119,7 @@ export function ReportForm({ initial, onCancel, onSaved }: {
     <SafeAreaView style={kit.app} edges={['top', 'bottom', 'left', 'right']}>
       <Disclaimer />
       <ShellHeader title={initial ? t('labs.reportEditTitle') : t('labs.reportAdd')} backLabel={t('common.cancel')} onBack={onCancel} />
-      <ScrollView contentContainerStyle={kit.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView split contentContainerStyle={kit.scrollContent} keyboardShouldPersistTaps="handled">
         <Card>
           <Text style={s.label}>{t('labs.date')}</Text>
           <Pressable style={kit.input} onPress={() => setPicking(true)} accessibilityRole="button">
@@ -226,7 +226,7 @@ export function ReportView({ report, readOnly, onBack, onEdit, onDeleted, onAddR
     <SafeAreaView style={kit.app} edges={['top', 'bottom', 'left', 'right']}>
       <Disclaimer />
       <ShellHeader title={title} backLabel={t('labs.back')} onBack={onBack} />
-      <ScrollView contentContainerStyle={kit.scrollContent}>
+      <ScrollView split contentContainerStyle={kit.scrollContent}>
         <Card>
           <Text style={kit.listMeta}>{parseLocalDay(report.date).toLocaleDateString()} · {pagesLabel(report, t)}</Text>
           {!!report.notes && <Text style={[kit.listMeta, { marginTop: 4 }]}>{report.notes}</Text>}

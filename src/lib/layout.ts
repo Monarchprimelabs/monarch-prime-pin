@@ -18,3 +18,21 @@ export function isWideWidth(width: number): boolean {
 export function useWideLayout(): boolean {
   return isWideWidth(useWindowDimensions().width);
 }
+
+/**
+ * True on a wide window of a device that folds (the open iPhone Duo): the
+ * crease runs down the middle, so controls keep off the centre line.
+ * EXPO_PUBLIC_FORCE_FOLD previews the fold layout in the web demo.
+ */
+export function useFoldLayout(): boolean {
+  const wide = useWideLayout();
+  if (!wide) return false;
+  if (process.env.EXPO_PUBLIC_FORCE_FOLD === 'true') return true;
+  try {
+    // Native module: absent on the web and in builds without it.
+    const hinge = require('expo-hinge') as typeof import('expo-hinge');
+    return hinge.isAvailable();
+  } catch {
+    return false;
+  }
+}
