@@ -24,7 +24,7 @@ import { useI18n } from '../lib/i18n';
 import { localDateISO } from '../lib/dates';
 import { DOSE_UNITS, DoseUnit } from '../lib/schedule/types';
 import { syncProtocolReminders } from '../lib/protocolReminders';
-import { GradientButton } from '../components/Glass';
+import { GradientButton, SuccessBurst } from '../components/Glass';
 
 /** A planned dose from a protocol, logged from Today or a reminder. */
 export type PlannedDose = {
@@ -99,6 +99,8 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const [customMinute, setCustomMinute] = useState(seedTime.slice(3, 5));
   const [customMeridiem, setCustomMeridiem] = useState<'AM' | 'PM'>(seedHour >= 12 ? 'PM' : 'AM');
   const [saving, setSaving] = useState(false);
+  // The celebration shown after a save; its button continues the save flow.
+  const [savedNotice, setSavedNotice] = useState<{ title: string; message: string; onOk: () => void } | null>(null);
   const [vials, setVials] = useState<Vial[]>([]);
   const [vialId, setVialId] = useState<string | undefined>(initialInjection?.vialId);
   const [vialTouched, setVialTouched] = useState(!!initialInjection);
@@ -417,8 +419,11 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
         }
       };
 
-      Alert.alert(isEditing ? t('log.updatedTitle') : t('log.savedTitle'), savedMessage, [
-        { text: t('common.ok'), onPress: () => {
+      setSavedNotice({
+        title: isEditing ? t('log.updatedTitle') : t('log.savedTitle'),
+        message: savedMessage,
+        onOk: () => {
+          setSavedNotice(null);
           // A dose drawn from a vial is tracked on the vial; the stock item
           // was already counted when the vial was opened.
           if (isEditing || vialId) {
@@ -426,8 +431,8 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
           } else {
             offerInventoryDeduction();
           }
-        }},
-      ]);
+        },
+      });
     } catch (e: any) {
       Alert.alert(t('settings.saveFailedTitle'), e?.message || t('common.tryAgain'));
     } finally {
@@ -1035,7 +1040,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             </Card>
 
             <View style={{ paddingHorizontal: spacing.xl }}>
-              <Pressable
+              <GradientButton
                 style={s.submit}
                 onPress={handleSave}
                 disabled={saving}
@@ -1043,7 +1048,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
                 accessibilityState={{ disabled: saving }}
               >
                 <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
-              </Pressable>
+              </GradientButton>
             </View>
           </>
         )}
@@ -1082,6 +1087,15 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
           </SafeAreaView>
         </View>
       </SafeAreaProvider></Modal>
+      <Modal visible={!!savedNotice} transparent animationType="fade" onRequestClose={() => savedNotice?.onOk()}>
+        <SuccessBurst
+          visible={!!savedNotice}
+          title={savedNotice?.title ?? ''}
+          message={savedNotice?.message ?? ''}
+          actionLabel={t('common.ok')}
+          onAction={() => savedNotice?.onOk()}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }

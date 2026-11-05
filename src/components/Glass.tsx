@@ -320,6 +320,74 @@ export function GrowBar({ style, index = 0 }: { style?: StyleProp<ViewStyle>; in
   );
 }
 
+const SPARK_COLORS = [BRAND.blue, BRAND.orange, BRAND.green, BRAND.cyan];
+
+function Spark({ angle, index, play }: { angle: number; index: number; play: number }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = 0;
+    t.value = withDelay(120, withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [play]);
+  const distance = 74 + (index % 3) * 14;
+  const anim = useAnimatedStyle(() => ({
+    opacity: interpolate(t.value, [0, 0.15, 1], [0, 1, 0]),
+    transform: [
+      { translateX: Math.cos(angle) * distance * t.value },
+      { translateY: Math.sin(angle) * distance * t.value },
+      { scale: interpolate(t.value, [0, 0.3, 1], [0.4, 1.1, 0.6]) },
+    ],
+  }));
+  return <Animated.View style={[s.spark, { backgroundColor: SPARK_COLORS[index % SPARK_COLORS.length] }, anim]} />;
+}
+
+/**
+ * A moment of celebration after saving: a glass card pops in, the check
+ * springs into its ring and sparks burst out in the brand colors.
+ */
+export function SuccessBurst({ visible, title, message, actionLabel, onAction }: {
+  visible: boolean; title: string; message: string; actionLabel: string; onAction: () => void;
+}) {
+  const reduce = useReducedMotion();
+  const card = useSharedValue(0);
+  const check = useSharedValue(0);
+  const [play, setPlay] = useState(0);
+  useEffect(() => {
+    if (!visible) return;
+    setPlay(n => n + 1);
+    card.value = 0; check.value = 0;
+    card.value = reduce ? 1 : withSpring(1, { damping: 14, stiffness: 180 });
+    check.value = reduce ? 1 : withDelay(140, withSpring(1, { damping: 8, stiffness: 220 }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+  const cardStyle = useAnimatedStyle(() => ({ opacity: card.value, transform: [{ scale: 0.85 + 0.15 * card.value }] }));
+  const checkStyle = useAnimatedStyle(() => ({ transform: [{ scale: check.value }] }));
+  if (!visible) return null;
+  return (
+    <View style={s.burstScrim}>
+      <Animated.View style={[s.burstCardWrap, cardStyle]}>
+        <GlassSurface style={s.burstCard} intensity={60}>
+          <View style={s.burstIconArea}>
+            {!reduce && Array.from({ length: 10 }).map((_, i) => (
+              <Spark key={i} index={i} angle={(i / 10) * Math.PI * 2} play={play} />
+            ))}
+            <Animated.View style={[s.burstRing, checkStyle]}>
+              <LinearGradient colors={[BRAND.green, '#2E7D32']} style={s.burstRingFill}>
+                <Text style={s.burstCheck}>✓</Text>
+              </LinearGradient>
+            </Animated.View>
+          </View>
+          <Text style={[s.burstTitle, { color: colors.white }]}>{title}</Text>
+          <Text style={[s.burstMessage, { color: colors.textMuted }]}>{message}</Text>
+          <GradientButton style={s.burstButton} onPress={onAction} accessibilityRole="button">
+            <Text style={s.burstButtonText}>{actionLabel}</Text>
+          </GradientButton>
+        </GlassSurface>
+      </Animated.View>
+    </View>
+  );
+}
+
 /** A soft glow that breathes, for things that need attention (a hot zone, a due entry). */
 export function Pulse({ color, size, style }: { color: string; size: number; style?: StyleProp<ViewStyle> }) {
   const reduce = useReducedMotion();
@@ -339,6 +407,18 @@ export function Pulse({ color, size, style }: { color: string; size: number; sty
 }
 
 const s = StyleSheet.create({
+  burstScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(2,6,14,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 100 },
+  burstCardWrap: { width: '100%', maxWidth: 360 },
+  burstCard: { borderRadius: 28, padding: 24, alignItems: 'center' },
+  burstIconArea: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  burstRing: { width: 76, height: 76, borderRadius: 38, shadowColor: BRAND.green, shadowOpacity: 0.6, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } },
+  burstRingFill: { flex: 1, borderRadius: 38, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
+  burstCheck: { color: '#fff', fontSize: 38, fontWeight: '800', marginTop: -2 },
+  spark: { position: 'absolute', width: 9, height: 9, borderRadius: 5 },
+  burstTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center' },
+  burstMessage: { fontSize: 15, lineHeight: 21, textAlign: 'center', marginTop: 6, marginBottom: 18 },
+  burstButton: { alignSelf: 'stretch', minHeight: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  burstButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   gradientShadow: {
     backgroundColor: 'transparent',
     shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 6,
