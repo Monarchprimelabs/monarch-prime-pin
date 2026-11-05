@@ -24,6 +24,7 @@ import { useI18n } from '../lib/i18n';
 import { localDateISO } from '../lib/dates';
 import { DOSE_UNITS, DoseUnit } from '../lib/schedule/types';
 import { syncProtocolReminders } from '../lib/protocolReminders';
+import { GradientButton } from '../components/Glass';
 
 /** A planned dose from a protocol, logged from Today or a reminder. */
 export type PlannedDose = {
@@ -761,7 +762,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
               </Card>
 
               <View style={{ paddingHorizontal: spacing.xl }}>
-                <Pressable
+                <GradientButton
                   style={s.submit}
                   onPress={handleSave}
                   disabled={saving}
@@ -769,7 +770,7 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
                   accessibilityState={{ disabled: saving }}
                 >
                   <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
-                </Pressable>
+                </GradientButton>
               </View>
             </>}
             right={siteCard}

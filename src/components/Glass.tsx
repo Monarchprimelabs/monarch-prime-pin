@@ -7,7 +7,7 @@ import Animated, {
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../theme';
+import { BRAND, colors } from '../theme';
 import { hapticTap } from '../lib/haptics';
 
 // The 2.0 look: a slow aurora behind everything, frosted glass for the
@@ -205,6 +205,37 @@ export function PressableScale({ children, style, scaleTo = 0.965, haptic = true
   );
 }
 
+/**
+ * The main call to action: a lit gradient pill with the glass sheen, that
+ * springs under the finger. Takes the caller's layout style as-is.
+ */
+export function GradientButton({ style, children, tone = 'blue', disabled, ...rest }: PressableProps & {
+  style?: StyleProp<ViewStyle>;
+  children?: React.ReactNode;
+  tone?: 'blue' | 'orange';
+}) {
+  const flat = StyleSheet.flatten(style) || {};
+  const radius = typeof flat.borderRadius === 'number' ? flat.borderRadius : 14;
+  const stops = tone === 'orange' ? [colors.accentLight, colors.accent] as const : [colors.primary, colors.primaryDark] as const;
+  return (
+    <PressableScale
+      {...rest}
+      disabled={disabled}
+      style={[style, s.gradientShadow, { shadowColor: stops[0] }, disabled && { opacity: 0.55 }]}
+    >
+      <LinearGradient pointerEvents="none" colors={stops} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: radius }]} />
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.7 }}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
+      />
+      {children}
+    </PressableScale>
+  );
+}
+
 /** Counts a number up from zero when it first appears, then follows changes. */
 export function CountUp({ value, style, duration = 900, suffix = '' }: {
   value: number; style?: StyleProp<TextStyle>; duration?: number; suffix?: string;
@@ -273,6 +304,22 @@ export function FlipCard({ front, back, style, flipped: controlled, onFlip, peek
   );
 }
 
+/** A chart bar that grows up from the baseline, staggered by its index. */
+export function GrowBar({ style, index = 0 }: { style?: StyleProp<ViewStyle>; index?: number }) {
+  const reduce = useReducedMotion();
+  const g = useSharedValue(reduce ? 1 : 0);
+  useEffect(() => {
+    if (!reduce) g.value = withDelay(150 + index * 70, withSpring(1, { damping: 14, stiffness: 110 }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scaleY: g.value }] }));
+  return (
+    <Animated.View style={[style, { transformOrigin: 'bottom' }, anim]}>
+      <LinearGradient pointerEvents="none" colors={[BRAND.cyan, colors.primary]} style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 6, borderTopRightRadius: 6 }]} />
+    </Animated.View>
+  );
+}
+
 /** A soft glow that breathes, for things that need attention (a hot zone, a due entry). */
 export function Pulse({ color, size, style }: { color: string; size: number; style?: StyleProp<ViewStyle> }) {
   const reduce = useReducedMotion();
@@ -290,3 +337,10 @@ export function Pulse({ color, size, style }: { color: string; size: number; sty
     />
   );
 }
+
+const s = StyleSheet.create({
+  gradientShadow: {
+    backgroundColor: 'transparent',
+    shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 6,
+  },
+});

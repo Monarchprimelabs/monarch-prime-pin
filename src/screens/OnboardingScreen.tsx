@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useI18n } from '../lib/i18n';
 import { LanguageSelect } from '../components/LanguageSelect';
 import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
+import { GradientButton } from '../components/Glass';
 
 type MultiItem = { id: string; labelKey: string; icon: string };
 type SingleItem = { id: string; labelKey: string; icon: string; subKey?: string };
@@ -124,7 +125,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
           {/* CTA */}
           <View style={s.footer}>
-            <Pressable
+            <GradientButton
               style={[s.ctaBtn, !canContinue() && s.ctaBtnDisabled]}
               onPress={handleContinue}
               disabled={!canContinue()}
@@ -132,7 +133,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               <Text style={s.ctaBtnText}>
                 {step === TOTAL_STEPS - 1 ? t('ob.letsGo') : t('ob.continue')}
               </Text>
-            </Pressable>
+            </GradientButton>
             <Text style={s.stepCount}>{t('ob.stepCount', { step, total: TOTAL_STEPS - 1 })}</Text>
           </View>
         </View>
@@ -176,9 +177,9 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
       </View>
 
       <View style={s.welcomeFooter}>
-        <Pressable style={s.ctaBtn} onPress={onStart}>
+        <GradientButton style={s.ctaBtn} onPress={onStart}>
           <Text style={s.ctaBtnText}>{t('ob.getStarted')}</Text>
-        </Pressable>
+        </GradientButton>
         <Text style={s.complianceNote}>
           {t('ob.compliance', { max: FREE_INJECTION_LIMIT })}
         </Text>

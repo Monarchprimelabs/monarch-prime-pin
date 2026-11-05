@@ -24,6 +24,7 @@ import { getDoseSkips, getInjections, getProtocols, getVials } from '../lib/stor
 import type { DoseSkip, Protocol } from '../lib/schedule/types';
 import type { Vial } from '../lib/vials/types';
 import { HealthTrendsCard } from '../components/HealthTrends';
+import { GrowBar } from '../components/Glass';
 
 export function AnalyticsScreen() {
   const wide = useWideLayout();
@@ -327,7 +328,7 @@ export function AnalyticsScreen() {
                   <View style={s.barChart}>
                     {weeks.map((v, i) => (
                       <View key={i} style={s.barCol}>
-                        <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
+                        <GrowBar index={i} style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
                         <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
                       </View>
                     ))}
@@ -578,7 +579,7 @@ export function AnalyticsScreen() {
                 <View style={s.barChart}>
                   {weeks.map((v, i) => (
                     <View key={i} style={s.barCol}>
-                      <View style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
+                      <GrowBar index={i} style={[s.bar, { height: `${Math.max(2, (v / maxWeek) * 100)}%` }]} />
                       <Text style={s.barLabel}>{t('reports.weekAbbr')}{8 - i}</Text>
                     </View>
                   ))}
@@ -859,7 +860,7 @@ const s = StyleSheet.create({
 
   barChart: { flexDirection: 'row', height: 140, alignItems: 'flex-end', gap: 4, paddingVertical: 8 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 4 },
-  bar: { width: '100%', backgroundColor: colors.primary, borderTopLeftRadius: 4, borderTopRightRadius: 4, minHeight: 2 },
+  bar: { width: '100%', backgroundColor: colors.primary, borderTopLeftRadius: 6, borderTopRightRadius: 6, minHeight: 2, overflow: 'hidden' },
   barLabel: { fontSize: 10, color: colors.textMuted },
 
   rankRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },

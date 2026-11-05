@@ -20,7 +20,7 @@ import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '..
 import { Ionicons } from '@expo/vector-icons';
 import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
 import { TwoColumn } from '../components/Columns';
-import { AuroraBackground } from '../components/Glass';
+import { AuroraBackground, GlassSheen, Reveal, GradientButton } from '../components/Glass';
 import { useWideLayout } from '../lib/layout';
 import { usePremium } from '../lib/usePremium';
 import { PaywallProvider, usePaywall } from '../lib/paywall';
@@ -337,10 +337,10 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
               )}
 
               <View style={s.qaRow}>
-                <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
+                <GradientButton style={s.qaPrimary} onPress={() => onNavigate('log')}>
                   <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
                   <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
-                </Pressable>
+                </GradientButton>
               </View>
 
               {stats.total > 0 && (
@@ -400,10 +400,10 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
             )}
 
             <View style={s.qaRow}>
-              <Pressable style={s.qaPrimary} onPress={() => onNavigate('log')}>
+              <GradientButton style={s.qaPrimary} onPress={() => onNavigate('log')}>
                 <Ionicons name="add-circle-outline" size={19} color={colors.actionText} />
                 <Text style={s.qaPrimaryText}>{t('log.titleNew')}</Text>
-              </Pressable>
+              </GradientButton>
             </View>
 
 
@@ -583,11 +583,14 @@ function StatCard({ icon, color, value, label }: {
 }) {
   const displayValue = useCountUp(value);
   return (
-    <View style={s.statCard}>
-      <Ionicons name={icon} size={20} color={color} style={s.statIcon} />
+    <Reveal style={s.statCard}>
+      <GlassSheen radius={radius.xl} />
+      <View style={[s.statIconWrap, { backgroundColor: withAlpha(color, 0.16) }]}>
+        <Ionicons name={icon} size={18} color={color} />
+      </View>
       <Text style={s.statVal}>{displayValue}</Text>
       <Text style={s.statLabel}>{label}</Text>
-    </View>
+    </Reveal>
   );
 }
 
@@ -608,11 +611,13 @@ const s = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.bgCard,
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg,
-    paddingVertical: 14,
+    borderWidth: StyleSheet.hairlineWidth * 2, borderColor: colors.glassBorder, borderTopColor: colors.hairline,
+    borderRadius: radius.xl,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: colors.cardShadow, shadowRadius: 20, elevation: 3,
   },
-  statIcon: { marginBottom: 4 },
+  statIconWrap: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   milestoneLine: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -6, marginBottom: 14 },
   backupNudge: {
     marginHorizontal: spacing.xl, marginBottom: 14, padding: 14,
@@ -621,7 +626,7 @@ const s = StyleSheet.create({
     borderColor: 'rgba(20,184,166,0.25)', borderRadius: radius.lg,
   },
   backupNudgeText: { flex: 1, color: colors.textMuted, fontSize: 12, lineHeight: 17 },
-  statVal: { color: colors.white, fontSize: 22, fontWeight: '700' },
+  statVal: { color: colors.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.8, fontVariant: ['tabular-nums'] },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
 
   scheduleCard: {

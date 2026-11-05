@@ -19,6 +19,7 @@ import { colors, radius, spacing, withAlpha } from '../theme';
 import { getNotifyPrefs, setNotifyPrefs, setTrialEndsAt } from '../lib/notify/store';
 import { requestNotificationPermission } from '../lib/notify/scheduler';
 import { syncProtocolReminders } from '../lib/protocolReminders';
+import { GradientButton } from '../components/Glass';
 
 // What Premium includes, in plain language, matching src/lib/featureGate.ts
 // (Guideline 3.1.2(c)). Apple Health trends are iOS only.
@@ -251,9 +252,9 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
 
             {copy && (
               <>
-                <Pressable style={[s.primaryBtn, working && { opacity: 0.6 }]} onPress={buy} disabled={working} accessibilityRole="button">
+                <GradientButton style={[s.primaryBtn, working && { opacity: 0.6 }]} onPress={buy} disabled={working} accessibilityRole="button">
                   <Text style={s.primaryText}>{working ? '...' : copy.button}</Text>
-                </Pressable>
+                </GradientButton>
                 <Text style={s.terms}>{copy.terms}</Text>
                 {copy.showTrialTimeline && selected && (
                   <Card>

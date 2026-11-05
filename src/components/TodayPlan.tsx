@@ -13,6 +13,7 @@ import { OccurrenceView, summarizeThrough, unplannedOn, withStatus } from '../li
 import { DoseSkip, Protocol } from '../lib/schedule/types';
 import type { PlannedDose } from '../screens/LogInjectionScreen';
 import { weekdayName, weekdayOrder } from '../screens/ProtocolsScreen';
+import { GradientButton } from './Glass';
 
 export type PlanData = { protocols: Protocol[]; skips: DoseSkip[] };
 
@@ -70,9 +71,9 @@ export function TodayPlan({ injections, refreshToken, onLog, onOpenRecord, onSet
       <Card>
         <CardLabel icon="🗓">{t('proto.todayLabel')}</CardLabel>
         <Text style={s.emptyText}>{t('proto.todayEmpty')}</Text>
-        <Pressable style={s.setupBtn} onPress={onSetup} accessibilityRole="button">
+        <GradientButton style={s.setupBtn} onPress={onSetup} accessibilityRole="button">
           <Text style={s.setupBtnText}>{t('proto.setUp')}</Text>
-        </Pressable>
+        </GradientButton>
       </Card>
     );
   }
@@ -211,9 +212,9 @@ export function PlannedDoseCard({ view, canAct, onLog, onSkip, onUnskip, onOpen 
         </Text>
         {canAct && (status === 'planned' || status === 'notLogged') && (
           <View style={s.actions}>
-            <Pressable style={s.logBtn} onPress={onLog} accessibilityRole="button" accessibilityLabel={t('proto.logA11y', { name: view.compound, time })}>
+            <GradientButton style={s.logBtn} onPress={onLog} accessibilityRole="button" accessibilityLabel={t('proto.logA11y', { name: view.compound, time })}>
               <Text style={s.logBtnText}>{t('proto.log')}</Text>
-            </Pressable>
+            </GradientButton>
             <Pressable style={s.skipBtn} onPress={onSkip} accessibilityRole="button">
               <Text style={s.skipBtnText}>{t('proto.skip')}</Text>
             </Pressable>
