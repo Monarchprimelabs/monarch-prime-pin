@@ -5,6 +5,7 @@ import type { Feature } from './featureGate';
 import type { AutoPlacement } from './paywallCap';
 import { claimAutoPaywall } from './paywallAuto';
 import { useEntitlements } from './entitlements';
+import { AuroraBackground } from '../components/Glass';
 import { recordPaywallShown } from './localMetrics';
 
 /** Where the paywall was opened from (docs/PRIME_PIN_V2_HANDOFF.md, PAYWALL). */
@@ -49,6 +50,7 @@ export function PaywallProvider({ children }: { children: ReactNode }) {
       {children}
       <Modal visible={!!placement} animationType="slide" onRequestClose={() => setPlacement(null)}>
         <SafeAreaProvider>
+          <AuroraBackground />
           {placement && <PaywallScreen placement={placement} onClose={() => setPlacement(null)} />}
         </SafeAreaProvider>
       </Modal>

@@ -19,6 +19,7 @@ import {
 import { SettingsScreen } from './SettingsScreen';
 import { PaywallProvider, usePaywall } from '../lib/paywall';
 import { PremiumBadge } from '../components/PremiumLock';
+import { AuroraBackground } from '../components/Glass';
 import { LabsTool } from './LabsScreen';
 import { labsAccess } from '../lib/labs/labs';
 import { ProtocolsTool } from './ProtocolsScreen';
@@ -152,6 +153,7 @@ export function ToolsScreen() {
         ))}
       </ScrollView>
       <Modal visible={active !== null} animationType="slide" onRequestClose={() => { setActive(null); loadLegacyCounts(); }} onDismiss={loadLegacyCounts}><SafeAreaProvider>
+        <AuroraBackground />
         {/* Sheets inside this modal open their paywall from here: iOS can't present over a modal from the root. */}
         <PaywallProvider>
           {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
@@ -870,7 +872,7 @@ const s = StyleSheet.create({
   legacyHeader: { marginTop: 14, marginBottom: 2, paddingHorizontal: 4 },
   legacyTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
   legacySub: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 3 },
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   pageContent: { paddingHorizontal: spacing.xl, paddingBottom: 124, gap: 10 },
   toolRow: {
     minHeight: 78, flexDirection: 'row', alignItems: 'center',

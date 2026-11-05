@@ -827,7 +827,7 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
 const s = StyleSheet.create({
   insightText: { color: colors.text, fontSize: 14, lineHeight: 21, marginBottom: 4 },
   insightFooter: { color: colors.textMuted, fontSize: 12, marginTop: 8 },
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   sub: { fontSize: 11, color: colors.textMuted, marginTop: -8, marginBottom: 14 },
   empty: { color: colors.textFaint, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
   reportMonth: { color: colors.white, fontSize: 17, fontWeight: '700', marginBottom: 12 },

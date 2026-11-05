@@ -297,7 +297,7 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   context: { color: colors.textMuted, fontSize: 14, lineHeight: 20, paddingHorizontal: spacing.xl, marginTop: 8 },
   remindRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: 6 },

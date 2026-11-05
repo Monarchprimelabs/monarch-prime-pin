@@ -269,7 +269,7 @@ function SingleSelect({
 
 // ── Styles ───────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
 
   // Welcome
   welcomeRoot: { flex: 1, paddingHorizontal: spacing.xl },

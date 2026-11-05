@@ -1225,7 +1225,7 @@ export function PeptidePickerSheet({
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.8, marginBottom: 12 },
   trialCard: { borderColor: colors.teal, backgroundColor: 'rgba(20,184,166,0.08)' },
   trialTitle: { color: colors.white, fontSize: 17, fontWeight: '700', marginBottom: 6 },

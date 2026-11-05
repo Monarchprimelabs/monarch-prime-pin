@@ -18,7 +18,7 @@ export function ShellHeader({ title, backLabel, onBack }: { title: string; backL
 }
 
 export const kit = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   toolHeader: { minHeight: 58, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.borderSubtle, paddingHorizontal: spacing.xl },
   backBtn: { width: 80, minHeight: 44, justifyContent: 'center' },
   backText: { color: colors.primary, fontSize: 14, fontWeight: '700' },

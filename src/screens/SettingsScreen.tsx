@@ -558,7 +558,7 @@ function LegalTab() {
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   closeRow: { paddingHorizontal: spacing.xl, marginTop: -8, marginBottom: 10 },
   closeBtn: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', paddingRight: 12 },
   closeText: { color: colors.primary, fontSize: 14, fontWeight: '700' },

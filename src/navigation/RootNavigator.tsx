@@ -6,6 +6,7 @@ import { SignInScreen } from '../screens/SignInScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { BottomTabs } from './BottomTabs';
 import { colors } from '../theme';
+import { AuroraBackground } from '../components/Glass';
 import { useEntitlements } from '../lib/entitlements';
 import { usePaywall } from '../lib/paywall';
 import { DEMO, seedDemoData } from '../lib/demo';
@@ -41,15 +42,18 @@ export function RootNavigator() {
     );
   }
 
-  if (!user) return <SignInScreen />;
+  if (!user) return <View style={s.fill}><AuroraBackground /><SignInScreen /></View>;
 
   if (!onboardingDone) {
     return (
-      <OnboardingScreen onDone={() => {
-        setOnboardingDone(true);
-        // A soft, dismissible paywall once, at the end of onboarding.
-        maybeAutoPaywall('onboardingEnd').catch(() => undefined);
-      }} />
+      <View style={s.fill}>
+        <AuroraBackground />
+        <OnboardingScreen onDone={() => {
+          setOnboardingDone(true);
+          // A soft, dismissible paywall once, at the end of onboarding.
+          maybeAutoPaywall('onboardingEnd').catch(() => undefined);
+        }} />
+      </View>
     );
   }
 
@@ -57,6 +61,7 @@ export function RootNavigator() {
 }
 
 const s = StyleSheet.create({
+  fill: { flex: 1 },
   center: {
     flex: 1,
     backgroundColor: colors.bg,

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { colors, spacing, radius, fonts, withAlpha } from '../theme';
 import { useI18n } from '../lib/i18n';
 import { READABLE_MAX_WIDTH, WIDE_MAX_WIDTH, useWideLayout } from '../lib/layout';
+import { GlassSheen, Reveal } from './Glass';
 
 const SYMBOL: number = require('../../assets/logo-symbol.png');
 const FULL_LOGO: number = require('../../assets/logo-full.png');
@@ -74,7 +75,14 @@ export function Header({ title, subtitle, columns = 'one' }: {
 // Card — consistent panel
 // ============================================================
 export function Card({ children, style }: { children: React.ReactNode; style?: any }) {
-  return <View style={[s.card, style]}>{children}</View>;
+  // A pane of glass over the aurora that fades up into place with its siblings.
+  const radiusValue = StyleSheet.flatten([s.card, style])?.borderRadius;
+  return (
+    <Reveal style={[s.card, style]}>
+      <GlassSheen radius={radiusValue} />
+      {children}
+    </Reveal>
+  );
 }
 
 // ============================================================
@@ -163,8 +171,8 @@ function parseInline(s: string): React.ReactNode[] {
 
 const s = StyleSheet.create({
   disclaimer: {
-    backgroundColor: colors.disclaimerBg1,
-    borderBottomWidth: 1,
+    backgroundColor: withAlpha(colors.accent, 0.1),
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.borderOrange,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -185,29 +193,29 @@ const s = StyleSheet.create({
   avatar: {
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: colors.bgCard,
-    borderWidth: 1, borderColor: withAlpha(colors.primary, 0.15),
+    borderWidth: 1, borderColor: colors.glassBorder,
     alignItems: 'center', justifyContent: 'center',
     marginRight: 14, overflow: 'hidden',
   },
-  titleText: { fontSize: 26, fontWeight: '700', color: colors.white, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  titleText: { fontSize: 30, fontWeight: '800', color: colors.white, letterSpacing: -0.8 },
+  subtitle: { fontSize: 14, color: colors.text, opacity: 0.72, marginTop: 2 },
 
   card: {
     marginHorizontal: spacing.xl,
     marginBottom: spacing.lg,
     backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    // Lighter top edge + soft drop shadow fake a light source above the card.
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: colors.glassBorder,
+    // Lighter top edge + soft drop shadow fake a light source above the glass.
     borderTopColor: colors.hairline,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: colors.cardShadow,
-    shadowRadius: 10,
+    shadowRadius: 24,
     elevation: 4,
   },
   cardLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.8 },

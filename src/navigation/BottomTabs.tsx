@@ -15,6 +15,7 @@ import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 import { adoptLegacyPhotos } from '../lib/storage';
 import { FounderSheetHost } from '../components/FounderSheet';
+import { AuroraBackground } from '../components/Glass';
 import { LapsedSheetHost } from '../components/LapsedSheet';
 import { usePremium } from '../lib/usePremium';
 import { setPremiumKnown } from '../lib/notify/store';
@@ -54,6 +55,7 @@ export function BottomTabs() {
 
   return (
     <View style={s.app}>
+      <AuroraBackground />
       <View style={{ flex: 1 }}>
         {active === 'home' && (
           <DashboardScreen

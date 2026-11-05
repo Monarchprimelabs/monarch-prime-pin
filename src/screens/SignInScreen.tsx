@@ -208,7 +208,7 @@ export function SignInScreen() {
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: 24, alignItems: 'center', paddingBottom: 60 },
   logoWrap: { marginTop: 24, marginBottom: 4 },
   subBrand: {

@@ -20,6 +20,7 @@ import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '..
 import { Ionicons } from '@expo/vector-icons';
 import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
 import { TwoColumn } from '../components/Columns';
+import { AuroraBackground } from '../components/Glass';
 import { useWideLayout } from '../lib/layout';
 import { usePremium } from '../lib/usePremium';
 import { PaywallProvider, usePaywall } from '../lib/paywall';
@@ -445,6 +446,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </ScrollView>
 
       <Modal visible={repeatOpen} animationType="slide" onRequestClose={() => setRepeatOpen(false)}><SafeAreaProvider>
+        <AuroraBackground />
         {lastInj && (
           <LogInjectionScreen
             prefillFrom={lastInj}
@@ -455,6 +457,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!plannedLog} animationType="slide" onRequestClose={() => setPlannedLog(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {plannedLog && (
           <LogInjectionScreen
             planned={plannedLog}
@@ -465,6 +468,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!editRecord} animationType="slide" onRequestClose={() => setEditRecord(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {editRecord && (
           <LogInjectionScreen
             initialInjection={editRecord}
@@ -475,12 +479,14 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
       </SafeAreaProvider></Modal>
 
       <Modal visible={protocolsOpen} animationType="slide" onRequestClose={() => { setProtocolsOpen(false); refresh(); }}><SafeAreaProvider>
+        <AuroraBackground />
         <PaywallProvider>
           <ProtocolsTool onClose={() => { setProtocolsOpen(false); refresh(); }} />
         </PaywallProvider>
       </SafeAreaProvider></Modal>
 
       <Modal visible={shareOpen} animationType="fade" transparent onRequestClose={() => setShareOpen(false)}><SafeAreaProvider>
+        <AuroraBackground />
         <View style={s.shareBackdrop}>
           <View style={s.formatRow}>
             {(Object.keys(SHARE_FORMATS) as ShareFormat[]).map(id => (
@@ -595,7 +601,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   statRow: {
     flexDirection: 'row', gap: 10, paddingHorizontal: spacing.xl, marginBottom: 14,
   },

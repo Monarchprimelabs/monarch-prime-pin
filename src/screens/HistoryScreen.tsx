@@ -13,6 +13,7 @@ import { useI18n } from '../lib/i18n';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import { PlannedDoseCard, PlanData, loadPlan, toPlannedDose } from '../components/TodayPlan';
+import { AuroraBackground } from '../components/Glass';
 import type { PlannedDose } from './LogInjectionScreen';
 import { occurrencesBetween } from '../lib/schedule/engine';
 import { withStatus } from '../lib/schedule/status';
@@ -90,6 +91,7 @@ export function HistoryScreen() {
 
 
       <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {backdateFor && (
           <LogInjectionScreen
             initialDate={backdateFor}
@@ -100,6 +102,7 @@ export function HistoryScreen() {
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!plannedLog} animationType="slide" onRequestClose={() => setPlannedLog(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {plannedLog && (
           <LogInjectionScreen
             planned={plannedLog}
@@ -110,6 +113,7 @@ export function HistoryScreen() {
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!selectedRecord} animationType="slide" onRequestClose={() => setSelectedRecord(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {selectedRecord && (
           <RecordDetail
             record={selectedRecord}
@@ -124,6 +128,7 @@ export function HistoryScreen() {
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!editingRecord} animationType="slide" onRequestClose={() => setEditingRecord(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {editingRecord && (
           <LogInjectionScreen
             initialInjection={editingRecord}
@@ -505,6 +510,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
         animationType="slide"
         onRequestClose={() => setCompareIds([])}
       ><SafeAreaProvider>
+        <AuroraBackground />
         {comparePair.length === 2 && (
           <SafeAreaView style={s.app}>
             <View style={s.compareHeader}>
@@ -532,7 +538,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   subTabs: {
     flexDirection: 'row', marginHorizontal: spacing.xl, marginBottom: 14,
     backgroundColor: colors.bgCard,
