@@ -8,20 +8,26 @@ import { BottomTabs } from './BottomTabs';
 import { colors } from '../theme';
 import { useEntitlements } from '../lib/entitlements';
 import { usePaywall } from '../lib/paywall';
+import { DEMO, seedDemoData } from '../lib/demo';
 
 export function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, startLocal } = useAuth();
   const { loading: entitlementLoading } = useEntitlements();
   const { maybeAutoPaywall } = usePaywall();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
+
+  // Web demo: straight in, no sign-in screen.
+  useEffect(() => {
+    if (DEMO && !loading && !user) startLocal('').catch(() => undefined);
+  }, [loading, user, startLocal]);
 
   useEffect(() => {
     if (!user) {
       setOnboardingChecked(false);
       return;
     }
-    getOnboardingDone().then(done => {
+    (DEMO ? seedDemoData().catch(() => undefined) : Promise.resolve()).then(getOnboardingDone).then(done => {
       setOnboardingDone(done);
       setOnboardingChecked(true);
     });
