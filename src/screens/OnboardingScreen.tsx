@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView,
-  useWindowDimensions,
+  View, Text, StyleSheet, Pressable, useWindowDimensions,
 } from 'react-native';
+import { ReadableScrollView as ScrollView, TwoColumn } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useI18n } from '../lib/i18n';
 import { LanguageSelect } from '../components/LanguageSelect';
 import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
+import { GradientButton } from '../components/Glass';
+import { useWideLayout } from '../lib/layout';
 
 type MultiItem = { id: string; labelKey: string; icon: string };
 type SingleItem = { id: string; labelKey: string; icon: string; subKey?: string };
@@ -72,7 +74,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+    <SafeAreaView style={s.root} edges={['top', 'bottom', 'left', 'right']}>
       {step === 0 ? (
         <WelcomeStep onStart={() => setStep(1)} />
       ) : (
@@ -91,6 +93,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           </View>
 
           <ScrollView
+            fullWidth
             contentContainerStyle={s.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -124,7 +127,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
           {/* CTA */}
           <View style={s.footer}>
-            <Pressable
+            <GradientButton
               style={[s.ctaBtn, !canContinue() && s.ctaBtnDisabled]}
               onPress={handleContinue}
               disabled={!canContinue()}
@@ -132,7 +135,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               <Text style={s.ctaBtnText}>
                 {step === TOTAL_STEPS - 1 ? t('ob.letsGo') : t('ob.continue')}
               </Text>
-            </Pressable>
+            </GradientButton>
             <Text style={s.stepCount}>{t('ob.stepCount', { step, total: TOTAL_STEPS - 1 })}</Text>
           </View>
         </View>
@@ -144,45 +147,69 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 // ── Welcome (step 0) ─────────────────────────────────────────
 function WelcomeStep({ onStart }: { onStart: () => void }) {
   const { t } = useI18n();
+  const wide = useWideLayout();
+  const brand = (
+    <View style={s.welcomeLogoWrap}>
+      <BrandMark large />
+    </View>
+  );
+  const intro = (
+    <>
+      <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
+      <Text style={s.welcomeHeadline}>{t('ob.headline')}</Text>
+      <Text style={s.welcomeSub}>
+        {t('ob.welcomeSub', { max: FREE_INJECTION_LIMIT })}
+      </Text>
+    </>
+  );
+  const features = (
+    <View style={s.featureList}>
+      {[
+        { icon: '📋', key: 'ob.feat1' },
+        { icon: '📍', key: 'ob.feat2' },
+        { icon: '🕘', key: 'ob.feat3' },
+        { icon: '◆', key: 'ob.feat4' },
+      ].map(f => (
+        <View key={f.key} style={s.featureRow}>
+          <Text style={s.featureIcon}>{f.icon}</Text>
+          <Text style={s.featureText}>{t(f.key)}</Text>
+        </View>
+      ))}
+    </View>
+  );
+  const footer = (
+    <View style={s.welcomeFooter}>
+      <GradientButton style={s.ctaBtn} onPress={onStart}>
+        <Text style={s.ctaBtnText}>{t('ob.getStarted')}</Text>
+      </GradientButton>
+      <Text style={s.complianceNote}>
+        {t('ob.compliance', { max: FREE_INJECTION_LIMIT })}
+      </Text>
+    </View>
+  );
   return (
     <View style={s.welcomeRoot}>
       <View style={s.langPickRow}>
         <LanguageSelect compact />
       </View>
-      <View style={s.welcomeLogoWrap}>
-        <BrandMark large />
-      </View>
-
-      <View style={s.welcomeBody}>
-        <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
-        <Text style={s.welcomeHeadline}>{t('ob.headline')}</Text>
-        <Text style={s.welcomeSub}>
-          {t('ob.welcomeSub', { max: FREE_INJECTION_LIMIT })}
-        </Text>
-
-        <View style={s.featureList}>
-          {[
-            { icon: '📋', key: 'ob.feat1' },
-            { icon: '📍', key: 'ob.feat2' },
-            { icon: '🕘', key: 'ob.feat3' },
-            { icon: '◆', key: 'ob.feat4' },
-          ].map(f => (
-            <View key={f.key} style={s.featureRow}>
-              <Text style={s.featureIcon}>{f.icon}</Text>
-              <Text style={s.featureText}>{t(f.key)}</Text>
-            </View>
-          ))}
+      {wide ? (
+        // Wide windows (iPad, open Duo): the brand on the left, what's inside and Get started on the right.
+        <View style={s.wideWelcome}>
+          <TwoColumn
+            left={<View style={s.wideIntro}>{brand}{intro}</View>}
+            right={<View style={s.wideIntro}>{features}{footer}</View>}
+          />
         </View>
-      </View>
-
-      <View style={s.welcomeFooter}>
-        <Pressable style={s.ctaBtn} onPress={onStart}>
-          <Text style={s.ctaBtnText}>{t('ob.getStarted')}</Text>
-        </Pressable>
-        <Text style={s.complianceNote}>
-          {t('ob.compliance', { max: FREE_INJECTION_LIMIT })}
-        </Text>
-      </View>
+      ) : (
+        <>
+          {brand}
+          <View style={s.welcomeBody}>
+            {intro}
+            {features}
+          </View>
+          {footer}
+        </>
+      )}
     </View>
   );
 }
@@ -201,6 +228,18 @@ function ProgressBar({ step, total, width }: { step: number; total: number; widt
 
 // ── Step shell ───────────────────────────────────────────────
 function StepShell({ headline, sub, children }: { headline: string; sub: string; children: React.ReactNode }) {
+  // Wide windows (iPad, open Duo): the question on the left, the choices on the right.
+  const wide = useWideLayout();
+  if (wide) {
+    return (
+      <View style={s.stepShell}>
+        <TwoColumn
+          left={<View style={s.wideIntro}><Text style={s.stepHeadline}>{headline}</Text><Text style={s.stepSub}>{sub}</Text></View>}
+          right={<View style={s.optionsWrap}>{children}</View>}
+        />
+      </View>
+    );
+  }
   return (
     <View style={s.stepShell}>
       <Text style={s.stepHeadline}>{headline}</Text>
@@ -269,13 +308,15 @@ function SingleSelect({
 
 // ── Styles ───────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: 'transparent' },
 
   // Welcome
   welcomeRoot: { flex: 1, paddingHorizontal: spacing.xl },
   welcomeLogoWrap: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
   langPickRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8, paddingTop: 14 },
   welcomeBody: { flex: 1 },
+  wideWelcome: { flex: 1, justifyContent: 'center' },
+  wideIntro: { gap: 4, justifyContent: 'center' },
   welcomeEyebrow: {
     fontSize: 11, fontWeight: '700', letterSpacing: 2.5,
     color: colors.primary, marginBottom: 12,

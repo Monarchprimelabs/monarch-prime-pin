@@ -4,6 +4,9 @@ import { Injection } from '../data/peptides';
 import type { DoseSkip, Protocol } from './schedule/types';
 import type { Vial } from './vials/types';
 import { adoptLegacyPhoto, PHOTO_SCHEME } from './photos';
+import type { LabReport, LabResult } from './labs/types';
+import { deleteAllReportFiles, deleteReportFile } from './labs/reportFiles';
+import { recordEntryLogged } from './localMetrics';
 
 const KEY_INJECTIONS = '@mpp/injections';
 const KEY_USER = '@mpp/user';
@@ -14,6 +17,9 @@ const KEY_TEMPLATES = '@mpp/templates';
 const KEY_PROTOCOLS = '@mpp/protocols';
 const KEY_DOSE_SKIPS = '@mpp/dose_skips';
 const KEY_VIALS = '@mpp/vials';
+const KEY_LAB_RESULTS = '@mpp/lab_results';
+const KEY_LAB_REPORTS = '@mpp/lab_reports';
+export const KEY_NEXT_LAB_DATE = '@mpp/next_lab_date';
 export const KEY_REMINDER_IDS = '@mpp/reminder_map';
 
 export type ScheduleRepeat = 'once' | 'daily' | 'weekly';
@@ -132,6 +138,7 @@ export async function getInjections(): Promise<Injection[]> {
 
 export async function saveInjection(inj: Omit<Injection, 'id'>): Promise<Injection> {
   const newInj: Injection = { ...inj, id: Date.now().toString() };
+  recordEntryLogged().catch(() => undefined);
 
   if (SUPABASE_CONFIGURED && supabase) {
     const user = await getUser();
@@ -308,6 +315,46 @@ export async function deleteVial(id: string): Promise<void> {
   }
 }
 
+// ----- LAB RESULTS (Premium) -----
+export const getLabResults = () => getLocalList<LabResult>(KEY_LAB_RESULTS);
+export async function saveLabResult(result: LabResult): Promise<LabResult> {
+  const current = await getLabResults();
+  const exists = current.some(value => value.id === result.id);
+  await setLocalList(KEY_LAB_RESULTS, exists ? current.map(value => value.id === result.id ? result : value) : [result, ...current]);
+  return result;
+}
+export async function deleteLabResult(id: string): Promise<void> {
+  await setLocalList(KEY_LAB_RESULTS, (await getLabResults()).filter(item => item.id !== id));
+}
+export const newLabResultId = () => `lab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+// Saved lab reports (photos or a PDF of the user's own report), Premium.
+export const getLabReports = () => getLocalList<LabReport>(KEY_LAB_REPORTS);
+export async function saveLabReport(report: LabReport): Promise<LabReport> {
+  const current = await getLabReports();
+  const previous = current.find(value => value.id === report.id);
+  await setLocalList(KEY_LAB_REPORTS, previous ? current.map(value => value.id === report.id ? report : value) : [report, ...current]);
+  // Pages removed while editing are deleted from the phone.
+  const kept = new Set(report.files.map(f => f.ref));
+  previous?.files.filter(f => !kept.has(f.ref)).forEach(f => deleteReportFile(f.ref));
+  return report;
+}
+export async function deleteLabReport(id: string): Promise<void> {
+  const current = await getLabReports();
+  await setLocalList(KEY_LAB_REPORTS, current.filter(item => item.id !== id));
+  current.find(item => item.id === id)?.files.forEach(f => deleteReportFile(f.ref));
+}
+export const newLabReportId = () => `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** The user's next lab date (YYYY-MM-DD), for lab reminders. */
+export async function getNextLabDate(): Promise<string | null> {
+  return (await AsyncStorage.getItem(KEY_NEXT_LAB_DATE)) || null;
+}
+export async function setNextLabDate(date: string | null): Promise<void> {
+  if (date) await AsyncStorage.setItem(KEY_NEXT_LAB_DATE, date);
+  else await AsyncStorage.removeItem(KEY_NEXT_LAB_DATE);
+}
+
 // ----- PHOTO UPLOAD -----
 // In offline mode the local URI from expo-image-picker is fine —
 // it persists across app launches because it's in app sandbox storage.
@@ -354,8 +401,12 @@ export async function clearLocalData(): Promise<void> {
     KEY_PROTOCOLS,
     KEY_DOSE_SKIPS,
     KEY_VIALS,
+    KEY_LAB_RESULTS,
+    KEY_LAB_REPORTS,
+    KEY_NEXT_LAB_DATE,
     KEY_REMINDER_IDS,
   ]);
+  deleteAllReportFiles();
 }
 
 // Used by backup restore. Overwrites the data collections in one shot;
@@ -368,6 +419,8 @@ export async function replaceAllData(data: {
   protocols: Protocol[];
   doseSkips: DoseSkip[];
   vials: Vial[];
+  labResults: LabResult[];
+  labReports: LabReport[];
 }): Promise<void> {
   await AsyncStorage.multiSet([
     [KEY_INJECTIONS, JSON.stringify(data.injections)],
@@ -377,5 +430,7 @@ export async function replaceAllData(data: {
     [KEY_PROTOCOLS, JSON.stringify(data.protocols)],
     [KEY_DOSE_SKIPS, JSON.stringify(data.doseSkips)],
     [KEY_VIALS, JSON.stringify(data.vials)],
+    [KEY_LAB_RESULTS, JSON.stringify(data.labResults)],
+    [KEY_LAB_REPORTS, JSON.stringify(data.labReports)],
   ]);
 }

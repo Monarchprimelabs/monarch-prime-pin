@@ -36,19 +36,24 @@ type Palette = {
   disclaimerBg1: string; disclaimerBg2: string;
   cardShadow: number;     // drop-shadow strength; light mode needs far less
   statusBar: 'light' | 'dark';
+  // 2.0 glass look (src/components/Glass.tsx)
+  auroraA: string; auroraB: string; auroraC: string; // drifting background light
+  glassBorder: string;    // edge of a glass pane
+  glassSheen: string;     // light catching the top edge
+  glassSolid: string;     // stands in for blur where live blur is too costly
 };
 
 const DARK: Palette = {
   bg: '#050810',
-  bgCard: 'rgba(15, 25, 45, 0.4)',
+  bgCard: 'rgba(24, 38, 66, 0.38)',
   bgInput: 'rgba(10, 20, 38, 0.5)',
   bgPill: 'rgba(10, 20, 38, 0.6)',
   bgSheet: '#0a1019',
-  bgTabBar: 'rgba(5, 8, 16, 0.62)',
+  bgTabBar: 'rgba(12, 20, 38, 0.55)',
   scrim: 'rgba(2, 6, 14, 0.94)',
-  hairline: 'rgba(255, 255, 255, 0.08)',
+  hairline: 'rgba(255, 255, 255, 0.2)',
   zoneFill: 'rgba(10, 25, 50, 0.6)',
-  border: withAlpha(BRAND.blue, 0.25),
+  border: 'rgba(150, 190, 255, 0.16)',
   borderSubtle: withAlpha(BRAND.blue, 0.15),
   borderFaint: withAlpha(BRAND.blue, 0.08),
   borderOrange: withAlpha(BRAND.orange, 0.25),
@@ -68,8 +73,14 @@ const DARK: Palette = {
   red: '#E53935',
   disclaimerBg1: '#2a1a08',
   disclaimerBg2: '#1a1004',
-  cardShadow: 0.3,
+  cardShadow: 0.35,
   statusBar: 'light',
+  auroraA: BRAND.blue,
+  auroraB: BRAND.orange,
+  auroraC: BRAND.green,
+  glassBorder: 'rgba(255, 255, 255, 0.14)',
+  glassSheen: 'rgba(255, 255, 255, 0.13)',
+  glassSolid: 'rgba(16, 26, 48, 0.86)',
 };
 
 // Light mode keeps the same brand hues but darkens them enough to hold
@@ -79,11 +90,11 @@ const LIGHT: Palette = {
   // FuelRing does it — borders stay near-invisible so the contrast does the
   // work instead of outlines.
   bg: '#E9EEF4',
-  bgCard: '#FFFFFF',
+  bgCard: 'rgba(255, 255, 255, 0.66)',
   bgInput: '#FFFFFF',
   bgPill: '#E3EAF2',
   bgSheet: '#FFFFFF',
-  bgTabBar: 'rgba(255, 255, 255, 0.86)',
+  bgTabBar: 'rgba(255, 255, 255, 0.6)',
   scrim: 'rgba(10, 24, 45, 0.5)',
   hairline: 'rgba(255, 255, 255, 0.9)',
   zoneFill: 'rgba(30, 136, 229, 0.08)',
@@ -107,8 +118,14 @@ const LIGHT: Palette = {
   red: '#C62828',
   disclaimerBg1: '#FDEFD8',
   disclaimerBg2: '#FBE4C2',
-  cardShadow: 0.07,
+  cardShadow: 0.08,
   statusBar: 'dark',
+  auroraA: '#7FB8F0',
+  auroraB: '#FFC48A',
+  auroraC: '#9ED9A0',
+  glassBorder: 'rgba(255, 255, 255, 0.9)',
+  glassSheen: 'rgba(255, 255, 255, 0.6)',
+  glassSolid: 'rgba(250, 252, 255, 0.92)',
 };
 
 export const THEMES: Record<ThemeId, { labelKey: string; swatch: string; palette: Palette }> = {

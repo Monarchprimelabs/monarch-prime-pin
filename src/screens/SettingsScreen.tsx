@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -19,51 +21,54 @@ import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from 
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { SUPABASE_CONFIGURED } from '../lib/supabase';
 import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '../lib/health';
-import { UpgradeScreen } from './UpgradeScreen';
+import { usePaywall } from '../lib/paywall';
+import { useFounder } from '../lib/founders';
+import { NotificationSettings } from '../components/NotificationSettings';
+import { ActivityCard } from '../components/ActivityCard';
+import { PREMIUM_ANNUAL_ID, PREMIUM_MONTHLY_ID } from '../lib/store/constants';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const wide = useWideLayout();
   const { t } = useI18n();
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
-      <Header title={t('settings.title')} subtitle="" />
+      <Header title={t('settings.title')} subtitle="" columns="two" />
       {!!onClose && (
-        <View style={s.closeRow}>
+        <View style={[s.closeRow, wideColumn(wide)]}>
           <Pressable style={s.closeBtn} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close settings">
             <Text style={s.closeText}>{t('settings.backToTools')}</Text>
           </Pressable>
         </View>
       )}
 
-      <View style={s.subTabs}>
-        {[
-          { id: 'rem' as const, label: t('settings.tabReminders') },
-          { id: 'acc' as const, label: t('settings.tabAccess') },
-          { id: 'leg' as const, label: t('settings.tabLegal') },
-        ].map(item => (
-          <Pressable
-            key={item.id}
-            onPress={() => setTab(item.id)}
-            style={[s.subTab, tab === item.id && s.subTabActive]}
-          >
-            <Text style={[s.subTabText, tab === item.id && s.subTabTextActive]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={wideColumn(wide)}>
+        <View style={s.subTabs}>
+          {[
+            { id: 'rem' as const, label: t('settings.tabReminders') },
+            { id: 'acc' as const, label: t('settings.tabAccess') },
+            { id: 'leg' as const, label: t('settings.tabLegal') },
+          ].map(item => (
+            <Pressable
+              key={item.id}
+              onPress={() => setTab(item.id)}
+              style={[s.subTab, tab === item.id && s.subTabActive]}
+            >
+              <Text style={[s.subTabText, tab === item.id && s.subTabTextActive]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
+      <ScrollView fullWidth contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'rem' && <RemindersTab />}
-        {tab === 'acc' && <AccessTab onOpen={() => setUpgradeOpen(true)} />}
+        {tab === 'acc' && <SplitColumns><AccessTab /><ActivityCard /></SplitColumns>}
         {tab === 'leg' && <LegalTab />}
       </ScrollView>
-      <Modal visible={upgradeOpen} animationType="slide" onRequestClose={() => setUpgradeOpen(false)}><SafeAreaProvider>
-        <UpgradeScreen onClose={() => setUpgradeOpen(false)} />
-      </SafeAreaProvider></Modal>
     </SafeAreaView>
   );
 }
@@ -272,7 +277,7 @@ function RemindersTab() {
   const canSignOut = !!user && (user.isDeveloper || (SUPABASE_CONFIGURED && !user.isGuest));
 
   return (
-    <>
+    <SplitColumns>
       <Card>
         <CardLabel icon="🌐">{t('settings.languageLabel')}</CardLabel>
         <Text style={s.profileHelp}>
@@ -350,12 +355,7 @@ function RemindersTab() {
         </Pressable>
       </Card>
 
-      <Card>
-        <CardLabel icon="🔔">{t('settings.notificationsLabel')}</CardLabel>
-        <Text style={s.localDataText}>
-          {t('settings.notificationsBody')}
-        </Text>
-      </Card>
+      <NotificationSettings />
 
       {!!user?.isDeveloper && !!funnel && (
         <Card>
@@ -452,33 +452,73 @@ function RemindersTab() {
           <Text style={s.deleteBtnText}>{t('settings.deleteAccount')}</Text>
         </Pressable>
       </View>
-    </>
+    </SplitColumns>
   );
 }
 
-function AccessTab({ onOpen }: { onOpen: () => void }) {
-  const { source, monetizationEnabled } = useEntitlements();
-  const { t } = useI18n();
-  const label = source === 'paid-app' || source === 'legacy-install'
-    ? t('access.founding')
-    : source === 'lifetime'
-      ? t('access.lifetime')
-      : source === 'early-access'
-        ? t('access.earlyAccess')
-        : t('access.freePlan');
+function AccessTab() {
+  const { premium, monetizationEnabled, restorePurchases, manageSubscriptions, purchase, subscriptionProductId } = useEntitlements();
+  const { status: founder, setDebugStatus } = useFounder();
+  const { openPaywall } = usePaywall();
+  const { t, dateLocale } = useI18n();
+  const paidFounder = founder === 'paidFounder'
+    || premium.source === 'legacyLifetime' || premium.source === 'paidApp' || premium.source === 'legacyInstall';
+  const label = paidFounder
+    ? t('premium.statusPaidFounder')
+    : premium.source === 'lifetimePremium'
+      ? t('premium.statusLifetime')
+      : premium.source === 'subscription'
+        ? t('premium.statusSub')
+        : founder === 'freeFounder'
+          ? t('premium.statusFreeFounder')
+          : t('premium.statusFree');
   return (
     <Card>
       <CardLabel icon="◆">{t('access.label')}</CardLabel>
+      {(founder === 'freeFounder' || paidFounder) && <Text style={s.founderBadge}>{t('founder.badge')}</Text>}
       <Text style={s.accessTitle}>{label}</Text>
-      <Text style={s.localDataText}>
-        {t('access.body', { n: FREE_INJECTION_LIMIT, price: LIFETIME_PRO_PRICE_LABEL })}
-      </Text>
+      {premium.source === 'subscription' && premium.expires !== null && (
+        <Text style={s.localDataText}>
+          {t('paywall.renews', { date: new Date(premium.expires).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' }) })}
+        </Text>
+      )}
+      <Text style={s.localDataText}>{t('access.body')}</Text>
       {!monetizationEnabled && (
         <Text style={s.accessPreview}>{t('access.earlyNote')}</Text>
       )}
-      <Pressable style={s.saveNameBtn} onPress={onOpen}>
-        <Text style={s.saveNameText}>{t('access.viewDetails')}</Text>
+      {premium.source === 'subscription' ? (
+        <>
+          {subscriptionProductId === PREMIUM_MONTHLY_ID && (
+            // Same subscription group: the App Store handles the change.
+            <Pressable style={s.saveNameBtn} onPress={() => { purchase(PREMIUM_ANNUAL_ID).catch(() => undefined); }}>
+              <Text style={s.saveNameText}>{t('paywall.switchAnnual')}</Text>
+            </Pressable>
+          )}
+          <Pressable style={[s.saveNameBtn, { marginTop: spacing.md }]} onPress={() => { manageSubscriptions().catch(() => undefined); }}>
+            <Text style={s.saveNameText}>{t('paywall.manage')}</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Pressable style={s.saveNameBtn} onPress={() => openPaywall({ kind: 'settings' })}>
+          <Text style={s.saveNameText}>{t('premium.seePremium')}</Text>
+        </Pressable>
+      )}
+      <Pressable style={[s.saveNameBtn, { marginTop: spacing.md }]} onPress={() => { restorePurchases().catch(() => undefined); }}>
+        <Text style={s.saveNameText}>{t('paywall.restore')}</Text>
       </Pressable>
+      {/* Development builds only (__DEV__): preview each founder state. */}
+      {!!setDebugStatus && (
+        <View style={{ marginTop: 16 }}>
+          <Text style={s.accessPreview}>{t('premium.debugTitle')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+            {(['none', 'freeFounder', 'paidFounder'] as const).map(value => (
+              <Pressable key={value} style={s.saveNameBtn} onPress={() => setDebugStatus(value)}>
+                <Text style={s.saveNameText}>{value}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
     </Card>
   );
 }
@@ -486,6 +526,7 @@ function AccessTab({ onOpen }: { onOpen: () => void }) {
 function LegalTab() {
   const { t } = useI18n();
   return (
+    <SplitColumns mode="halves">
     <Card>
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
         <Text style={{ fontSize: 18, color: colors.accent, fontWeight: '700' }}>
@@ -502,7 +543,8 @@ function LegalTab() {
       <Text style={s.legalP}>{t('legal.p3')}</Text>
 
       <Text style={s.legalP}>{t('legal.p4')}</Text>
-
+    </Card>
+    <Card>
       <Text style={s.legalP}>{t('legal.ack')}</Text>
 
       <View style={{ paddingLeft: 18 }}>
@@ -518,11 +560,12 @@ function LegalTab() {
 
       <Text style={s.legalFooter}>{t('legal.footer')}</Text>
     </Card>
+    </SplitColumns>
   );
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   closeRow: { paddingHorizontal: spacing.xl, marginTop: -8, marginBottom: 10 },
   closeBtn: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', paddingRight: 12 },
   closeText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
@@ -597,6 +640,11 @@ const s = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     lineHeight: 22,
+  },
+  founderBadge: {
+    alignSelf: 'flex-start', color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.4,
+    borderWidth: 1, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 7, paddingVertical: 3, marginBottom: 6,
+    overflow: 'hidden',
   },
   accessTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 10 },
   accessPreview: { color: colors.teal, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 12 },

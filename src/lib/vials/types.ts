@@ -15,6 +15,8 @@ export type Vial = {
   diluentMl: number;
   openedAt: string;
   expiresAt?: string;
+  /** Optional restock reminder date the user picks (YYYY-MM-DD). */
+  restockDate?: string;
   /** The inventory item this vial was taken from, if any. */
   inventoryItemId?: string;
   status: 'active' | 'empty';

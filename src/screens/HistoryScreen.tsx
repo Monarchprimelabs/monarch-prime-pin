@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Image, Modal } from 'react-native';
+import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
+import { useWideLayout } from '../lib/layout';
+import { usePremium } from '../lib/usePremium';
+import { usePaywall } from '../lib/paywall';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Disclaimer, Header, Card } from '../components/UI';
 import { colors, spacing, radius, severity as sevColors, withAlpha } from '../theme';
@@ -8,10 +12,8 @@ import { getInjectionSiteIds } from '../lib/sites';
 import { useI18n } from '../lib/i18n';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
-import { UpgradeScreen } from './UpgradeScreen';
-import { useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
 import { PlannedDoseCard, PlanData, loadPlan, toPlannedDose } from '../components/TodayPlan';
+import { AuroraBackground } from '../components/Glass';
 import type { PlannedDose } from './LogInjectionScreen';
 import { occurrencesBetween } from '../lib/schedule/engine';
 import { withStatus } from '../lib/schedule/status';
@@ -20,8 +22,6 @@ import { syncProtocolReminders } from '../lib/protocolReminders';
 import { localDateISO } from '../lib/dates';
 import { photoDisplayUri } from '../lib/photos';
 
-const PRO_TABS = new Set(['calendar', 'photos']);
-
 export function HistoryScreen() {
   const [tab, setTab] = useState<'log' | 'calendar' | 'photos'>('log');
   const [injections, setInjections] = useState<Injection[]>([]);
@@ -29,11 +29,8 @@ export function HistoryScreen() {
   const [plannedLog, setPlannedLog] = useState<PlannedDose | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<Injection | null>(null);
   const [editingRecord, setEditingRecord] = useState<Injection | null>(null);
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
   const { t, dateLocale } = useI18n();
-  const canUsePro = hasPro || !!user?.isDeveloper;
+  const wide = useWideLayout();
 
   const refresh = async () => {
     try {
@@ -63,26 +60,27 @@ export function HistoryScreen() {
   };
 
   return (
-    <SafeAreaView style={s.app} edges={['top']}>
+    <SafeAreaView style={s.app} edges={['top', 'left', 'right']}>
       <Disclaimer />
-      <Header title={t('history.title')} />
-      <View style={s.subTabs}>
-        {(['log', 'calendar', 'photos'] as const).map(tabId => (
-          <Pressable
-            key={tabId}
-            onPress={() => (PRO_TABS.has(tabId) && !canUsePro ? setShowUpgrade(true) : setTab(tabId))}
-            style={[s.subTab, tab === tabId && s.subTabActive]}
-          >
-            <Text style={[s.subTabText, tab === tabId && s.subTabTextActive]}>
-              {tabId === 'log' ? t('history.tabLog') : tabId === 'calendar' ? t('history.tabCalendar') : t('history.tabPhotos')}
-              {PRO_TABS.has(tabId) && !canUsePro ? ' 🔒' : ''}
-            </Text>
-          </Pressable>
-        ))}
+      <Header title={t('history.title')} columns="two" />
+      <View style={wideColumn(wide)}>
+        <View style={s.subTabs}>
+          {(['log', 'calendar', 'photos'] as const).map(tabId => (
+            <Pressable
+              key={tabId}
+              onPress={() => setTab(tabId)}
+              style={[s.subTab, tab === tabId && s.subTabActive]}
+            >
+              <Text style={[s.subTabText, tab === tabId && s.subTabTextActive]}>
+                {tabId === 'log' ? t('history.tabLog') : tabId === 'calendar' ? t('history.tabCalendar') : t('history.tabPhotos')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 124 }}>
+      <ScrollView fullWidth contentContainerStyle={{ paddingBottom: 124 }}>
         {tab === 'log' && <LogList injections={injections} onOpen={setSelectedRecord} />}
-        {tab === 'calendar' && canUsePro && (
+        {tab === 'calendar' && (
           <CalendarView
             injections={injections}
             onLogForDate={(date) => setBackdateFor(date)}
@@ -90,14 +88,12 @@ export function HistoryScreen() {
             onOpen={setSelectedRecord}
           />
         )}
-        {tab === 'photos' && canUsePro && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
+        {tab === 'photos' && <PhotosGrid injections={injections} onOpen={setSelectedRecord} />}
       </ScrollView>
 
-      <Modal visible={showUpgrade} animationType="slide" onRequestClose={() => setShowUpgrade(false)}><SafeAreaProvider>
-        <UpgradeScreen onClose={() => setShowUpgrade(false)} />
-      </SafeAreaProvider></Modal>
 
       <Modal visible={!!backdateFor} animationType="slide" onRequestClose={() => setBackdateFor(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {backdateFor && (
           <LogInjectionScreen
             initialDate={backdateFor}
@@ -108,6 +104,7 @@ export function HistoryScreen() {
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!plannedLog} animationType="slide" onRequestClose={() => setPlannedLog(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {plannedLog && (
           <LogInjectionScreen
             planned={plannedLog}
@@ -118,6 +115,7 @@ export function HistoryScreen() {
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!selectedRecord} animationType="slide" onRequestClose={() => setSelectedRecord(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {selectedRecord && (
           <RecordDetail
             record={selectedRecord}
@@ -132,6 +130,7 @@ export function HistoryScreen() {
       </SafeAreaProvider></Modal>
 
       <Modal visible={!!editingRecord} animationType="slide" onRequestClose={() => setEditingRecord(null)}><SafeAreaProvider>
+        <AuroraBackground />
         {editingRecord && (
           <LogInjectionScreen
             initialInjection={editingRecord}
@@ -223,6 +222,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (record: Injection) => void }) {
   const { t, dateLocale } = useI18n();
+  const wide = useWideLayout();
   const recordTime = (r: Injection) => r.timePeriod ? t('period.' + r.timePeriod) : formatClockTime(r.time);
   const [filter, setFilter] = useState<'all' | 'none' | 'mild' | 'mod' | 'sev'>('all');
   const [q, setQ] = useState('');
@@ -232,7 +232,7 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
     return true;
   });
   return (
-    <View style={{ paddingHorizontal: spacing.xl }}>
+    <View style={[{ paddingHorizontal: spacing.xl }, wideColumn(wide)]}>
       <TextInput
         style={s.search}
         placeholder={t('history.search')}
@@ -259,33 +259,37 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
       </View>
       {filtered.length === 0 ? (
         <Text style={s.empty}>{t('history.empty')}</Text>
-      ) : filtered.map(i => (
-        <Pressable
-          key={i.id}
-          onPress={() => onOpen(i)}
-          style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date, dateLocale)}`}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.histName}>{i.peptide}</Text>
-              <Text style={s.histMeta}>{i.date} · {recordTime(i)}</Text>
-              <Text style={s.histMeta}>📍 {i.site}</Text>
-              {i.weight > 0 && <Text style={s.histMeta}>⚖ {i.weight} lbs</Text>}
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.histDose}>{i.dose}{i.unit}</Text>
-              <View style={[s.sevBadge, { backgroundColor: sevColors[i.sev] + '20' }]}>
-                <Text style={[s.sevBadgeText, { color: sevColors[i.sev] }]}>
-                  {t('sev.' + i.sev)}
-                </Text>
+      ) : (
+        <SplitColumns>
+          {filtered.map(i => (
+            <Pressable
+              key={i.id}
+              onPress={() => onOpen(i)}
+              style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${i.peptide} record from ${formatDate(i.date, dateLocale)}`}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.histName}>{i.peptide}</Text>
+                  <Text style={s.histMeta}>{i.date} · {recordTime(i)}</Text>
+                  <Text style={s.histMeta}>📍 {i.site}</Text>
+                  {i.weight > 0 && <Text style={s.histMeta}>⚖ {i.weight} lbs</Text>}
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={s.histDose}>{i.dose}{i.unit}</Text>
+                  <View style={[s.sevBadge, { backgroundColor: sevColors[i.sev] + '20' }]}>
+                    <Text style={[s.sevBadgeText, { color: sevColors[i.sev] }]}>
+                      {t('sev.' + i.sev)}
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-          <Text style={s.viewDetailText}>{t('history.viewDetails')}</Text>
-        </Pressable>
-      ))}
+              <Text style={s.viewDetailText}>{t('history.viewDetails')}</Text>
+            </Pressable>
+          ))}
+        </SplitColumns>
+      )}
     </View>
   );
 }
@@ -358,7 +362,7 @@ function CalendarView({ injections, onLogForDate, onLogPlanned, onOpen }: {
   };
 
   return (
-    <>
+    <SplitColumns mode="lead">
       <Card>
         <View style={s.calHeader}>
           <Pressable onPress={navPrev} style={s.calNav} accessibilityRole="button" accessibilityLabel="Previous month">
@@ -441,7 +445,7 @@ function CalendarView({ injections, onLogForDate, onLogPlanned, onOpen }: {
           </Pressable>
         )}
       </Card>
-    </>
+    </SplitColumns>
   );
 }
 
@@ -449,6 +453,8 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
   const { t, dateLocale } = useI18n();
   const photos = injections.filter(i => i.photoUri);
   const [compareMode, setCompareMode] = useState(false);
+  const { allows } = usePremium();
+  const { openPaywall } = usePaywall();
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const comparePair = compareIds
     .map(id => photos.find(p => p.id === id))
@@ -470,10 +476,13 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
       {photos.length >= 2 && (
         <Pressable
           style={s.compareToggle}
-          onPress={() => { setCompareMode(current => !current); setCompareIds([]); }}
+          onPress={() => {
+            if (!allows('progressPhotoCompare')) { openPaywall({ kind: 'lockedFeature', feature: 'progressPhotoCompare' }); return; }
+            setCompareMode(current => !current); setCompareIds([]);
+          }}
         >
           <Text style={s.compareToggleText}>
-            {compareMode ? t('history.compareCancel') : t('history.compare')}
+            {compareMode ? t('history.compareCancel') : `${allows('progressPhotoCompare') ? '' : '🔒 '}${t('history.compare')}`}
           </Text>
         </Pressable>
       )}
@@ -508,6 +517,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
         animationType="slide"
         onRequestClose={() => setCompareIds([])}
       ><SafeAreaProvider>
+        <AuroraBackground />
         {comparePair.length === 2 && (
           <SafeAreaView style={s.app}>
             <View style={s.compareHeader}>
@@ -535,7 +545,7 @@ function PhotosGrid({ injections, onOpen }: { injections: Injection[]; onOpen: (
 }
 
 const s = StyleSheet.create({
-  app: { flex: 1, backgroundColor: colors.bg },
+  app: { flex: 1, backgroundColor: 'transparent' },
   subTabs: {
     flexDirection: 'row', marginHorizontal: spacing.xl, marginBottom: 14,
     backgroundColor: colors.bgCard,

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, AppState } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, AppState } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, withAlpha } from '../theme';
@@ -11,30 +12,41 @@ import { LogInjectionScreen } from '../screens/LogInjectionScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
-import { UpgradeScreen } from '../screens/UpgradeScreen';
-import { useEntitlements } from '../lib/entitlements';
-import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { onProtocolReminderTap, syncProtocolReminders } from '../lib/protocolReminders';
 import { adoptLegacyPhotos } from '../lib/storage';
+import { FounderSheetHost } from '../components/FounderSheet';
+import { AuroraBackground, GlassSurface, PressableScale } from '../components/Glass';
+import { LapsedSheetHost } from '../components/LapsedSheet';
+import { usePremium } from '../lib/usePremium';
+import { setPremiumKnown } from '../lib/notify/store';
+import { useFoldLayout } from '../lib/layout';
+import { recordAppOpen } from '../lib/localMetrics';
 
 export type TabId = 'home' | 'log' | 'history' | 'analytics' | 'settings';
 
 export function BottomTabs() {
   const { t } = useI18n();
   const [active, setActive] = React.useState<TabId>('home');
-  const { hasPro } = useEntitlements();
-  const { user } = useAuth();
-  const canUsePro = hasPro || !!user?.isDeveloper;
   const [pendingOccurrence, setPendingOccurrence] = React.useState<string | null>(null);
+  const { premium } = usePremium();
+
+  // Notification syncs run outside React, so they read the last known
+  // Premium state (monthly report, weekly summary wording).
+  React.useEffect(() => {
+    setPremiumKnown(premium).then(() => syncProtocolReminders()).catch(() => undefined);
+  }, [premium]);
 
   // Protocol reminders are a rolling window: rebuild it whenever the app
   // comes forward, which also re-anchors them after a time zone change.
   React.useEffect(() => {
     syncProtocolReminders().catch(() => undefined);
     adoptLegacyPhotos().catch(() => undefined);
+    recordAppOpen().catch(() => undefined);
     const sub = AppState.addEventListener('change', state => {
-      if (state === 'active') syncProtocolReminders().catch(() => undefined);
+      if (state !== 'active') return;
+      syncProtocolReminders().catch(() => undefined);
+      recordAppOpen().catch(() => undefined);
     });
     const stopTaps = onProtocolReminderTap(key => {
       setActive('home');
@@ -45,7 +57,8 @@ export function BottomTabs() {
 
   return (
     <View style={s.app}>
-      <View style={{ flex: 1 }}>
+      <AuroraBackground />
+      <ScreenFade key={active}>
         {active === 'home' && (
           <DashboardScreen
             onNavigate={(t) => setActive(t as TabId)}
@@ -55,59 +68,95 @@ export function BottomTabs() {
         )}
         {active === 'log' && <LogInjectionScreen onDone={() => setActive('history')} />}
         {active === 'history' && <HistoryScreen />}
-        {active === 'analytics' && (canUsePro ? <AnalyticsScreen /> : <UpgradeScreen />)}
+        {active === 'analytics' && <AnalyticsScreen />}
         {active === 'settings' && <ToolsScreen />}
-      </View>
+      </ScreenFade>
 
-      <View style={s.tabBarWrap}>
-        {Platform.OS === 'ios' && (
-          <BlurView intensity={48} tint={colors.statusBar === 'light' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        )}
-        <SafeAreaView edges={['bottom']} style={s.tabBarSafe}>
-        <View style={s.tabBar}>
-          {([
-            { id: 'home' as const, labelKey: 'tab.home' },
-            { id: 'history' as const, labelKey: 'tab.history' },
-            { id: 'spacer' as const, labelKey: '' },
-            { id: 'analytics' as const, labelKey: 'tab.reports' },
-            { id: 'settings' as const, labelKey: 'tab.tools' },
-          ]).map(tab => (
-            tab.id === 'spacer' ? (
-              // Leaves room for the raised log button, which is rendered
-              // outside this clipped container.
-              <View key="spacer" style={s.tab} pointerEvents="none" />
-            ) : (
-              <Pressable
-                key={tab.id}
-                onPress={() => setActive(tab.id)}
-                style={({ pressed }) => [s.tab, pressed && s.tabPressed]}
+      <GlassTabBar active={active} onSelect={setActive} />
+      <FounderSheetHost />
+      <LapsedSheetHost />
+    </View>
+  );
+}
+
+const TABS: { id: TabId; labelKey: string }[] = [
+  { id: 'home', labelKey: 'tab.home' },
+  { id: 'history', labelKey: 'tab.history' },
+  { id: 'log', labelKey: 'tab.log' },
+  { id: 'analytics', labelKey: 'tab.reports' },
+  { id: 'settings', labelKey: 'tab.tools' },
+];
+
+/** Each tab's screen eases in when it becomes active. */
+function ScreenFade({ children }: { children: React.ReactNode }) {
+  const reduce = useReducedMotion();
+  const p = useSharedValue(reduce ? 1 : 0);
+  React.useEffect(() => {
+    if (!reduce) p.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const anim = useAnimatedStyle(() => ({ flex: 1, opacity: p.value, transform: [{ translateY: (1 - p.value) * 12 }] }));
+  return <Animated.View style={anim}>{children}</Animated.View>;
+}
+
+/**
+ * A floating capsule of glass. A lit pill slides to the selected tab on a
+ * spring; the log button sits in the middle, raised and glowing.
+ */
+function GlassTabBar({ active, onSelect }: { active: TabId; onSelect: (tab: TabId) => void }) {
+  const { t } = useI18n();
+  const insets = useSafeAreaInsets();
+  const reduce = useReducedMotion();
+  // On the open Duo the bar sits in the left half, clear of the fold.
+  const fold = useFoldLayout();
+  const [width, setWidth] = React.useState(0);
+  const index = TABS.findIndex(tab => tab.id === active);
+  const x = useSharedValue(0);
+  const shown = useSharedValue(active === 'log' ? 0 : 1);
+  const slot = width / TABS.length;
+  React.useEffect(() => {
+    if (!width) return;
+    const target = index * slot;
+    x.value = reduce ? target : withSpring(target, { damping: 18, stiffness: 190, mass: 0.8 });
+    shown.value = withTiming(active === 'log' ? 0 : 1, { duration: 180 });
+  }, [index, slot, width, reduce, active, x, shown]);
+  const pill = useAnimatedStyle(() => ({ width: slot, opacity: shown.value, transform: [{ translateX: x.value }] }));
+  return (
+    <View pointerEvents="box-none" style={[s.barHost, fold && s.barHostFold, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <GlassSurface style={s.bar} intensity={55}>
+        <View style={s.barRow} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
+          {width > 0 && <Animated.View style={[s.pillTrack, pill]} pointerEvents="none"><View style={s.pill} /></Animated.View>}
+          {TABS.map(tab => tab.id === 'log' ? (
+            <View key="log" style={s.tab}>
+              <PressableScale
+                onPress={() => onSelect('log')}
+                scaleTo={0.9}
+                style={s.fab}
+                accessibilityRole="button"
+                accessibilityLabel={t('tab.log')}
+                accessibilityState={{ selected: active === 'log' }}
               >
-                <View style={[s.tabIconWrap, active === tab.id && s.tabIconWrapActive]}>
-                  <TabIcon id={tab.id} active={active === tab.id} />
-                </View>
-                <Text style={[s.tabLabel, active === tab.id && s.tabLabelActive]}>
-                  {t(tab.labelKey)}
-                </Text>
-              </Pressable>
-            )
+                <LinearGradient colors={[colors.accentLight, colors.accent]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.fabFill}>
+                  <Ionicons name="add" size={30} color={colors.actionText} />
+                </LinearGradient>
+              </PressableScale>
+            </View>
+          ) : (
+            <PressableScale
+              key={tab.id}
+              onPress={() => onSelect(tab.id)}
+              style={s.tab}
+              scaleTo={0.88}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active === tab.id }}
+              accessibilityLabel={t(tab.labelKey)}
+            >
+              <TabIcon id={tab.id} active={active === tab.id} />
+              <Text style={[s.tabLabel, active === tab.id && s.tabLabelActive]} numberOfLines={1}>{t(tab.labelKey)}</Text>
+            </PressableScale>
           ))}
         </View>
-        </SafeAreaView>
-      </View>
-
-      {/* Raised log button. Rendered as a sibling of the bar because the bar
-          clips its own blur (overflow: hidden) and would cut the top off. */}
-      <SafeAreaView edges={['bottom']} style={s.fabHost} pointerEvents="box-none">
-        <Pressable
-          onPress={() => setActive('log')}
-          style={({ pressed }) => [s.fab, pressed && s.fabPressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t('tab.log')}
-          accessibilityState={{ selected: active === 'log' }}
-        >
-          <Ionicons name="add" size={32} color={colors.actionText} />
-        </Pressable>
-      </SafeAreaView>
+      </GlassSurface>
     </View>
   );
 }
@@ -163,69 +212,29 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
 
 const s = StyleSheet.create({
   app: { flex: 1, backgroundColor: colors.bg },
-  // Floating bar: content scrolls underneath, blur shows through on iOS.
-  // Android gets a solid sheet (no cheap live blur there).
-  tabBarWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: 'hidden',
-    borderTopWidth: 1,
-    borderTopColor: withAlpha(colors.primary, 0.2),
-    backgroundColor: Platform.OS === 'ios' ? colors.bgTabBar : colors.bgSheet,
+  // Floating glass capsule; content scrolls underneath it.
+  barHost: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 14 },
+  barHostFold: { right: '50%', paddingRight: 28 },
+  bar: {
+    width: '100%', maxWidth: 520, height: 66, borderRadius: 33,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 14 }, shadowOpacity: colors.cardShadow, shadowRadius: 28, elevation: 10,
   },
-  tabBarSafe: {
-    backgroundColor: 'transparent',
+  barRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 0 },
+  pillTrack: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: 7, paddingHorizontal: 5 },
+  pill: {
+    flex: 1, borderRadius: 26,
+    backgroundColor: withAlpha(colors.primary, 0.2),
+    borderWidth: StyleSheet.hairlineWidth, borderColor: withAlpha(colors.primary, 0.45),
   },
-  tabBar: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 6,
-    gap: 4,
-  },
-  tabPressed: {
-    transform: [{ scale: 0.9 }],
-    opacity: 0.7,
-  },
-  fabHost: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    alignItems: 'center', justifyContent: 'flex-end',
-  },
+  tab: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'center', gap: 3 },
   fab: {
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-    // Lifts the button above the bar without clipping, and keeps a ring of
-    // the bar's own surface around it so it reads as seated, not floating.
-    marginBottom: 18,
-    borderWidth: 4, borderColor: colors.bg,
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 8,
+    width: 56, height: 56, borderRadius: 28,
+    shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.55, shadowRadius: 14, elevation: 8,
   },
-  fabPressed: { transform: [{ scale: 0.92 }], opacity: 0.9 },
-  tabIconWrap: {
-    paddingHorizontal: 14,
-    paddingVertical: 3,
-    borderRadius: 10,
+  fabFill: {
+    flex: 1, borderRadius: 28, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
   },
-  tabIconWrapActive: {
-    backgroundColor: withAlpha(colors.primary, 0.16),
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textFaint,
-  },
-  tabLabelActive: {
-    color: colors.primary,
-  },
+  tabLabel: { fontSize: 10, fontWeight: '600', color: colors.textFaint },
+  tabLabelActive: { color: colors.primary, fontWeight: '700' },
 });

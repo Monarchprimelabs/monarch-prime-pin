@@ -25,6 +25,15 @@
       "env": {
         "EXPO_PUBLIC_MONETIZATION_ENABLED": "true"
       }
+    },
+    "android-emulator": {
+      "extends": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_MONETIZATION_ENABLED": "true"
+      }
     }
   },
   "submit": {

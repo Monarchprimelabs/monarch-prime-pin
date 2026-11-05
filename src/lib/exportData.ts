@@ -1,6 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { getDoseSkips, getInjections, getProtocols, getVials } from './storage';
+import { getDoseSkips, getInjections, getLabResults, getProtocols, getVials } from './storage';
+import { labCsv } from './labs/labs';
 import { buildCsv } from './csvRows';
 import { localDateISO } from './dates';
 
@@ -36,4 +37,17 @@ export async function exportInjectionsCsv(): Promise<{ shared: boolean; count: n
   });
 
   return { shared: true, count };
+}
+
+/** Lab results as their own CSV file (Premium screen; the data is always the user's). */
+export async function exportLabCsv(): Promise<{ count: number }> {
+  const results = await getLabResults();
+  if (results.length === 0) return { count: 0 };
+  const file = new File(Paths.cache, `monarch-prime-pin-lab-results-${localDateISO()}.csv`);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(labCsv(results));
+  if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.');
+  await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Export lab results', UTI: 'public.comma-separated-values-text' });
+  return { count: results.length };
 }

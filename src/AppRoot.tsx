@@ -2,6 +2,8 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './lib/auth';
 import { EntitlementProvider } from './lib/entitlements';
+import { FounderProvider } from './lib/founders';
+import { PaywallProvider } from './lib/paywall';
 import { LanguageProvider } from './lib/i18n';
 import { AppLockGate } from './components/AppLockGate';
 import { RootNavigator } from './navigation/RootNavigator';
@@ -14,12 +16,16 @@ export function AppRoot() {
   return (
     <LanguageProvider>
       <EntitlementProvider>
+        <FounderProvider>
         <AuthProvider>
           <StatusBar style={colors.statusBar} />
-          <AppLockGate>
-            <RootNavigator />
-          </AppLockGate>
+          <PaywallProvider>
+            <AppLockGate>
+              <RootNavigator />
+            </AppLockGate>
+          </PaywallProvider>
         </AuthProvider>
+        </FounderProvider>
       </EntitlementProvider>
     </LanguageProvider>
   );
