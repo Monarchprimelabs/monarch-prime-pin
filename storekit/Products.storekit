@@ -53,7 +53,13 @@
           "familyShareable": false,
           "groupNumber": 1,
           "internalID": "77210965",
-          "introductoryOffer": null,
+          "introductoryOffer": {
+            "internalID": "A1B2C3D4",
+            "numberOfPeriods": 1,
+            "paymentMode": "payAsYouGo",
+            "subscriptionPeriod": "P1M",
+            "displayPrice": "0.99"
+          },
           "localizations": [
             {
               "description": "Monarch Prime Pin Premium, billed monthly",

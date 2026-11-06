@@ -1,4 +1,4 @@
-import { perMonth, planCopy } from '../paywallCopy';
+import { introOffer, perMonth, planCopy } from '../paywallCopy';
 import { AUTO_GAP_MS, canAutoShow, recordAutoShow } from '../paywallCap';
 
 // Echo translator: shows which key was used and with which values.
@@ -31,6 +31,28 @@ test('subscriptions always carry renewal terms and where to cancel; lifetime say
   expect(monthly.button).toBe('paywall.subscribeMonthly(price=$4.99)');
   const lifetime = planCopy({ plan: 'lifetime', price: { displayPrice: '$79.99' }, trialEligible: true, platform: 'ios', locale: 'en-US', t });
   expect(lifetime.terms).toBe('paywall.lifetimeTerms');
+});
+
+test('monthly first-month price shows only when eligible, with what follows', () => {
+  const intro = introOffer({ subscriptionOffers: [{ type: 'introductory', displayPrice: '$0.99', paymentMode: 'pay-as-you-go', period: { unit: 'month', value: 1 }, periodCount: 1 }] });
+  expect(intro).toEqual({ displayPrice: '$0.99', mode: 'pay-as-you-go', periods: 1, unit: 'month' });
+  const monthly = { displayPrice: '$4.99', intro };
+  const eligible = planCopy({ plan: 'monthly', price: monthly, trialEligible: true, platform: 'ios', locale: 'en-US', t });
+  expect(eligible.priceLine).toBe('paywall.monthlyIntroLine(intro=$0.99,price=$4.99)');
+  expect(eligible.button).toBe('paywall.startMonthlyIntro(intro=$0.99)');
+  expect(eligible.terms).toContain('paywall.monthlyTerms(price=$4.99)');
+  expect(eligible.terms).toContain('paywall.renewTerms');
+  const notEligible = planCopy({ plan: 'monthly', price: monthly, trialEligible: false, platform: 'ios', locale: 'en-US', t });
+  expect(notEligible.button).toBe('paywall.subscribeMonthly(price=$4.99)');
+  expect(notEligible.terms).not.toContain('Intro');
+});
+
+test('intro offers also read from StoreKit fields, and other shapes get the general line', () => {
+  const ios = introOffer({ introductoryPriceIOS: '$1.99', introductoryPricePaymentModeIOS: 'pay-as-you-go', introductoryPriceNumberOfPeriodsIOS: '3', introductoryPriceSubscriptionPeriodIOS: 'month' });
+  expect(ios).toEqual({ displayPrice: '$1.99', mode: 'pay-as-you-go', periods: 3, unit: 'month' });
+  expect(introOffer({ introductoryPricePaymentModeIOS: 'empty' })).toBeNull();
+  const copy = planCopy({ plan: 'monthly', price: { displayPrice: '$4.99', intro: ios }, trialEligible: true, platform: 'ios', locale: 'en-US', t });
+  expect(copy.priceLine).toBe('paywall.monthlyIntroLineAny(intro=$1.99,price=$4.99)');
 });
 
 test('no per-month figure without a numeric price', () => {
