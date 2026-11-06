@@ -242,17 +242,19 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
           const all = [...(inApp ?? []), ...(subs ?? [])] as (Product | ProductSubscription)[];
           const find = (id: string) => all.find(p => p.id === id) ?? null;
           if (active) {
+            const monthly = find(PREMIUM_MONTHLY_ID) as ProductSubscription | null;
+            const annual = find(PREMIUM_ANNUAL_ID) as ProductSubscription | null;
             setLegacyProduct(find(LEGACY_LIFETIME_ID) as Product | null);
-            setProducts({
-              monthly: find(PREMIUM_MONTHLY_ID) as ProductSubscription | null,
-              annual: find(PREMIUM_ANNUAL_ID) as ProductSubscription | null,
-              lifetime: find(PREMIUM_LIFETIME_ID) as Product | null,
-            });
-          }
-          if (Platform.OS === 'ios') {
-            iap.isEligibleForIntroOfferIOS(PREMIUM_ANNUAL_ID)
-              .then(eligible => { if (active) setTrialEligible(eligible); })
-              .catch(() => { if (active) setTrialEligible(null); });
+            setProducts({ monthly, annual, lifetime: find(PREMIUM_LIFETIME_ID) as Product | null });
+            // Intro offers (the annual trial, the monthly first-month price) are
+            // one per person per subscription group, so StoreKit takes the group ID.
+            const sub = (annual ?? monthly) as (ProductSubscription & { subscriptionGroupIdIOS?: string | null }) | null;
+            const groupId = sub?.subscriptionGroupIdIOS;
+            if (Platform.OS === 'ios' && groupId) {
+              iap.isEligibleForIntroOfferIOS(groupId)
+                .then(eligible => { if (active) setTrialEligible(eligible); })
+                .catch(() => { if (active) setTrialEligible(null); });
+            }
           }
         } catch {
           // Expo Go and unavailable store products land here. Saved grants
@@ -293,7 +295,10 @@ export function EntitlementProvider({ children }: { children: ReactNode }) {
       if (!product) throw new Error('Premium is temporarily unavailable. Please try again later.');
       // Google Play needs an offer token; StoreKit applies the introductory
       // trial itself when the user is eligible.
-      const offerToken = (product.subscriptionOffers ?? []).find(offer => !!offer.offerTokenAndroid)?.offerTokenAndroid;
+      // Prefer the intro offer (annual trial, monthly first-month price); Play
+      // only lists it to people who can still get it.
+      const offers = (product.subscriptionOffers ?? []).filter(offer => !!offer.offerTokenAndroid);
+      const offerToken = (offers.find(offer => offer.type === 'introductory') ?? offers[0])?.offerTokenAndroid;
       await iap.requestPurchase({
         request: {
           apple: { sku: productId },
