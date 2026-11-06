@@ -7,7 +7,7 @@ import { Card, Disclaimer } from '../components/UI';
 import { useEntitlements } from '../lib/entitlements';
 import { useFounder } from '../lib/founders';
 import { useI18n } from '../lib/i18n';
-import { planCopy, PlanId } from '../lib/paywallCopy';
+import { introOffer, IntroSource, planCopy, PlanId } from '../lib/paywallCopy';
 import { markPurchaseFailed } from '../lib/paywallAuto';
 import { PaywallPlacement, placementName } from '../lib/paywall';
 import { recordPaywallPurchased } from '../lib/localMetrics';
@@ -81,11 +81,17 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
     onClose?.();
   }, [premium.source, onClose, t]);
 
+  const withIntro = (product: typeof products.monthly) =>
+    product ? { ...product, intro: introOffer(product as IntroSource) } : null;
   const prices = {
-    annual: products.annual,
-    monthly: products.monthly,
+    annual: withIntro(products.annual),
+    monthly: withIntro(products.monthly),
     lifetime: products.lifetime,
   };
+  // iOS asks StoreKit; Google Play only lists the offers a person can still get.
+  const introEligible = (id: PlanId) => Platform.OS === 'android'
+    ? !!(id === 'annual' ? prices.annual?.intro : id === 'monthly' ? prices.monthly?.intro : null)
+    : trialEligible === true;
   const loaded = !!(prices.annual || prices.monthly || prices.lifetime);
   // Annual is preselected; fall back to the first plan the store returned.
   useEffect(() => {
@@ -96,7 +102,7 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
   }, [products]);
   const selected = prices[plan] ?? null;
   const copy = selected
-    ? planCopy({ plan, price: selected, trialEligible: trialEligible === true, platform: Platform.OS, locale: dateLocale, t })
+    ? planCopy({ plan, price: selected, trialEligible: introEligible(plan), platform: Platform.OS, locale: dateLocale, t })
     : null;
 
   const formatDate = (ms: number) => new Date(ms).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' });
@@ -234,7 +240,7 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
             {(['annual', 'monthly', 'lifetime'] as PlanId[]).map(id => {
               const product = prices[id];
               if (!product) return null;
-              const line = planCopy({ plan: id, price: product, trialEligible: trialEligible === true, platform: Platform.OS, locale: dateLocale, t }).priceLine;
+              const line = planCopy({ plan: id, price: product, trialEligible: introEligible(id), platform: Platform.OS, locale: dateLocale, t }).priceLine;
               const active = plan === id;
               return (
                 <Pressable

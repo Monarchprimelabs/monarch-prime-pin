@@ -13,7 +13,7 @@ Version 2.0
 - Two active plans with reminders are free, with one-tap "Log it" and "Snooze 1 h" right from the notification.
 - New optional reminders: unlogged-plan follow-up, low-vial alerts, restock dates, photo check-ins and a Sunday summary. Each has its own switch in Settings, with quiet hours.
 - New Premium (optional): lab results log with charts and lab reminders, saved lab reports (photos or PDF, kept on your phone), summaries of your own entries, expanded Apple Health trends (HRV, resting heart rate, sleep, glucose), full heat map history, per-compound charts, photo compare and monthly PDF reports.
-- The annual plan includes a 1-week free trial for new subscribers. Monthly and one-time Lifetime options are also available.
+- The annual plan includes a 1-week free trial for new subscribers. Monthly starts at $0.99 for the first month. A one-time Lifetime option is also available.
 - Worksheet clarified: a math helper for numbers you enter. It does not recommend amounts.
 - Designed for iPad and iPhone Duo.
 - Full Spanish and Portuguese support for all new screens.
