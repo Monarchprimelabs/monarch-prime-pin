@@ -19,7 +19,7 @@ import {
 import { SettingsScreen } from './SettingsScreen';
 import { PaywallProvider, usePaywall } from '../lib/paywall';
 import { PremiumBadge } from '../components/PremiumLock';
-import { AuroraBackground } from '../components/Glass';
+import { AuroraBackground, PressableScale } from '../components/Glass';
 import { LabsTool } from './LabsScreen';
 import { labsAccess } from '../lib/labs/labs';
 import { ProtocolsTool } from './ProtocolsScreen';
@@ -131,9 +131,9 @@ export function ToolsScreen() {
             <Text style={s.legacySub}>{t('tools.legacySub')}</Text>
           </View>
         ) : (
-          <Pressable
+          <PressableScale
             key={tool.id}
-            style={({ pressed }) => [s.toolRow, pressed && s.toolRowPressed]}
+            style={s.toolRow}
             onPress={() => openTool(tool)}
             accessibilityRole="button"
             accessibilityLabel={`Open ${t(tool.titleKey)}`}
@@ -150,7 +150,7 @@ export function ToolsScreen() {
               <Text style={s.toolSub}>{t(tool.subKey)}</Text>
             </View>
             <Text style={s.chev}>›</Text>
-          </Pressable>
+          </PressableScale>
         ))}
         </SplitColumns>
       </ScrollView>

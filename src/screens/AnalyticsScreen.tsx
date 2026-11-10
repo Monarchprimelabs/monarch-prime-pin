@@ -24,6 +24,8 @@ import { getDoseSkips, getInjections, getProtocols, getVials } from '../lib/stor
 import type { DoseSkip, Protocol } from '../lib/schedule/types';
 import type { Vial } from '../lib/vials/types';
 import { HealthTrendsCard } from '../components/HealthTrends';
+import { WeightTrendCard } from '../components/WeightTrend';
+import { mergeWeights } from '../lib/weight';
 import { GrowBar } from '../components/Glass';
 
 export function AnalyticsScreen() {
@@ -156,34 +158,9 @@ export function AnalyticsScreen() {
     }));
   }, [injections, halfLife]);
 
-  // Chronological weight series (oldest → newest), capped to the most
-  // recent 30 entries so the chart stays readable.
-  const weightFromHealth = healthWeights.length > 0;
-  const weightSeries = useMemo(() => {
-    if (healthWeights.length > 0) return healthWeights.slice(-30).map(point => ({ weight: point.value }));
-    const entries = injections
-      .filter(i => i.weight > 0)
-      .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
-    return entries.slice(-30);
-  }, [injections, healthWeights]);
-
-  const weightChart = useMemo(() => {
-    if (weightSeries.length < 2) return null;
-    const values = weightSeries.map(w => w.weight);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const span = max - min || 1; // flat series still renders mid-chart
-    const x = (index: number) => 12 + (index / (weightSeries.length - 1)) * 176;
-    const y = (weight: number) => 48 - ((weight - min) / span) * 36;
-    return {
-      min,
-      max,
-      first: values[0],
-      last: values[values.length - 1],
-      points: values.map((weight, index) => ({ cx: x(index), cy: y(weight) })),
-      polyline: values.map((weight, index) => `${x(index)},${y(weight)}`).join(' '),
-    };
-  }, [weightSeries]);
+  // One weight history: Apple Health readings plus the weights typed into
+  // entries (a typed weight wins on its day). See src/lib/weight.ts.
+  const weightPoints = useMemo(() => mergeWeights(healthWeights, injections), [healthWeights, injections]);
   const currentMonth = localDateISO().slice(0, 7);
   const monthRecords = injections.filter(i => i.date.startsWith(currentMonth));
   const monthDays = new Set(monthRecords.map(i => i.date)).size;
@@ -338,57 +315,15 @@ export function AnalyticsScreen() {
                 <PremiumLockCard feature="advancedAnalytics" title={t('reports.weeklyLabel')} />
               )}
 
-              <Card>
-                <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
-                {weightSeries.length === 0 ? (
-                  <Text style={s.empty}>{t('reports.noWeight')}</Text>
-                ) : !weightChart ? (
-                  <Text style={s.empty}>
-                    {t('reports.weightLatestOnly', { w: weightSeries[0].weight })}
-                  </Text>
-                ) : (
-                  <>
-                    <View style={s.weightSummaryRow}>
-                      <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
-                      <Text style={s.weightDelta}>
-                        {weightChart.last !== weightChart.first
-                          ? t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })
-                          : weightChart.max > weightChart.min
-                            ? t('reports.weightRanged', { min: weightChart.min, max: weightChart.max })
-                            : t('reports.weightNoChange')}
-                      </Text>
-                    </View>
-                    <Svg viewBox="0 0 200 60" width="100%" height={90}>
-                      <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                      <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                      <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{weightChart.max}</SvgText>
-                      <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{weightChart.min}</SvgText>
-                      <Polyline
-                        points={weightChart.polyline}
-                        fill="none"
-                        stroke={colors.primary}
-                        strokeWidth="1.5"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                      {weightChart.points.map((point, index) => (
-                        <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.primary} />
-                      ))}
-                    </Svg>
-                    <Text style={s.weightRangeNote}>
-                      {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
-                    </Text>
-                  </>
-                )}
-                {weightSeries.length > 0 && (
-                  <Text style={s.weightRangeNote}>{t(weightFromHealth ? 'health.sourceHealth' : 'health.sourceLog')}</Text>
-                )}
+              <WeightTrendCard points={weightPoints}>
+
                 {!!healthBodyFat && (
                   <Text style={s.weightRangeNote}>
                     {t('health.bodyFatLatest', { v: healthBodyFat.value, date: parseLocalDay(healthBodyFat.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
                   </Text>
                 )}
-              </Card>
+
+              </WeightTrendCard>
 
             </>}
             right={<>
@@ -589,57 +524,15 @@ export function AnalyticsScreen() {
               <PremiumLockCard feature="advancedAnalytics" title={t('reports.weeklyLabel')} />
             )}
 
-            <Card>
-              <CardLabel icon="⚖">{t('reports.weightLabel')}</CardLabel>
-              {weightSeries.length === 0 ? (
-                <Text style={s.empty}>{t('reports.noWeight')}</Text>
-              ) : !weightChart ? (
-                <Text style={s.empty}>
-                  {t('reports.weightLatestOnly', { w: weightSeries[0].weight })}
-                </Text>
-              ) : (
-                <>
-                  <View style={s.weightSummaryRow}>
-                    <Text style={s.weightLatest}>{weightChart.last} lbs</Text>
-                    <Text style={s.weightDelta}>
-                      {weightChart.last !== weightChart.first
-                        ? t('reports.weightDelta', { delta: `${weightChart.last > weightChart.first ? '+' : ''}${Math.round((weightChart.last - weightChart.first) * 10) / 10}` })
-                        : weightChart.max > weightChart.min
-                          ? t('reports.weightRanged', { min: weightChart.min, max: weightChart.max })
-                          : t('reports.weightNoChange')}
-                    </Text>
-                  </View>
-                  <Svg viewBox="0 0 200 60" width="100%" height={90}>
-                    <Line x1="12" y1="12" x2="188" y2="12" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                    <Line x1="12" y1="48" x2="188" y2="48" stroke={colors.primary} strokeWidth="0.4" opacity={0.25} />
-                    <SvgText x="2" y="14" fill={colors.textMuted} fontSize="5">{weightChart.max}</SvgText>
-                    <SvgText x="2" y="50" fill={colors.textMuted} fontSize="5">{weightChart.min}</SvgText>
-                    <Polyline
-                      points={weightChart.polyline}
-                      fill="none"
-                      stroke={colors.primary}
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-                    {weightChart.points.map((point, index) => (
-                      <SvgCircle key={index} cx={point.cx} cy={point.cy} r="1.6" fill={colors.primary} />
-                    ))}
-                  </Svg>
-                  <Text style={s.weightRangeNote}>
-                    {t('reports.weightRange', { n: weightSeries.length, min: weightChart.min, max: weightChart.max })}
-                  </Text>
-                </>
-              )}
-              {weightSeries.length > 0 && (
-                <Text style={s.weightRangeNote}>{t(weightFromHealth ? 'health.sourceHealth' : 'health.sourceLog')}</Text>
-              )}
+            <WeightTrendCard points={weightPoints}>
+
               {!!healthBodyFat && (
                 <Text style={s.weightRangeNote}>
                   {t('health.bodyFatLatest', { v: healthBodyFat.value, date: parseLocalDay(healthBodyFat.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
                 </Text>
               )}
-            </Card>
+
+            </WeightTrendCard>
 
             {insightsCard}
 

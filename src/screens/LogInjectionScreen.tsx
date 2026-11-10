@@ -18,6 +18,8 @@ import { getInjectionSiteIds, lastLoggedBySite } from '../lib/sites';
 import { daysBetween } from '../lib/schedule/days';
 import { keepPhoto, photoDisplayUri } from '../lib/photos';
 import { HealthPoint, readHealthWeights } from '../lib/health';
+import { healthWeightToOffer, mergeWeights, offeredKey, weightOn } from '../lib/weight';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notifySuccessfulSave } from '../lib/reviewPrompt';
 import { hapticSuccess, hapticTap } from '../lib/haptics';
 import { useI18n } from '../lib/i18n';
@@ -116,8 +118,6 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   const isEditing = !!initialInjection;
   const logDate = initialInjection?.date ?? initialDate ?? localDateISO();
   const lastBySite = lastLoggedBySite(history, logDate, initialInjection?.id);
-  // Latest Apple Health weight on or before the record's day, if any.
-  const healthWeight = [...healthWeights].reverse().find(point => point.date <= logDate);
   const wide = useWideLayout();
   // Vials to draw from: active ones, plus the record's own when editing.
   useEffect(() => {
@@ -732,25 +732,14 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
               {/* Weight */}
               <Card>
                 <Text style={s.cardLabel}>{t('log.weight')}</Text>
-                <TextInput
-                  placeholder={t('log.weightPlaceholder')}
-                  placeholderTextColor={colors.textFaint}
+                <WeightField
                   value={weight}
-                  onChangeText={setWeight}
-                  keyboardType="numeric"
-                  style={s.textInput}
+                  onChange={setWeight}
+                  history={history}
+                  healthWeights={healthWeights}
+                  day={logDate}
+                  editingId={initialInjection?.id}
                 />
-                {!!healthWeight && weight !== String(healthWeight.value) && (
-                  <Pressable
-                    style={[s.timeChip, { alignSelf: 'flex-start', marginTop: 10 }]}
-                    onPress={() => { hapticTap(); setWeight(String(healthWeight.value)); }}
-                    accessibilityRole="button"
-                  >
-                    <Text style={s.timeChipText}>
-                      {t('health.useWeight', { w: healthWeight.value, date: new Date(healthWeight.date + 'T12:00:00').toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
-                    </Text>
-                  </Pressable>
-                )}
               </Card>
 
               {/* Notes */}
@@ -1005,25 +994,14 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
             {/* Weight */}
             <Card>
               <Text style={s.cardLabel}>{t('log.weight')}</Text>
-              <TextInput
-                placeholder={t('log.weightPlaceholder')}
-                placeholderTextColor={colors.textFaint}
+              <WeightField
                 value={weight}
-                onChangeText={setWeight}
-                keyboardType="numeric"
-                style={s.textInput}
+                onChange={setWeight}
+                history={history}
+                healthWeights={healthWeights}
+                day={logDate}
+                editingId={initialInjection?.id}
               />
-              {!!healthWeight && weight !== String(healthWeight.value) && (
-                <Pressable
-                  style={[s.timeChip, { alignSelf: 'flex-start', marginTop: 10 }]}
-                  onPress={() => { hapticTap(); setWeight(String(healthWeight.value)); }}
-                  accessibilityRole="button"
-                >
-                  <Text style={s.timeChipText}>
-                    {t('health.useWeight', { w: healthWeight.value, date: new Date(healthWeight.date + 'T12:00:00').toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }) })}
-                  </Text>
-                </Pressable>
-              )}
             </Card>
 
             {/* Notes */}
@@ -1392,4 +1370,86 @@ const s = StyleSheet.create({
   },
   sheetRowName: { color: colors.white, fontSize: 16, fontWeight: '500' },
   sheetSection: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, fontSize: 11, color: colors.textFaint, fontWeight: '700', letterSpacing: 2 },
+});
+
+const KEY_HEALTH_WEIGHT_OFFERED = '@mpp/health_weight_offered_v1';
+
+/**
+ * The weight box. Apple Health is offered once per new reading (and only
+ * when it's newer than the last weight logged); after that, typing a number
+ * different from the current weight asks whether to update it or keep it.
+ */
+function WeightField({ value, onChange, history, healthWeights, day, editingId }: {
+  value: string;
+  onChange: (next: string) => void;
+  history: Injection[];
+  healthWeights: HealthPoint[];
+  day: string;
+  editingId?: string;
+}) {
+  const { t, dateLocale } = useI18n();
+  const [offered, setOffered] = useState<string | null | undefined>(undefined);
+  const [confirmed, setConfirmed] = useState<string | null>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(KEY_HEALTH_WEIGHT_OFFERED).then(setOffered).catch(() => setOffered(null));
+  }, []);
+  const others = history.filter(r => r.id !== editingId);
+  const current = weightOn(mergeWeights(healthWeights, others), day);
+  const offer = offered === undefined ? null : healthWeightToOffer(healthWeights, others, day, offered);
+  const markOffered = () => {
+    if (!offer) return;
+    const key = offeredKey(offer);
+    setOffered(key);
+    AsyncStorage.setItem(KEY_HEALTH_WEIGHT_OFFERED, key).catch(() => undefined);
+  };
+  const typed = Number(value);
+  const changed = !!current && value !== '' && Number.isFinite(typed) && typed > 0 && typed !== current.value && value !== confirmed && !offer;
+  const shortDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' });
+
+  return (
+    <>
+      <TextInput
+        placeholder={current ? t('weight.lastPlaceholder', { w: current.value }) : t('log.weightPlaceholder')}
+        placeholderTextColor={colors.textFaint}
+        value={value}
+        onChangeText={onChange}
+        keyboardType="numeric"
+        style={s.textInput}
+      />
+      {!!offer && (
+        <View style={ws.row}>
+          <Pressable
+            style={[s.timeChip, ws.grow]}
+            onPress={() => { hapticTap(); onChange(String(offer.value)); setConfirmed(String(offer.value)); markOffered(); }}
+            accessibilityRole="button"
+          >
+            <Text style={s.timeChipText}>{t('health.useWeight', { w: offer.value, date: shortDate(offer.date) })}</Text>
+          </Pressable>
+          <Pressable style={s.timeChip} onPress={() => { hapticTap(); markOffered(); }} accessibilityRole="button" accessibilityLabel={t('weight.notNow')}>
+            <Text style={s.timeChipText}>{t('weight.notNow')}</Text>
+          </Pressable>
+        </View>
+      )}
+      {changed && (
+        <View style={ws.prompt}>
+          <Text style={ws.promptText}>{t('weight.updatePrompt', { next: typed, prev: current.value, date: shortDate(current.date) })}</Text>
+          <View style={ws.row}>
+            <Pressable style={[s.timeChip, s.timeChipActive, ws.grow]} onPress={() => { hapticTap(); setConfirmed(value); }} accessibilityRole="button">
+              <Text style={[s.timeChipText, s.timeChipTextActive]}>{t('weight.update', { w: typed })}</Text>
+            </Pressable>
+            <Pressable style={[s.timeChip, ws.grow]} onPress={() => { hapticTap(); onChange(String(current.value)); setConfirmed(String(current.value)); }} accessibilityRole="button">
+              <Text style={s.timeChipText}>{t('weight.keep', { w: current.value })}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </>
+  );
+}
+
+const ws = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  grow: { flex: 1, alignItems: 'center' },
+  prompt: { marginTop: 10, padding: 12, borderRadius: radius.md, backgroundColor: withAlpha(colors.primary, 0.08), borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  promptText: { color: colors.text, fontSize: 13, lineHeight: 19 },
 });
