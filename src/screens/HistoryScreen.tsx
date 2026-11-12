@@ -13,7 +13,7 @@ import { useI18n } from '../lib/i18n';
 import { getInjections, deleteInjection } from '../lib/storage';
 import { LogInjectionScreen } from './LogInjectionScreen';
 import { PlannedDoseCard, PlanData, loadPlan, toPlannedDose } from '../components/TodayPlan';
-import { AuroraBackground } from '../components/Glass';
+import { AuroraBackground, PressableScale, Reveal } from '../components/Glass';
 import type { PlannedDose } from './LogInjectionScreen';
 import { occurrencesBetween } from '../lib/schedule/engine';
 import { withStatus } from '../lib/schedule/status';
@@ -262,8 +262,8 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
       ) : (
         <SplitColumns>
           {filtered.map(i => (
-            <Pressable
-              key={i.id}
+            <Reveal key={i.id}>
+            <PressableScale
               onPress={() => onOpen(i)}
               style={[s.histCard, { borderLeftColor: sevColors[i.sev] }]}
               accessibilityRole="button"
@@ -286,7 +286,8 @@ function LogList({ injections, onOpen }: { injections: Injection[]; onOpen: (rec
                 </View>
               </View>
               <Text style={s.viewDetailText}>{t('history.viewDetails')}</Text>
-            </Pressable>
+            </PressableScale>
+            </Reveal>
           ))}
         </SplitColumns>
       )}
