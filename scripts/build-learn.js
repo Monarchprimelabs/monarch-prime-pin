@@ -10,16 +10,25 @@ const dir = process.argv[2];
 if (!dir) { console.error('usage: node scripts/build-learn.js <dir>'); process.exit(1); }
 const LEVELS = ['Approved drug (human RCTs)', 'Human clinical trials (limited)', 'Mostly animal studies', 'In vitro / very early'];
 const DOSING = /\b\d+(?:\.\d+)?\s?(?:mg|mcg|µg|ug|iu|ml|units?)\b/i;
-const ADVICE = /\b(should|recommend(?:ed|s)?|you can take|we suggest|ideal (?:dose|amount)|best for you)\b/i;
+// Advice to the reader. Reporting that a committee voted to recommend something is fine.
+const ADVICE = /\b(you should|we recommend|recommended (?:for you|dose|amount)|you can take|we suggest|ideal (?:dose|amount)|best for you|consider taking)\b/i;
 
 const problems = [];
+// Folds extra source lists (`sources`, `additionalSources`) into `more`, minus the primary source.
+const status = st => {
+  if (!st) return null;
+  const extra = [...(st.sources ?? []), ...(st.additionalSources ?? [])].filter(x => x.url !== st.source?.url);
+  const seen = new Set();
+  const more = extra.filter(x => !seen.has(x.url) && seen.add(x.url));
+  return more.length ? { text: st.text, source: st.source, more } : { text: st.text, source: st.source };
+};
 const compounds = [];
 for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort()) {
   const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
   for (const c of data.compounds) {
     const where = `${file}:${c.id}`;
     const texts = [c.summary, c.fdaStatus?.text, c.wadaStatus?.text, ...(c.findings ?? []).map(f => f.text), ...(c.risks ?? []).map(r => r.text), ...(c.unknowns ?? [])].filter(Boolean);
-    const sources = [c.fdaStatus?.source, c.wadaStatus?.source, ...(c.findings ?? []).map(f => f.source), ...(c.risks ?? []).map(r => r.source)].filter(Boolean);
+    const sources = [c.fdaStatus?.source, c.wadaStatus?.source, ...(status(c.fdaStatus)?.more ?? []), ...(status(c.wadaStatus)?.more ?? []), ...(c.findings ?? []).map(f => f.source), ...(c.risks ?? []).map(r => r.source)].filter(Boolean);
     if (!LEVELS.includes(c.evidenceLevel)) problems.push(`${where}: unknown evidence level "${c.evidenceLevel}"`);
     if (!c.fdaStatus?.source?.url) problems.push(`${where}: FDA status has no source`);
     for (const src of sources) if (!/^https:\/\//.test(src.url ?? '')) problems.push(`${where}: source without https URL: ${src.title}`);
@@ -29,7 +38,7 @@ for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort()) 
     }
     compounds.push({
       id: c.id, name: c.name, aliases: c.aliases ?? [], category: c.category, summary: c.summary,
-      evidenceLevel: c.evidenceLevel, fdaStatus: c.fdaStatus, wadaStatus: c.wadaStatus ?? null,
+      evidenceLevel: c.evidenceLevel, fdaStatus: status(c.fdaStatus), wadaStatus: status(c.wadaStatus),
       topics: c.topics ?? [], findings: c.findings ?? [], risks: c.risks ?? [], unknowns: c.unknowns ?? [],
     });
   }

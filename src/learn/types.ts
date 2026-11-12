@@ -9,6 +9,9 @@ export type EvidenceLevel =
   | 'Mostly animal studies'
   | 'In vitro / very early';
 
+/** A status line; `more` lists further sources backing the same statement. */
+export type Status = { text: string; source: Source; more?: Source[] };
+
 export type Finding = { text: string; subjects: string; design: string; source: Source };
 
 export type LearnCompound = {
@@ -18,8 +21,8 @@ export type LearnCompound = {
   category: string;
   summary: string;
   evidenceLevel: EvidenceLevel;
-  fdaStatus: { text: string; source: Source };
-  wadaStatus: { text: string; source: Source } | null;
+  fdaStatus: Status;
+  wadaStatus: Status | null;
   topics: string[];
   findings: Finding[];
   risks: { text: string; source: Source }[];

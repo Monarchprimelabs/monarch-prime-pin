@@ -245,10 +245,12 @@ function CompoundDetail({ c, onTopic }: { c: LearnCompound; onTopic: (t: Topic) 
         <Text style={s.cardHeading}>{t('learn.regulatory')}</Text>
         <Text style={s.body}>{c.fdaStatus.text}</Text>
         <SourceLink source={c.fdaStatus.source} />
+        {c.fdaStatus.more?.map(m => <SourceLink key={m.url} source={m} />)}
         {!!c.wadaStatus && (
           <>
             <Text style={[s.body, { marginTop: 10 }]}>{c.wadaStatus.text}</Text>
             <SourceLink source={c.wadaStatus.source} />
+            {c.wadaStatus.more?.map(m => <SourceLink key={m.url} source={m} />)}
           </>
         )}
       </Card>
