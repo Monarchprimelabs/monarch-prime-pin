@@ -1,0 +1,7 @@
+// Cloudflare settings for the public website (marketing page + web app).
+// Build first with `npm run build:site`, then `npx wrangler deploy`.
+{
+  "name": "monarch-prime-pin",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./site-dist" }
+}
