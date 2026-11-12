@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, AppState } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -151,7 +151,7 @@ function GlassTabBar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
               accessibilityState={{ selected: active === tab.id }}
               accessibilityLabel={t(tab.labelKey)}
             >
-              <TabIcon id={tab.id} active={active === tab.id} />
+              <BounceOnSelect active={active === tab.id}><TabIcon id={tab.id} active={active === tab.id} /></BounceOnSelect>
               <Text style={[s.tabLabel, active === tab.id && s.tabLabelActive]} numberOfLines={1}>{t(tab.labelKey)}</Text>
             </PressableScale>
           ))}
@@ -159,6 +159,17 @@ function GlassTabBar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
       </GlassSurface>
     </View>
   );
+}
+
+/** The selected tab's icon pops up a little when chosen. */
+function BounceOnSelect({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const reduce = useReducedMotion();
+  const sc = useSharedValue(1);
+  React.useEffect(() => {
+    if (active && !reduce) sc.value = withSequence(withSpring(1.22, { damping: 6, stiffness: 380 }), withSpring(1, { damping: 10, stiffness: 220 }));
+  }, [active, reduce, sc]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: sc.value }] }));
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 function TabIcon({ id, active }: { id: TabId; active: boolean }) {
