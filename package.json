@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "TZ=UTC jest && TZ=America/New_York jest && TZ=Asia/Tokyo jest"
+    "test": "TZ=UTC jest && TZ=America/New_York jest && TZ=Asia/Tokyo jest",
+    "build:site": "node scripts/build-site.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
