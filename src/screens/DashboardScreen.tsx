@@ -20,7 +20,9 @@ import { ProgressCard, SHARE_FORMATS, ShareFormat, BASE_W, cardHeight } from '..
 import { Ionicons } from '@expo/vector-icons';
 import { TodayPlan, loadPlan, toPlannedDose } from '../components/TodayPlan';
 import { TwoColumn } from '../components/Columns';
-import { AuroraBackground, GlassSheen, Reveal, GradientButton } from '../components/Glass';
+import { AuroraBackground, GlassSheen, Reveal, GradientButton, PressableScale } from '../components/Glass';
+import { LearnScreen } from '../learn/LearnScreen';
+import { LEARN_AVAILABLE } from '../learn/available';
 import { useWideLayout } from '../lib/layout';
 import { usePremium } from '../lib/usePremium';
 import { PaywallProvider, usePaywall } from '../lib/paywall';
@@ -64,6 +66,7 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
   const [plannedLog, setPlannedLog] = useState<PlannedDose | null>(null);
   const [editRecord, setEditRecord] = useState<Injection | null>(null);
   const [protocolsOpen, setProtocolsOpen] = useState(false);
+  const [learnOpen, setLearnOpen] = useState(false);
   const [planToken, setPlanToken] = useState(0);
   const [stepsToday, setStepsToday] = useState<number | null>(null);
   const shareCardRef = useRef<React.ComponentRef<typeof View>>(null);
@@ -270,6 +273,17 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
                 <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
                 <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
               </View>
+              {LEARN_AVAILABLE && (
+                <PressableScale style={s.learnPromo} onPress={() => setLearnOpen(true)} accessibilityRole="button">
+                  <GlassSheen radius={radius.xl} />
+                  <View style={s.learnIcon}><Ionicons name="library-outline" size={22} color={colors.teal} /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.learnTitle}>{t('learn.promoTitle')}</Text>
+                    <Text style={s.learnBody}>{t('learn.promoBody')}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+                </PressableScale>
+              )}
 
               {/* Free users get the Today plan too: one protocol is free. */}
               <TodayPlan
@@ -360,6 +374,17 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
               <StatCard icon="eyedrop-outline" color={colors.primary} value={stats.total} label={t('dash.totalInj')} />
               <StatCard icon="calendar-outline" color={colors.teal} value={stats.thisWeek} label={t('dash.thisWeek')} />
             </View>
+            {LEARN_AVAILABLE && (
+              <PressableScale style={s.learnPromo} onPress={() => setLearnOpen(true)} accessibilityRole="button">
+                <GlassSheen radius={radius.xl} />
+                <View style={s.learnIcon}><Ionicons name="library-outline" size={22} color={colors.teal} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.learnTitle}>{t('learn.promoTitle')}</Text>
+                  <Text style={s.learnBody}>{t('learn.promoBody')}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+              </PressableScale>
+            )}
 
             {/* Free users get the Today plan too: one protocol is free. */}
             <TodayPlan
@@ -478,6 +503,12 @@ export function DashboardScreen({ onNavigate, pendingOccurrenceKey, onPendingHan
         )}
       </SafeAreaProvider></Modal>
 
+      {LEARN_AVAILABLE && (
+        <Modal visible={learnOpen} animationType="slide" onRequestClose={() => setLearnOpen(false)}><SafeAreaProvider>
+          <AuroraBackground />
+          <LearnScreen onClose={() => setLearnOpen(false)} />
+        </SafeAreaProvider></Modal>
+      )}
       <Modal visible={protocolsOpen} animationType="slide" onRequestClose={() => { setProtocolsOpen(false); refresh(); }}><SafeAreaProvider>
         <AuroraBackground />
         <PaywallProvider>
@@ -604,6 +635,13 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 const s = StyleSheet.create({
+  learnPromo: {
+    marginHorizontal: spacing.xl, marginBottom: 14, padding: 16, borderRadius: radius.xl, flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: withAlpha(colors.teal, 0.12), borderWidth: StyleSheet.hairlineWidth * 2, borderColor: withAlpha(colors.teal, 0.4),
+  },
+  learnIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(colors.teal, 0.18) },
+  learnTitle: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  learnBody: { color: colors.textMuted, fontSize: 13, lineHeight: 18, marginTop: 2 },
   app: { flex: 1, backgroundColor: 'transparent' },
   statRow: {
     flexDirection: 'row', gap: 10, paddingHorizontal: spacing.xl, marginBottom: 14,
