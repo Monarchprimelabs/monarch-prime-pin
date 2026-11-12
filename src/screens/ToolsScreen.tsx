@@ -21,6 +21,8 @@ import { PaywallProvider, usePaywall } from '../lib/paywall';
 import { PremiumBadge } from '../components/PremiumLock';
 import { AuroraBackground } from '../components/Glass';
 import { LabsTool } from './LabsScreen';
+import { LearnScreen } from '../learn/LearnScreen';
+import { LEARN_AVAILABLE } from '../learn/available';
 import { labsAccess } from '../lib/labs/labs';
 import { ProtocolsTool } from './ProtocolsScreen';
 import { VialsTool } from './VialsScreen';
@@ -40,11 +42,13 @@ function animateListChange(): void {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
-type ToolId = 'protocols' | 'vials' | 'labs' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
+type ToolId = 'learn' | 'protocols' | 'vials' | 'labs' | 'schedule' | 'inventory' | 'templates' | 'conversion' | 'export' | 'settings';
 
 const LEGACY_TOOLS: ToolId[] = ['schedule', 'inventory', 'templates'];
 
 const TOOLS: { id: ToolId; icon: keyof typeof Ionicons.glyphMap; titleKey: string; subKey: string; tint: string; pro?: boolean }[] = [
+  // Research library: web app only (src/learn/available.web.ts).
+  ...(LEARN_AVAILABLE ? [{ id: 'learn' as const, icon: 'library-outline' as const, titleKey: 'learn.title', subKey: 'learn.toolSub', tint: colors.teal }] : []),
   // Two active protocols are free (src/lib/freeTier.ts); the tool enforces it.
   { id: 'protocols', icon: 'repeat-outline', titleKey: 'proto.title', subKey: 'proto.toolSub', tint: colors.accent },
   { id: 'vials', icon: 'flask-outline', titleKey: 'vial.title', subKey: 'vial.toolSub', tint: colors.primary },
@@ -160,6 +164,7 @@ export function ToolsScreen() {
         <PaywallProvider>
           {active === 'protocols' && <ProtocolsTool onClose={() => setActive(null)} />}
           {active === 'vials' && <VialsTool onClose={() => setActive(null)} />}
+          {active === 'learn' && <LearnScreen onClose={() => setActive(null)} />}
           {active === 'labs' && <LabsTool onClose={() => setActive(null)} readOnly={labsAccess(allows('labResults'), labCount) === 'readOnly'} />}
           {active === 'schedule' && <ScheduleTool onClose={() => setActive(null)} />}
           {active === 'inventory' && <InventoryTool onClose={() => setActive(null)} />}
