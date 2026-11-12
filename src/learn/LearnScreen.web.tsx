@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,7 +72,8 @@ function MeterBar({ on, color, delay, reduce, large }: { on: boolean; color: str
 function SourceLink({ source }: { source: Source }) {
   const where = [source.journal ?? source.publisher, source.year].filter(Boolean).join(', ');
   return (
-    <Pressable onPress={() => Linking.openURL(source.url)} accessibilityRole="link" style={s.source}>
+    // A real <a target="_blank"> on web, so the link opens even where pop-ups are restricted.
+    <Pressable {...({ href: source.url, hrefAttrs: { target: '_blank', rel: 'noopener noreferrer' } } as object)} accessibilityRole="link" style={s.source}>
       <Text style={s.sourceText} numberOfLines={2}>{source.title}{where ? ` · ${where}` : ''}</Text>
       <Ionicons name="open-outline" size={13} color={colors.primary} />
     </Pressable>
