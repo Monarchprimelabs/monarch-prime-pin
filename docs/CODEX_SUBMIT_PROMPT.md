@@ -18,20 +18,29 @@ You are finishing the App Store release of **Monarch Prime Pin 2.0** (iOS, bundl
 
 `docs/REVIEW_NOTES.md`, `docs/APP_STORE_CONNECT_CHANGES.md`, `docs/APP_STORE_LISTING.md`, `docs/RELEASE_CHECKLIST.md`, `docs/RELEASING.md`, `docs/PRIME_PIN_V2_HANDOFF.md` and `src/lib/store/constants.ts`. They are the source of truth. If this prompt and a doc disagree, tell me before acting.
 
+## Founders: already decided
+
+Everyone who **paid** before 2.0 gets Premium for life at no cost. That means anyone who bought the app when it was a paid download, and anyone who bought the old one-time unlock `com.monarchprime.pin.pro.lifetime`. The code already does this ("paid founders"); your job is to make sure it works for real customers:
+
+- `PAID_APP_FREE_DATE` must be right, because it is how the app recognizes people who paid for the download. See Step 1.
+- The old product `com.monarchprime.pin.pro.lifetime` must stay in App Store Connect untouched, so those purchases keep restoring.
+- There is **no founder offer code** for 2.0. Leave `FOUNDER_CODE` empty, do not create an offer code, and remove the founder-code sentence from the review notes.
+
+People who only ever used the free version keep everything they had in 1.x, with a Founding Member badge, but Premium is not free for them. Do not change that.
+
 ## Ask me these once, up front, then keep going
 
-1. **Founder offer code:** do I want one for 2.0? If yes, the code word, the price for the first year, how many redemptions, and the end date. If no, the founder-code sentence comes out of the review notes and `FOUNDER_CODE` stays empty.
-2. **Privacy policy URL:** confirm it is `https://monarchprimelabs.github.io/apps/monarch-prime-pin/privacy.html`, and that the page mentions Apple Health as `docs/APP_STORE_CONNECT_CHANGES.md` describes.
-3. **Prices:** confirm monthly $4.99 with the first month at $0.99, annual $39.99 with a 1-week free trial, lifetime $79.99.
+1. **Privacy policy URL:** confirm it is `https://monarchprimelabs.github.io/apps/monarch-prime-pin/privacy.html`, and that the page mentions Apple Health as `docs/APP_STORE_CONNECT_CHANGES.md` describes.
+2. **Prices:** confirm monthly $4.99 with the first month at $0.99, annual $39.99 with a 1-week free trial, lifetime $79.99.
 
 ## Step 1: the last code constants
 
 In `src/lib/store/constants.ts`, on a branch:
 
 - `PRIVACY_URL`: the confirmed privacy policy URL.
-- `FOUNDER_CUTOFF`: the planned 2.0 release date.
+- `FOUNDER_CUTOFF`: the planned 2.0 release date. Everyone who installed before it counts as a founder.
 - `PAID_APP_FREE_DATE`: the day the app's price changed to Free. Find it in App Store Connect under Sales and Trends (the last day with paid downloads) or the pricing history. If unsure, pick the later date; a too-early date misses people who paid.
-- `FOUNDER_CODE`: the code word from my answer, or leave it empty.
+- `FOUNDER_CODE`: leave it empty.
 
 Run `npx tsc --noEmit`, `npm test` and `node scripts/test-heat.js`. Open a pull request, wait for its checks, and ask me before merging.
 
@@ -51,7 +60,6 @@ Create these, matching the IDs in `constants.ts` exactly:
 - Add the display name and description for each product and for the group in English, Spanish and Portuguese (the app ships in those three).
 - Add the review screenshot each product needs: a screenshot of the paywall.
 - Turn on **Billing Grace Period**.
-- If I asked for a founder code, create it as a custom offer code on the annual plan.
 - **Leave the old product `com.monarchprime.pin.pro.lifetime` exactly as it is.** Do not change its price or remove it from sale now; that happens after 2.0 is approved.
 - Attach the three new products to the 2.0.0 version so they go to review with it.
 
@@ -67,7 +75,7 @@ Follow `docs/APP_STORE_LISTING.md` and `docs/APP_STORE_CONNECT_CHANGES.md`:
 - Screenshots: follow the screenshot rules in `docs/APP_STORE_LISTING.md` (made-up sample records, no worksheet, no amounts that read as dose advice). Take them from the 2.0 build. If you cannot produce them on this Mac, stop and tell me exactly which sizes are missing.
 - Age rating: answer the questionnaire so the app is 18+.
 - Privacy policy URL, and check the App Privacy answers still say no data is collected.
-- App Review Information: **Sign-in required: No.** Paste the notes block from `docs/REVIEW_NOTES.md`, with prices checked against what you created and the founder-code sentence removed if there is no code.
+- App Review Information: **Sign-in required: No.** Paste the notes block from `docs/REVIEW_NOTES.md`, with prices checked against what you created and the founder-code sentence removed.
 
 ## Step 5: check, then submit
 

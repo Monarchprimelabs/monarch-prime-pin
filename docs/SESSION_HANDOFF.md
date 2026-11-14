@@ -14,7 +14,7 @@ For whoever picks this project up in a new session. Read this, then `docs/PROJEC
 1. **Domain:** `monarchprimepin.com` was bought in the Cleanspace Cloudflare account by mistake. It can move to the Monarch account once it is more than 10 days old (from about 2026-11-23): Manage Domain > Configuration > Start, with the Monarch account ID. Then attach it under the Worker's Settings > Domains & Routes.
 2. **Automatic website updates:** connect the repo in Cloudflare (Worker > Settings > Builds; build command `npm run build:site`, deploy command `npx wrangler deploy`). Until then the site only changes on a manual deploy.
 3. **Cloudflare API token:** one was pasted into chat on 2026-11-12 and should be rolled.
-4. **App Store submission:** see `docs/CODEX_SUBMIT_PROMPT.md`. The owner constants in `src/lib/store/constants.ts` (`PRIVACY_URL`, `FOUNDER_CUTOFF`, `PAID_APP_FREE_DATE`, `FOUNDER_CODE`) are still empty, and the subscriptions do not exist in App Store Connect yet.
+4. **App Store submission:** see `docs/CODEX_SUBMIT_PROMPT.md`. The owner constants in `src/lib/store/constants.ts` (`PRIVACY_URL`, `FOUNDER_CUTOFF`, `PAID_APP_FREE_DATE`) are still empty; the owner decided on 2026-11-14 that there is no founder offer code and that everyone who paid before 2.0 keeps Premium for life, and the subscriptions do not exist in App Store Connect yet.
 5. **Sign-in copy on web** says "Your records stay on this phone"; it should say "this device" on web.
 6. **Learn reel:** not made, because Learn is web only and the reels end on "Free on the App Store". Make it once the domain is attached.
 
