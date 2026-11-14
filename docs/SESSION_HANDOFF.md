@@ -1,0 +1,34 @@
+# Session handoff, 2026-11-14
+
+For whoever picks this project up in a new session. Read this, then `docs/PROJECT_HANDOFF.md`.
+
+## Where things stand
+
+- **iPhone app 2.0:** merged to `main`. PRs #26 (2.0), #27 ($0.99 first month), #28 (weight trend fix, ask-once Apple Health, SS-31 and more compounds, more motion) are in. A TestFlight build was started from `release/ios` on 2026-11-12.
+- **Web app:** every tool is open on web, records stay in the visitor's browser. The **Learn** research library (16 compounds, each claim sourced) is web only (PR #29).
+- **Website:** `npm run build:site` builds the marketing page at `/` and the web app at `/app` into `site-dist/` (PRs #31, #32). It is live at https://monarch-prime-pin.monarch-prime-pin.workers.dev on Cloudflare, in the Monarch Prime Labs account, deployed by hand with `npx wrangler deploy` (config in `wrangler.jsonc`).
+- **Expo web deploy** (`.eas/workflows/deploy-web.yml`, branch `release/web`) exists but is not the live site.
+
+## Open items
+
+1. **Domain:** `monarchprimepin.com` was bought in the Cleanspace Cloudflare account by mistake. It can move to the Monarch account once it is more than 10 days old (from about 2026-11-23): Manage Domain > Configuration > Start, with the Monarch account ID. Then attach it under the Worker's Settings > Domains & Routes.
+2. **Automatic website updates:** connect the repo in Cloudflare (Worker > Settings > Builds; build command `npm run build:site`, deploy command `npx wrangler deploy`). Until then the site only changes on a manual deploy.
+3. **Cloudflare API token:** one was pasted into chat on 2026-11-12 and should be rolled.
+4. **App Store submission:** see `docs/CODEX_SUBMIT_PROMPT.md`. The owner constants in `src/lib/store/constants.ts` (`PRIVACY_URL`, `FOUNDER_CUTOFF`, `PAID_APP_FREE_DATE`, `FOUNDER_CODE`) are still empty, and the subscriptions do not exist in App Store Connect yet.
+5. **Sign-in copy on web** says "Your records stay on this phone"; it should say "this device" on web.
+6. **Learn reel:** not made, because Learn is web only and the reels end on "Free on the App Store". Make it once the domain is attached.
+
+## Marketing reels
+
+`marketing/reels/` holds the scripts that made the commercial and seven reels:
+
+- `record.js` records the real app (web demo build, sample data) with Playwright.
+- `compose.py` assembles each reel with ffmpeg from the recordings, the generated voiceover, music and b-roll, as listed in `reels.json`.
+
+The generated voiceovers, music and b-roll came from Higgsfield and are not in the repo; the finished videos are on the "Prime Pin Handoff" artifact page.
+
+## Rules the owner set
+
+- Never push to `main`, never force-push. Merging a pull request needs the owner's OK each time.
+- No dosing amounts and no "this might be for you" recommendations anywhere.
+- Learn stays web only and is not linked from the iPhone app.
