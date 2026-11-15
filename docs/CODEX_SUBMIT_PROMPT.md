@@ -4,7 +4,9 @@ Paste everything below the line into Codex on the Mac mini, with its full comput
 
 ---
 
-You are finishing the App Store release of **Monarch Prime Pin 2.0** (iOS, bundle ID `com.monarchprime.pin`, App Store app ID `6770808426`). The code is done and merged. Your job is the release work: the last few code constants, the in-app purchases in App Store Connect, the build, the listing, and the submission for review.
+You are finishing the App Store release of **Monarch Prime Pin 2.0** (iOS, bundle ID `com.monarchprime.pin`, App Store app ID `6770808426`). The code is done and merged. Your job is the release work: the last few code constants, the in-app purchase in App Store Connect, the build, the listing, and the submission for review.
+
+**How 2.0 is sold (owner decision, 2026-11-15):** one one-time purchase, **Lifetime Premium at $19.99**. There are **no subscriptions** in 2.0: do not create a subscription group, a monthly plan, an annual plan, a free trial or any introductory offer. New free users can save 30 entries; Premium unlocks unlimited entries and the Premium features. Onboarding ends with an optional first reminder.
 
 ## How you work on this Mac
 
@@ -16,7 +18,7 @@ You are finishing the App Store release of **Monarch Prime Pin 2.0** (iOS, bundl
 
 ## Read these first
 
-`docs/REVIEW_NOTES.md`, `docs/APP_STORE_CONNECT_CHANGES.md`, `docs/APP_STORE_LISTING.md`, `docs/RELEASE_CHECKLIST.md`, `docs/RELEASING.md`, `docs/PRIME_PIN_V2_HANDOFF.md` and `src/lib/store/constants.ts`. They are the source of truth. If this prompt and a doc disagree, tell me before acting.
+`docs/REVIEW_NOTES.md`, `docs/APP_STORE_CONNECT_CHANGES.md`, `docs/APP_STORE_LISTING.md`, `docs/RELEASE_CHECKLIST.md`, `docs/RELEASING.md`, `docs/PRIME_PIN_V2_HANDOFF.md` and `src/lib/store/constants.ts`. They are the source of truth, except that the pricing decision at the top of this prompt overrides any mention of subscriptions, monthly or annual plans, trials or a founder code in older planning docs (`PRIME_PIN_V2_HANDOFF.md`, `V2_PLAN.md`). If this prompt and a doc disagree on anything else, tell me before acting.
 
 ## Founders: already decided
 
@@ -31,7 +33,7 @@ People who only ever used the free version keep everything they had in 1.x, with
 ## Ask me these once, up front, then keep going
 
 1. **Privacy policy URL:** confirm it is `https://monarchprimelabs.github.io/apps/monarch-prime-pin/privacy.html`, and that the page mentions Apple Health as `docs/APP_STORE_CONNECT_CHANGES.md` describes.
-2. **Prices:** confirm monthly $4.99 with the first month at $0.99, annual $39.99 with a 1-week free trial, lifetime $79.99.
+2. **Price:** confirm Lifetime Premium at $19.99 (US), with Apple's matching price in other countries.
 
 ## Step 1: the last code constants
 
@@ -44,24 +46,21 @@ In `src/lib/store/constants.ts`, on a branch:
 
 Run `npx tsc --noEmit`, `npm test` and `node scripts/test-heat.js`. Open a pull request, wait for its checks, and ask me before merging.
 
-## Step 2: in-app purchases in App Store Connect
+## Step 2: the in-app purchase in App Store Connect
 
-First check that the Paid Apps agreement, banking and tax forms are active; subscriptions cannot be submitted without them. If they are not, stop and tell me.
+First check that the Paid Apps agreement, banking and tax forms are active; in-app purchases cannot be submitted without them. If they are not, stop and tell me.
 
-Create these, matching the IDs in `constants.ts` exactly:
+Create this one product, matching the ID in `constants.ts` exactly:
 
-| Product | ID | Type | Price | Offer |
-|---|---|---|---|---|
-| Premium Monthly | `com.monarchprime.pin.premium.monthly` | Auto-renewable, 1 month | $4.99 | Introductory offer: pay as you go, $0.99 for 1 month, new subscribers |
-| Premium Annual | `com.monarchprime.pin.premium.annual` | Auto-renewable, 1 year | $39.99 | Introductory offer: free trial, 1 week, new subscribers |
-| Lifetime Premium | `com.monarchprime.pin.premium.lifetime` | Non-consumable | $79.99 | none |
+| Product | ID | Type | Price |
+|---|---|---|---|
+| Lifetime Premium | `com.monarchprime.pin.premium.lifetime` | Non-consumable | $19.99 |
 
-- Both subscriptions go in one subscription group named **Monarch Prime Pin Premium**, at the same level of service.
-- Add the display name and description for each product and for the group in English, Spanish and Portuguese (the app ships in those three).
-- Add the review screenshot each product needs: a screenshot of the paywall.
-- Turn on **Billing Grace Period**.
+- Add its display name and description in English, Spanish and Portuguese (the app ships in those three).
+- Add the review screenshot it needs: a screenshot of the paywall.
+- If App Store Connect already has the subscription products `com.monarchprime.pin.premium.monthly` or `com.monarchprime.pin.premium.annual` from earlier work, do not submit them; leave them unsubmitted and tell me they exist.
 - **Leave the old product `com.monarchprime.pin.pro.lifetime` exactly as it is.** Do not change its price or remove it from sale now; that happens after 2.0 is approved.
-- Attach the three new products to the 2.0.0 version so they go to review with it.
+- Attach Lifetime Premium to the 2.0.0 version so it goes to review with it.
 
 ## Step 3: the build
 
@@ -81,7 +80,7 @@ Follow `docs/APP_STORE_LISTING.md` and `docs/APP_STORE_CONNECT_CHANGES.md`:
 
 Before submitting, give me a short summary:
 
-- every product with its ID, price, offer and status
+- the product's ID, price and status
 - the build number selected
 - anything on the version page still showing a warning
 - anything you could not do, and why
