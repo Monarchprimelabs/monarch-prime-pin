@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch, Platform } from 'react-native';
 import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -382,7 +382,7 @@ function RemindersTab() {
       <Card>
         <CardLabel icon="💾">{t('settings.localDataLabel')}</CardLabel>
         <Text style={s.localDataText}>
-          {t('settings.localDataBody')}
+          {t(Platform.OS === 'web' ? 'settings.localDataBodyWeb' : 'settings.localDataBody')}
         </Text>
       </Card>
 
@@ -464,6 +464,16 @@ function AccessTab() {
   const { t, dateLocale } = useI18n();
   const paidFounder = founder === 'paidFounder'
     || premium.source === 'legacyLifetime' || premium.source === 'paidApp' || premium.source === 'legacyInstall';
+  // The web app has no store: everything is open there, with nothing to buy or restore.
+  if (Platform.OS === 'web') {
+    return (
+      <Card>
+        <CardLabel icon="◆">{t('access.label')}</CardLabel>
+        <Text style={s.accessTitle}>{t('access.webTitle')}</Text>
+        <Text style={s.localDataText}>{t('access.bodyWeb', { max: FREE_LOG_LIMIT })}</Text>
+      </Card>
+    );
+  }
   const label = paidFounder
     ? t('premium.statusPaidFounder')
     : premium.source === 'lifetimePremium'

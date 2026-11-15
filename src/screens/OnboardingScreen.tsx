@@ -248,7 +248,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
       <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
       <Text style={s.welcomeHeadline}>{t('ob.headline')}</Text>
       <Text style={s.welcomeSub}>
-        {t('ob.welcomeSub', { max: FREE_LOG_LIMIT })}
+        {t(Platform.OS === 'web' ? 'ob.welcomeSubWeb' : 'ob.welcomeSub', { max: FREE_LOG_LIMIT })}
       </Text>
     </>
   );
@@ -258,7 +258,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         { icon: '📋', key: 'ob.feat1' },
         { icon: '📍', key: 'ob.feat2' },
         { icon: '🕘', key: 'ob.feat3' },
-        { icon: '◆', key: 'ob.feat4' },
+        { icon: '◆', key: Platform.OS === 'web' ? 'ob.feat4Web' : 'ob.feat4' },
       ].map(f => (
         <View key={f.key} style={s.featureRow}>
           <Text style={s.featureIcon}>{f.icon}</Text>
@@ -273,7 +273,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         <Text style={s.ctaBtnText}>{t('ob.getStarted')}</Text>
       </GradientButton>
       <Text style={s.complianceNote}>
-        {t('ob.compliance', { max: FREE_LOG_LIMIT })}
+        {t(Platform.OS === 'web' ? 'ob.complianceWeb' : 'ob.compliance', { max: FREE_LOG_LIMIT })}
       </Text>
     </View>
   );

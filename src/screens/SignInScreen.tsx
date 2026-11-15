@@ -99,8 +99,8 @@ export function SignInScreen() {
 
           {!showPasscode && !SUPABASE_CONFIGURED ? (
             <>
-              <Text style={s.welcomeTitle}>{t('welcome.title')}</Text>
-              <Text style={s.welcomeBody}>{t('welcome.body')}</Text>
+              <Text style={s.welcomeTitle}>{t(Platform.OS === 'web' ? 'welcome.titleWeb' : 'welcome.title')}</Text>
+              <Text style={s.welcomeBody}>{t(Platform.OS === 'web' ? 'welcome.bodyWeb' : 'welcome.body')}</Text>
               <TextInput
                 placeholder={t('welcome.namePh')}
                 placeholderTextColor={colors.textFaint}
