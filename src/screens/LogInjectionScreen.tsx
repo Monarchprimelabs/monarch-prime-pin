@@ -27,6 +27,10 @@ import { localDateISO } from '../lib/dates';
 import { DOSE_UNITS, DoseUnit } from '../lib/schedule/types';
 import { syncProtocolReminders } from '../lib/protocolReminders';
 import { GradientButton, SuccessBurst } from '../components/Glass';
+import { useEntitlements } from '../lib/entitlements';
+import { usePremium } from '../lib/usePremium';
+import { PaywallProvider, usePaywall } from '../lib/paywall';
+import { FREE_LOG_LIMIT, freeLogsLeft } from '../lib/freeTier';
 
 /** A planned dose from a protocol, logged from Today or a reminder. */
 export type PlannedDose = {
@@ -57,8 +61,17 @@ type TimeChoice =
   | { kind: 'period'; period: TimePeriod }
   | { kind: 'custom' };
 
-export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initialInjection, prefillFrom, planned, onCancel }: LogInjectionScreenProps) {
+// Its own paywall host: the log screen also opens inside modals, where iOS
+// can't present the app-level paywall on top.
+export function LogInjectionScreen(props: LogInjectionScreenProps) {
+  return <PaywallProvider><LogInjectionForm {...props} /></PaywallProvider>;
+}
+
+function LogInjectionForm({ onDone, initialDate: initialDateProp, initialInjection, prefillFrom, planned, onCancel }: LogInjectionScreenProps) {
   const { t, dateLocale } = useI18n();
+  const { monetizationEnabled } = useEntitlements();
+  const { premium, founder } = usePremium();
+  const { openPaywall } = usePaywall();
   const seedRecord = initialInjection ?? prefillFrom ?? null;
   const today = localDateISO();
   // A planned dose from an earlier day is logged on that day.
@@ -116,6 +129,10 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
   useEffect(() => { readHealthWeights(400).then(setHealthWeights).catch(() => undefined); }, []);
 
   const isEditing = !!initialInjection;
+  // New free users get FREE_LOG_LIMIT entries (src/lib/freeTier.ts). Only
+  // counts where Premium can actually be bought; editing never counts.
+  const limited = monetizationEnabled && !isEditing;
+  const logsLeft = limited ? freeLogsLeft(history.length, { premium, founder }) : null;
   const logDate = initialInjection?.date ?? initialDate ?? localDateISO();
   const lastBySite = lastLoggedBySite(history, logDate, initialInjection?.id);
   const wide = useWideLayout();
@@ -260,6 +277,17 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
     if (!resolvedTime) {
       Alert.alert(t('log.badTimeTitle'), t('log.badTimeBody'));
       return;
+    }
+
+    if (limited) {
+      const saved = await getInjections().catch(() => history);
+      if (freeLogsLeft(saved.length, { premium, founder }) === 0) {
+        Alert.alert(t('log.limitTitle'), t('log.limitBody', { max: FREE_LOG_LIMIT }), [
+          { text: t('log.limitLater'), style: 'cancel' },
+          { text: t('log.limitCta'), onPress: () => openPaywall({ kind: 'logLimit' }) },
+        ]);
+        return;
+      }
     }
 
     // One planned dose takes one record: a double tap or a second device
@@ -765,6 +793,9 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
                 >
                   <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
                 </GradientButton>
+                {logsLeft !== null && logsLeft <= 5 && (
+                  <Text style={s.limitNote}>{logsLeft > 0 ? t('log.limitLeft', { left: logsLeft, max: FREE_LOG_LIMIT }) : t('log.limitReached', { max: FREE_LOG_LIMIT })}</Text>
+                )}
               </View>
             </>}
             right={siteCard}
@@ -1027,6 +1058,9 @@ export function LogInjectionScreen({ onDone, initialDate: initialDateProp, initi
               >
                 <Text style={s.submitText}>{saving ? t('log.saving') : isEditing ? t('log.saveChanges') : t('log.save')}</Text>
               </GradientButton>
+              {logsLeft !== null && logsLeft <= 5 && (
+                <Text style={s.limitNote}>{logsLeft > 0 ? t('log.limitLeft', { left: logsLeft, max: FREE_LOG_LIMIT }) : t('log.limitReached', { max: FREE_LOG_LIMIT })}</Text>
+              )}
             </View>
           </>
         )}
@@ -1339,6 +1373,7 @@ const s = StyleSheet.create({
     paddingVertical: 18, alignItems: 'center',
   },
   submitText: { color: colors.actionText, fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  limitNote: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 10 },
 
   sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
   sheetBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },

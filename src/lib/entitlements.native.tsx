@@ -29,8 +29,6 @@ const LEGACY_STORAGE_KEYS = [
 // The 1.x product. Kept as LIFETIME_PRO_PRODUCT_ID while the 1.x upgrade
 // screen still sells it; the 2.0 paywall (M4) replaces that screen.
 export const LIFETIME_PRO_PRODUCT_ID = LEGACY_LIFETIME_ID;
-export const FREE_INJECTION_LIMIT = 5;
-export const LIFETIME_PRO_PRICE_LABEL = '$9.99';
 
 // EAS profiles enable this for monetized builds.
 export const MONETIZATION_ENABLED = process.env.EXPO_PUBLIC_MONETIZATION_ENABLED === 'true';

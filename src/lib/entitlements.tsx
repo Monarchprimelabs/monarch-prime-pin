@@ -5,8 +5,6 @@ import type { PremiumStatus } from './store/premium';
 
 // Web and tests: no store, every tool open. Mirrors entitlements.native.tsx.
 export const LIFETIME_PRO_PRODUCT_ID = LEGACY_LIFETIME_ID;
-export const FREE_INJECTION_LIMIT = 5;
-export const LIFETIME_PRO_PRICE_LABEL = '$9.99';
 export const MONETIZATION_ENABLED = false;
 
 export type EntitlementSource = 'free' | 'early-access' | 'legacy-install' | 'paid-app' | 'lifetime' | 'premium';

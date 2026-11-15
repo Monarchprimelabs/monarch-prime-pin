@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, useWindowDimensions,
+  View, Text, StyleSheet, Pressable, useWindowDimensions, Platform, TextInput, Alert,
 } from 'react-native';
 import { ReadableScrollView as ScrollView, TwoColumn } from '../components/Columns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '../components/UI';
 import { colors, radius, spacing, withAlpha } from '../theme';
-import { setOnboardingDone } from '../lib/storage';
+import { newProtocolId, saveProtocol, setOnboardingDone } from '../lib/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useI18n } from '../lib/i18n';
 import { LanguageSelect } from '../components/LanguageSelect';
-import { FREE_INJECTION_LIMIT } from '../lib/entitlements';
 import { GradientButton } from '../components/Glass';
 import { useWideLayout } from '../lib/layout';
+import { CompoundField } from '../components/CompoundField';
+import { FREE_LOG_LIMIT } from '../lib/freeTier';
+import { localDateISO } from '../lib/dates';
+import { formatClockTime } from '../data/peptides';
+import { DOSE_UNITS, DoseUnit, Frequency, Weekday } from '../lib/schedule/types';
+import type { Protocol } from '../lib/schedule/types';
+import { syncProtocolReminders } from '../lib/protocolReminders';
 
 type MultiItem = { id: string; labelKey: string; icon: string };
 type SingleItem = { id: string; labelKey: string; icon: string; subKey?: string };
@@ -37,13 +43,56 @@ const GOAL_OPTIONS: SingleItem[] = [
   { id: 'summaries',  labelKey: 'ob.goal.summaries',  icon: '📊', subKey: 'ob.goal.summariesSub' },
 ];
 
-const TOTAL_STEPS = 3;
+// The last step offers a first plan reminder. Notifications exist only in the
+// iPhone and Android apps, so the web app skips it.
+const REMINDER_STEP = Platform.OS === 'web' ? -1 : 3;
+const TOTAL_STEPS = Platform.OS === 'web' ? 3 : 4;
+
+type Often = 'daily' | 'everyOther' | 'weekly';
+const OFTEN: { id: Often; key: string }[] = [
+  { id: 'daily', key: 'ob.rem.daily' },
+  { id: 'everyOther', key: 'ob.rem.everyOther' },
+  { id: 'weekly', key: 'ob.rem.weekly' },
+];
+const TIMES = ['08:00', '12:00', '20:00'];
+
+type ReminderDraft = { compound: string; amount: string; unit: DoseUnit; often: Often; time: string };
+const EMPTY_REMINDER: ReminderDraft = { compound: '', amount: '', unit: 'mg', often: 'weekly', time: '08:00' };
+
+const amountOk = (amount: string) => {
+  const value = Number(amount.replace(',', '.'));
+  return amount.trim() !== '' && Number.isFinite(value) && value > 0;
+};
+
+/** The same plan the Protocols tool saves; the amount is always the user's own. */
+function reminderProtocol(draft: ReminderDraft): Protocol {
+  const today = localDateISO();
+  const nowIso = new Date().toISOString();
+  const frequency: Frequency = draft.often === 'daily' ? { kind: 'daily' }
+    : draft.often === 'everyOther' ? { kind: 'interval', everyDays: 2 }
+    : { kind: 'weekdays', days: [new Date().getDay() as Weekday] };
+  return {
+    id: newProtocolId(),
+    compound: draft.compound.trim(),
+    startDate: today,
+    status: 'active',
+    revisions: [{
+      effectiveFrom: today, anchorDate: today, amount: draft.amount.trim().replace(',', '.'), unit: draft.unit,
+      frequency, times: [draft.time], reminders: true,
+    }],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
 
 export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [trackSelected, setTrackSelected] = useState<string[]>([]);
   const [goalSelected, setGoalSelected] = useState<string>('');
+  const [reminder, setReminder] = useState<ReminderDraft>(EMPTY_REMINDER);
+  const [savingReminder, setSavingReminder] = useState(false);
+  const reminderReady = !!reminder.compound.trim() && amountOk(reminder.amount);
 
   const { width } = useWindowDimensions();
 
@@ -56,11 +105,41 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const canContinue = () => {
     if (step === 1) return goalSelected !== '';
     if (step === 2) return trackSelected.length > 0;
+    if (step === REMINDER_STEP) return reminderReady && !savingReminder;
     return true;
   };
 
+  const finish = async () => {
+    // Persisted for future personalization; display never depends on it.
+    AsyncStorage.setItem(
+      '@mpp/onboarding_prefs',
+      JSON.stringify({ goal: goalSelected, track: trackSelected }),
+    ).catch(() => undefined);
+    await setOnboardingDone();
+    onDone();
+  };
+
+  const saveReminder = async () => {
+    setSavingReminder(true);
+    try {
+      await saveProtocol(reminderProtocol(reminder));
+      const result = await syncProtocolReminders({ askPermission: true }).catch(() => null);
+      if (result?.permission === 'denied') {
+        Alert.alert(t('proto.savedTitle'), t('proto.permissionDenied'), [{ text: t('common.ok'), onPress: () => { finish().catch(() => undefined); } }]);
+        return;
+      }
+      await finish();
+    } catch (error: any) {
+      Alert.alert(t('settings.saveFailedTitle'), error?.message || t('common.tryAgain'));
+    } finally {
+      setSavingReminder(false);
+    }
+  };
+
   const handleContinue = async () => {
-    if (step < TOTAL_STEPS - 1) {
+    if (step === REMINDER_STEP) {
+      await saveReminder();
+    } else if (step < TOTAL_STEPS - 1) {
       setStep(s => s + 1);
     } else {
       // Persisted for future personalization; display never depends on it.
@@ -123,6 +202,12 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
                 />
               </StepShell>
             )}
+
+            {step === REMINDER_STEP && (
+              <StepShell headline={t('ob.rem.head')} sub={t('ob.rem.sub')}>
+                <ReminderForm draft={reminder} onChange={patch => setReminder(r => ({ ...r, ...patch }))} />
+              </StepShell>
+            )}
           </ScrollView>
 
           {/* CTA */}
@@ -133,9 +218,14 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
               disabled={!canContinue()}
             >
               <Text style={s.ctaBtnText}>
-                {step === TOTAL_STEPS - 1 ? t('ob.letsGo') : t('ob.continue')}
+                {step === REMINDER_STEP ? t('ob.rem.turnOn') : step === TOTAL_STEPS - 1 ? t('ob.letsGo') : t('ob.continue')}
               </Text>
             </GradientButton>
+            {step === REMINDER_STEP && (
+              <Pressable style={s.skipBtn} onPress={() => { finish().catch(() => undefined); }} disabled={savingReminder} accessibilityRole="button">
+                <Text style={s.skipText}>{t('ob.rem.skip')}</Text>
+              </Pressable>
+            )}
             <Text style={s.stepCount}>{t('ob.stepCount', { step, total: TOTAL_STEPS - 1 })}</Text>
           </View>
         </View>
@@ -158,7 +248,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
       <Text style={s.welcomeEyebrow}>MONARCH PRIME PIN</Text>
       <Text style={s.welcomeHeadline}>{t('ob.headline')}</Text>
       <Text style={s.welcomeSub}>
-        {t('ob.welcomeSub', { max: FREE_INJECTION_LIMIT })}
+        {t('ob.welcomeSub', { max: FREE_LOG_LIMIT })}
       </Text>
     </>
   );
@@ -183,7 +273,7 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         <Text style={s.ctaBtnText}>{t('ob.getStarted')}</Text>
       </GradientButton>
       <Text style={s.complianceNote}>
-        {t('ob.compliance', { max: FREE_INJECTION_LIMIT })}
+        {t('ob.compliance', { max: FREE_LOG_LIMIT })}
       </Text>
     </View>
   );
@@ -211,6 +301,46 @@ function WelcomeStep({ onStart }: { onStart: () => void }) {
         </>
       )}
     </View>
+  );
+}
+
+// ── First reminder (last step, native only) ─────────────────
+function ReminderForm({ draft, onChange }: { draft: ReminderDraft; onChange: (patch: Partial<ReminderDraft>) => void }) {
+  const { t } = useI18n();
+  const chip = (active: boolean, label: string, onPress: () => void, key: string) => (
+    <Pressable key={key} style={[s.chip, active && s.chipActive]} onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: active }}>
+      <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
+    </Pressable>
+  );
+  return (
+    <>
+      <Text style={s.remLabel}>{t('ob.rem.compound')}</Text>
+      <CompoundField
+        value={draft.compound}
+        placeholder={t('ob.rem.compoundPlaceholder')}
+        accessibilityLabel={t('ob.rem.compound')}
+        onChange={compound => onChange({ compound: compound.name })}
+      />
+      <Text style={s.remLabel}>{t('ob.rem.amount')}</Text>
+      <View style={s.amountRow}>
+        <TextInput
+          style={s.amountInput}
+          value={draft.amount}
+          onChangeText={amount => onChange({ amount })}
+          keyboardType="decimal-pad"
+          placeholder={t('ob.rem.amountPlaceholder')}
+          placeholderTextColor={colors.textFaint}
+          accessibilityLabel={t('ob.rem.amount')}
+        />
+        <View style={s.chipRow}>{DOSE_UNITS.map(unit => chip(draft.unit === unit, unit, () => onChange({ unit }), unit))}</View>
+      </View>
+      <Text style={s.remHint}>{t('ob.rem.amountHint')}</Text>
+      <Text style={s.remLabel}>{t('ob.rem.often')}</Text>
+      <View style={s.chipRow}>{OFTEN.map(o => chip(draft.often === o.id, t(o.key), () => onChange({ often: o.id }), o.id))}</View>
+      <Text style={s.remLabel}>{t('ob.rem.time')}</Text>
+      <View style={s.chipRow}>{TIMES.map(time => chip(draft.time === time, formatClockTime(time), () => onChange({ time }), time))}</View>
+      <Text style={s.remHint}>{t('ob.rem.later')}</Text>
+    </>
   );
 }
 
@@ -424,4 +554,23 @@ const s = StyleSheet.create({
   ctaBtnDisabled: { opacity: 0.35 },
   ctaBtnText: { color: colors.actionText, fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
   stepCount: { textAlign: 'center', fontSize: 12, color: colors.textFaint },
+  skipBtn: { alignItems: 'center', justifyContent: 'center', minHeight: 40 },
+  skipText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
+
+  // First reminder
+  remLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, color: colors.textMuted, marginTop: 8, textTransform: 'uppercase' },
+  remHint: { fontSize: 12, color: colors.textFaint, lineHeight: 17 },
+  amountRow: { gap: 10 },
+  amountInput: {
+    minHeight: 50, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, paddingHorizontal: 14, color: colors.text, fontSize: 16, fontWeight: '600',
+  },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md,
+    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: withAlpha(colors.primary, 0.2),
+  },
+  chipActive: { backgroundColor: withAlpha(colors.primary, 0.25), borderColor: colors.primary },
+  chipText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+  chipTextActive: { color: colors.white },
 });

@@ -17,7 +17,8 @@ import { LanguageSelect } from '../components/LanguageSelect';
 import { getHeatHalfLife, setHeatHalfLife, HALF_LIFE_OPTIONS, DEFAULT_HALF_LIFE_DAYS } from '../lib/heat';
 import { THEMES, ThemeId, getTheme, setThemeSetting } from '../theme';
 import { Language, useI18n } from '../lib/i18n';
-import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
+import { useEntitlements } from '../lib/entitlements';
+import { FREE_LOG_LIMIT } from '../lib/freeTier';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { SUPABASE_CONFIGURED } from '../lib/supabase';
 import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '../lib/health';
@@ -482,7 +483,7 @@ function AccessTab() {
           {t('paywall.renews', { date: new Date(premium.expires).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' }) })}
         </Text>
       )}
-      <Text style={s.localDataText}>{t('access.body')}</Text>
+      <Text style={s.localDataText}>{t('access.body', { max: FREE_LOG_LIMIT })}</Text>
       {!monetizationEnabled && (
         <Text style={s.accessPreview}>{t('access.earlyNote')}</Text>
       )}
