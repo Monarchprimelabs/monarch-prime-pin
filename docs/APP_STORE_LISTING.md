@@ -57,7 +57,7 @@ REPORTS AND TOOLS
 • Export every record to CSV, or back up everything (photos included) to a file you keep
 
 PRICING
-Start free with 5 saved logs. Monarch Pro is a one-time purchase that unlocks unlimited logs, protocols and reminders, vials, reports, the worksheet, the calendar and the photo gallery. No subscription.
+Start free with 30 entries, 2 plans with reminders, vials, the calendar, photos and the worksheet. Premium is a one-time purchase that unlocks unlimited entries and plans, lab results with charts, full heat-map history, insights and monthly PDF reports. No subscription.
 
 Monarch Prime Pin is a personal log for adults. It does not give medical advice, and it never suggests or calculates a dose: every amount comes from you. Talk to a licensed clinician about anything you take.
 ```
@@ -79,8 +79,8 @@ Monarch Prime Pin is a personal log for adults. It does not give medical advice,
 ## Fact check (every claim is backed by the code)
 - No account, no cloud, records stay on the phone: Supabase isn't configured; data is in AsyncStorage (src/lib/storage.ts).
 - No ad tracking: no analytics or attribution SDK in package.json; funnel counters are local (src/lib/funnel.ts).
-- 5 free logs, one-time Pro: FREE_INJECTION_LIMIT = 5 and the lifetime product (src/lib/entitlements.native.tsx). No price in the text, because it varies by country.
-- Pro list matches the gates in ToolsScreen (protocols, vials, worksheet, schedule, inventory, templates), BottomTabs (reports) and HistoryScreen (calendar, photo gallery). Export and backup stay free.
+- 30 free entries, one-time Premium: FREE_LOG_LIMIT = 30 (src/lib/freeTier.ts) and the Lifetime Premium product, the only one on sale (OFFERED_PLANS in src/lib/store/constants.ts). No price in the text, because it varies by country.
+- Premium list matches src/lib/featureGate.ts and the paywall's feature list. Export and backup stay free.
 - Never suggests a dose: amounts start empty everywhere; the worksheet is unit conversion only.
 
 ## Also in App Store Connect
@@ -102,7 +102,7 @@ The first three screenshots carry the listing, because they are all most people 
 | 6 | Vials: one vial card with the remaining bar and "covers entries through" | Know when a vial runs low | What's left, and how far it covers your plan |
 | 7 | Reports: weekly summary and weight trend "from Apple Health" | Your history, clearly | Summaries, site usage and weight from Apple Health |
 | 8 | Settings: data card ("Everything you log stays on this phone") with Export and Backup | Stays on your phone | No account. No cloud. No ad tracking. Export anytime. |
-| 9 | Upgrade screen | Pay once. No subscription. | Start free with 5 logs. Pro is a one-time purchase. |
+| 9 | Paywall (Lifetime Premium) | Pay once. No subscription. | Start free with 30 entries. Premium is a one-time purchase. |
 
 ### Rules for the screenshots
 
@@ -131,7 +131,7 @@ Wording matches the app's Spanish text: protocolo, vial, Apple Salud, "registro"
 | 6 | Sabe cuándo se acaba un vial | Lo que queda y hasta cuándo cubre tu plan |
 | 7 | Tu historial, claro | Resúmenes, uso de sitios y peso de Apple Salud |
 | 8 | Se queda en tu teléfono | Sin cuenta. Sin nube. Sin rastreo publicitario. Exporta cuando quieras. |
-| 9 | Paga una vez. Sin suscripción. | Empieza gratis con 5 registros. Pro es un pago único. |
+| 9 | Paga una vez. Sin suscripción. | Empieza gratis con 30 registros. Premium es un pago único. |
 
 ### Portuguese (Brazil)
 
@@ -147,7 +147,7 @@ Wording matches the app's Portuguese text: protocolo, frasco, Apple Saúde, "reg
 | 6 | Saiba quando um frasco está acabando | O que resta e até quando ele cobre seu plano |
 | 7 | Seu histórico, claro | Resumos, uso de locais e peso do Apple Saúde |
 | 8 | Fica no seu celular | Sem conta. Sem nuvem. Sem rastreamento de anúncios. Exporte quando quiser. |
-| 9 | Pague uma vez. Sem assinatura. | Comece grátis com 5 registros. O Pro é uma compra única. |
+| 9 | Pague uma vez. Sem assinatura. | Comece grátis com 30 registros. O Premium é uma compra única. |
 
 Spanish and Portuguese run 20–30% longer than English. Check that line 3 and line 8 fit on two lines at the caption size you use; if not, the smaller line can drop its last clause ("…de un vistazo" / "…num relance", "Exporta cuando quieras" / "Exporte quando quiser").
 
@@ -216,7 +216,7 @@ REPORTES Y HERRAMIENTAS
 • Exporta todos tus registros a CSV o respalda todo (fotos incluidas) en un archivo que tú guardas
 
 PRECIO
-Empieza gratis con 5 registros guardados. Monarch Pro es un pago único que desbloquea registros ilimitados, protocolos y recordatorios, viales, reportes, la hoja de concentración, el calendario y la galería de fotos. Sin suscripción.
+Empieza gratis con 30 registros, 2 protocolos con recordatorios, viales, el calendario, las fotos y la hoja de concentración. Premium es un pago único que desbloquea registros y protocolos ilimitados, resultados de laboratorio con gráficas, historial completo del mapa de sitios, resúmenes y reportes mensuales en PDF. Sin suscripción.
 
 Monarch Prime Pin es un registro personal para adultos. No da consejo médico y nunca sugiere ni calcula una dosis: cada cantidad la pones tú. Habla con un profesional de la salud autorizado sobre cualquier cosa que uses.
 ```
@@ -291,7 +291,7 @@ RELATÓRIOS E FERRAMENTAS
 • Exporte todos os registros em CSV ou faça backup de tudo (com fotos) em um arquivo que você guarda
 
 PREÇO
-Comece grátis com 5 registros salvos. O Monarch Pro é uma compra única que libera registros ilimitados, protocolos e lembretes, frascos, relatórios, a planilha de concentração, o calendário e a galeria de fotos. Sem assinatura.
+Comece grátis com 30 registros, 2 protocolos com lembretes, frascos, o calendário, as fotos e a planilha de concentração. O Premium é uma compra única que libera registros e protocolos ilimitados, resultados de exames com gráficos, histórico completo do mapa de locais, resumos e relatórios mensais em PDF. Sem assinatura.
 
 O Monarch Prime Pin é um registro pessoal para adultos. Ele não oferece aconselhamento médico e nunca sugere nem calcula uma dose: cada quantidade vem de você. Converse com um profissional de saúde habilitado sobre qualquer coisa que você use.
 ```

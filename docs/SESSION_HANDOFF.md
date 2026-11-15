@@ -9,6 +9,12 @@ For whoever picks this project up in a new session. Read this, then `docs/PROJEC
 - **Website:** `npm run build:site` builds the marketing page at `/` and the web app at `/app` into `site-dist/` (PRs #31, #32). It is live at https://monarch-prime-pin.monarch-prime-pin.workers.dev on Cloudflare, in the Monarch Prime Labs account, deployed by hand with `npx wrangler deploy` (config in `wrangler.jsonc`).
 - **Expo web deploy** (`.eas/workflows/deploy-web.yml`, branch `release/web`) exists but is not the live site.
 
+## Pricing (decided 2026-11-15)
+
+- One one-time purchase, Lifetime Premium at $19.99; no subscriptions in 2.0 (`OFFERED_PLANS` in `src/lib/store/constants.ts`).
+- New free users get 30 entries (`FREE_LOG_LIMIT` in `src/lib/freeTier.ts`); Premium and every founder log without a limit.
+- Onboarding ends with an optional first-plan reminder (iPhone and Android only).
+
 ## Open items
 
 1. **Domain:** `monarchprimepin.com` was bought in the Cleanspace Cloudflare account by mistake. It can move to the Monarch account once it is more than 10 days old (from about 2026-11-23): Manage Domain > Configuration > Start, with the Monarch account ID. Then attach it under the Worker's Settings > Domains & Routes.

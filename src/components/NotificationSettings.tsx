@@ -61,7 +61,6 @@ export function NotificationSettings() {
     { id: 'restock', key: 'notify.optRestock' },
     { id: 'weeklySummary', key: 'notify.optWeekly' },
     { id: 'monthlyReport', key: 'notify.optMonthly', premium: true },
-    { id: 'trialEnding', key: 'notify.optTrial' },
   ];
 
   return (
