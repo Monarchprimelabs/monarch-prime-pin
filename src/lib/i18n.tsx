@@ -68,7 +68,7 @@ const en: Record<string, string> = {
 
   // Backup card
   'settings.backupLabel': 'DATA BACKUP',
-  'settings.backupBody': "Export all records, protocols, vials, schedules, inventory and templates as one backup file you control, for safekeeping or moving to a new phone. Photos can be included. Pro unlock status is not included: restore it with Restore Prior Purchase. Protocol reminders are rebuilt after importing.",
+  'settings.backupBody': "Export all records, protocols, vials, lab results, schedules, inventory and templates as one backup file you control, for safekeeping, moving to a new phone, or moving between the web app and the iPhone or Android app (the same file works in all of them). Photos can be included. Premium is not in the file: restore it with Restore Purchases. Protocol reminders are rebuilt after importing.",
   'settings.backupExport': 'Export Backup File',
   'settings.backupWarnTitle': 'Before you export',
   'settings.backupWarnBody': 'The backup file is readable by anyone who opens it — it is not password-protected. Keep it somewhere private, and avoid sending it over email or shared drives.',
@@ -1154,7 +1154,7 @@ const es: Record<string, string> = {
 
   // Backup card
   'settings.backupLabel': 'RESPALDO DE DATOS',
-  'settings.backupBody': "Exporta todos los registros, protocolos, viales, horarios, inventario y plantillas en un solo archivo de respaldo que tú controlas, para guardarlo o pasarte a un teléfono nuevo. Puedes incluir las fotos. El estado Pro no se incluye: recupéralo con Restaurar compra anterior. Los recordatorios de protocolos se vuelven a crear al importar.",
+  'settings.backupBody': "Exporta todos los registros, protocolos, viales, resultados de laboratorio, horarios, inventario y plantillas en un solo archivo de respaldo que tú controlas, para guardarlo, pasarte a un teléfono nuevo o moverte entre la app web y la app de iPhone o Android (el mismo archivo funciona en todas). Puedes incluir las fotos. Premium no va en el archivo: recupéralo con Restaurar compras. Los recordatorios de protocolos se vuelven a crear al importar.",
   'settings.backupExport': 'Exportar respaldo',
   'settings.backupWarnTitle': 'Antes de exportar',
   'settings.backupWarnBody': 'Cualquier persona que abra el archivo de respaldo puede leerlo — no está protegido con contraseña. Guárdalo en un lugar privado y evita enviarlo por correo o unidades compartidas.',
@@ -2240,7 +2240,7 @@ const pt: Record<string, string> = {
 
   // Backup card
   'settings.backupLabel': 'BACKUP DE DADOS',
-  'settings.backupBody': "Exporte todos os registros, protocolos, frascos, agenda, estoque e modelos em um único arquivo de backup que você controla, para guardar ou trocar de aparelho. As fotos podem ser incluídas. O status Pro não é incluído: recupere-o com Restaurar compra anterior. Os lembretes de protocolo são recriados após a importação.",
+  'settings.backupBody': "Exporte todos os registros, protocolos, frascos, resultados de exames, horários, estoque e modelos em um único arquivo de backup que você controla, para guardar, trocar de celular ou passar entre o app web e o app para iPhone ou Android (o mesmo arquivo funciona em todos). As fotos podem ser incluídas. O Premium não vai no arquivo: recupere com Restaurar compras. Os lembretes de protocolos são recriados ao importar.",
   'settings.backupExport': 'Exportar arquivo de backup',
   'settings.backupWarnTitle': 'Antes de exportar',
   'settings.backupWarnBody': 'Qualquer pessoa que abrir o arquivo de backup consegue lê-lo — ele não é protegido por senha. Guarde-o em um lugar privado e evite enviá-lo por e-mail ou em pastas compartilhadas.',

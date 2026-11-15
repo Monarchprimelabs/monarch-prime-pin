@@ -15,6 +15,10 @@ For whoever picks this project up in a new session. Read this, then `docs/PROJEC
 - New free users get 30 entries (`FREE_LOG_LIMIT` in `src/lib/freeTier.ts`); Premium and every founder log without a limit.
 - Onboarding ends with an optional first-plan reminder (iPhone and Android only).
 
+## Moving data between the web app and the apps
+
+The backup file (Settings > Data) is one format everywhere: the web app downloads it and opens it from the browser's file chooser; the iPhone and Android apps share it and open it from Files. Photos and saved lab report pages travel inside it. Moving is one-time and manual: nothing syncs. Live sync would need accounts and a server; see `docs/cloudsync-plan.md`.
+
 ## Open items
 
 1. **Domain:** `monarchprimepin.com` was bought in the Cleanspace Cloudflare account by mistake. It can move to the Monarch account once it is more than 10 days old (from about 2026-11-23): Manage Domain > Configuration > Start, with the Monarch account ID. Then attach it under the Worker's Settings > Domains & Routes.
