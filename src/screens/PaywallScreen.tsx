@@ -11,7 +11,7 @@ import { introOffer, IntroSource, planCopy, PlanId } from '../lib/paywallCopy';
 import { markPurchaseFailed } from '../lib/paywallAuto';
 import { PaywallPlacement, placementName } from '../lib/paywall';
 import { recordPaywallPurchased } from '../lib/localMetrics';
-import { FOUNDER_CODE, PREMIUM_ANNUAL_ID, PREMIUM_LIFETIME_ID, PREMIUM_MONTHLY_ID, PRIVACY_URL, TERMS_URL } from '../lib/store/constants';
+import { FOUNDER_CODE, OFFERED_PLANS, PREMIUM_ANNUAL_ID, PREMIUM_LIFETIME_ID, PREMIUM_MONTHLY_ID, PRIVACY_URL, TERMS_URL } from '../lib/store/constants';
 import { isPaidFounderSource } from '../lib/store/premium';
 import { trackPaywallView, trackUpgradeTap } from '../lib/funnel';
 import { hapticSuccess } from '../lib/haptics';
@@ -24,7 +24,7 @@ import { GradientButton } from '../components/Glass';
 // What Premium includes, in plain language, matching src/lib/featureGate.ts
 // (Guideline 3.1.2(c)). Apple Health trends are iOS only.
 const FEATURE_KEYS = [
-  'paywall.f.heatmap', 'paywall.f.plans', 'paywall.f.charts', 'paywall.f.pdf', 'paywall.f.photos',
+  'paywall.f.unlimited', 'paywall.f.heatmap', 'paywall.f.plans', 'paywall.f.charts', 'paywall.f.pdf', 'paywall.f.photos',
   'paywall.f.labs', 'paywall.f.insights', 'paywall.f.health', 'paywall.f.weekly',
 ];
 
@@ -33,6 +33,7 @@ const CONTEXT_KEY: Partial<Record<PaywallPlacement['kind'], string>> = {
   monthlyRecap: 'paywall.contextMonthly',
   heatmapBeyond30Days: 'paywall.contextHeatmap',
   lapsed: 'paywall.contextLapsed',
+  logLimit: 'paywall.contextLogLimit',
 };
 
 const PRODUCT_ID: Record<PlanId, string> = { annual: PREMIUM_ANNUAL_ID, monthly: PREMIUM_MONTHLY_ID, lifetime: PREMIUM_LIFETIME_ID };
@@ -48,7 +49,8 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
     purchase, restorePurchases, openRedeemCode, manageSubscriptions,
   } = useEntitlements();
   const { status: founder } = useFounder();
-  const [plan, setPlan] = useState<PlanId>('annual');
+  const offered: readonly PlanId[] = OFFERED_PLANS;
+  const [plan, setPlan] = useState<PlanId>(offered[0]);
   const [working, setWorking] = useState(false);
   const [copied, setCopied] = useState(false);
   const awaitingPurchase = useRef(false);
@@ -92,11 +94,11 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
   const introEligible = (id: PlanId) => Platform.OS === 'android'
     ? !!(id === 'annual' ? prices.annual?.intro : id === 'monthly' ? prices.monthly?.intro : null)
     : trialEligible === true;
-  const loaded = !!(prices.annual || prices.monthly || prices.lifetime);
-  // Annual is preselected; fall back to the first plan the store returned.
+  const loaded = offered.some(id => !!prices[id]);
+  // The first offered plan is preselected; fall back to the first one the store returned.
   useEffect(() => {
     if (prices[plan]) return;
-    const first = (['annual', 'monthly', 'lifetime'] as PlanId[]).find(id => !!prices[id]);
+    const first = offered.find(id => !!prices[id]);
     if (first) setPlan(first);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]);
@@ -237,7 +239,7 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
 
         {showOffers && monetizationEnabled && loaded && (
           <>
-            {(['annual', 'monthly', 'lifetime'] as PlanId[]).map(id => {
+            {offered.map(id => {
               const product = prices[id];
               if (!product) return null;
               const line = planCopy({ plan: id, price: product, trialEligible: introEligible(id), platform: Platform.OS, locale: dateLocale, t }).priceLine;
@@ -256,7 +258,7 @@ export function PaywallScreen({ onClose, placement }: { onClose?: () => void; pl
                     </Text>
                     <Text style={s.planPrice}>{line}</Text>
                   </View>
-                  {id === 'annual' && <Text style={s.bestValue}>{t('paywall.bestValue')}</Text>}
+                  {id === 'annual' && offered.length > 1 && <Text style={s.bestValue}>{t('paywall.bestValue')}</Text>}
                 </Pressable>
               );
             })}

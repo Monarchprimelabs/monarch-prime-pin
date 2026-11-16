@@ -1,0 +1,626 @@
+{
+ "commercial": {
+  "vo": "vo0",
+  "total": 30.5,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b0",
+    "ss": 0.3,
+    "end": 4.25,
+    "style": "BIG",
+    "caps": [
+     [
+      "Every entry.",
+      0.2,
+      1.45
+     ],
+     [
+      "Every site.",
+      1.45,
+      2.75
+     ],
+     [
+      "Yours alone.",
+      2.75,
+      4.25
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 1.6,
+    "end": 8.85,
+    "caps": [
+     [
+      "The private logbook for your injection routine",
+      4.4,
+      8.85
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "log",
+    "ss": 10.6,
+    "end": 10.85,
+    "caps": [
+     [
+      "Log an entry in seconds",
+      8.95,
+      10.85
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 9.0,
+    "end": 13.75,
+    "caps": [
+     [
+      "See your site rotation on a body map",
+      10.95,
+      13.75
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "reports",
+    "ss": 7.0,
+    "end": 15.6,
+    "caps": [
+     [
+      "Follow your weight trend",
+      13.85,
+      15.6
+     ]
+    ]
+   },
+   {
+    "kind": "broll",
+    "src": "b2",
+    "ss": 1.2,
+    "end": 18.0,
+    "style": "MID",
+    "caps": [
+     [
+      "Set your plan.\nGet reminders.",
+      15.7,
+      18.0
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "vials",
+    "ss": 5.0,
+    "end": 19.6,
+    "caps": [
+     [
+      "Track your vials",
+      18.1,
+      19.6
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "labs",
+    "ss": 6.5,
+    "end": 21.2,
+    "caps": [
+     [
+      "and your lab results",
+      19.6,
+      21.2
+     ]
+    ]
+   },
+   {
+    "kind": "broll",
+    "src": "b1",
+    "ss": 1.0,
+    "end": 23.5,
+    "style": "MID",
+    "caps": [
+     [
+      "Nothing leaves your phone.",
+      21.3,
+      23.5
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 30.5,
+    "tagline": "Every entry. Every site. Yours alone."
+   }
+  ]
+ },
+ "reel-1-rotation": {
+  "vo": "vo1",
+  "total": 17.5,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b0",
+    "ss": 0.2,
+    "end": 3.4,
+    "style": "MID",
+    "caps": [
+     [
+      "Where was your last injection site?",
+      0.5,
+      3.4
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "history",
+    "ss": 3.2,
+    "end": 6.5,
+    "caps": [
+     [
+      "Monarch Prime Pin remembers",
+      3.6,
+      6.5
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 7.6,
+    "end": 11.9,
+    "caps": [
+     [
+      "One body map shows every site",
+      6.7,
+      9.6
+     ],
+     [
+      "and how recently you used it",
+      9.6,
+      11.9
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "log",
+    "ss": 9.6,
+    "end": 14.9,
+    "caps": [
+     [
+      "Your rotation, never a guess",
+      12.1,
+      14.9
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 17.5,
+    "tagline": "Your rotation, never a guess."
+   }
+  ]
+ },
+ "reel-2-privacy": {
+  "vo": "vo2",
+  "total": 13.5,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b1",
+    "ss": 0.2,
+    "end": 3.5,
+    "style": "BIG",
+    "caps": [
+     [
+      "No account.",
+      0.15,
+      1.1
+     ],
+     [
+      "No cloud.",
+      1.1,
+      2.15
+     ],
+     [
+      "No trackers.",
+      2.15,
+      3.5
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 1.6,
+    "end": 7.3,
+    "caps": [
+     [
+      "Your log stays on your phone",
+      3.6,
+      5.8
+     ],
+     [
+      "and only your phone",
+      5.8,
+      7.3
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 13.5,
+    "tagline": "Private by design."
+   }
+  ]
+ },
+ "reel-3-numbers": {
+  "vo": "vo3",
+  "total": 13.5,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b2",
+    "ss": 1.0,
+    "end": 3.0,
+    "style": "MID",
+    "caps": [
+     [
+      "Your numbers,\nin one place.",
+      0.2,
+      3.0
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "reports",
+    "ss": 7.2,
+    "end": 4.6,
+    "caps": [
+     [
+      "Weight trend",
+      3.2,
+      4.6
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "labs",
+    "ss": 6.5,
+    "end": 6.2,
+    "caps": [
+     [
+      "Lab results",
+      4.7,
+      6.2
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "vials",
+    "ss": 5.0,
+    "end": 8.3,
+    "caps": [
+     [
+      "What's left in every vial",
+      6.3,
+      8.3
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 13.5,
+    "tagline": "The whole picture, in one place."
+   }
+  ]
+ },
+ "reel-4-ten-seconds": {
+  "vo": "vo4",
+  "total": 13.0,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b5",
+    "ss": 0.3,
+    "end": 3.45,
+    "style": "MID",
+    "caps": [
+     [
+      "Ten seconds.",
+      0.25,
+      1.45
+     ],
+     [
+      "That's all a log takes.",
+      1.45,
+      3.45
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "log",
+    "ss": 3.5,
+    "end": 5.25,
+    "caps": [
+     [
+      "Pick your compound",
+      3.55,
+      5.25
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "log",
+    "ss": 10.8,
+    "end": 6.65,
+    "caps": [
+     [
+      "Tap the site",
+      5.25,
+      6.65
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "log",
+    "ss": 21.0,
+    "end": 8.85,
+    "caps": [
+     [
+      "Save.",
+      6.65,
+      7.85
+     ],
+     [
+      "Done.",
+      7.85,
+      8.85
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 13.0,
+    "tagline": "A log takes ten seconds."
+   }
+  ]
+ },
+ "reel-5-notes-app": {
+  "vo": "vo5",
+  "total": 18.0,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b3",
+    "ss": 0.0,
+    "speed": 0.9,
+    "end": 5.55,
+    "style": "MID",
+    "caps": [
+     [
+      "Still keeping your log in a notes app?",
+      0.95,
+      3.75
+     ],
+     [
+      "Or on paper?",
+      3.75,
+      5.55
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 1.6,
+    "end": 8.65,
+    "caps": [
+     [
+      "Monarch Prime Pin was built for this",
+      5.85,
+      8.65
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "history",
+    "ss": 3.2,
+    "end": 10.15,
+    "caps": [
+     [
+      "Every entry",
+      8.75,
+      10.15
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 9.0,
+    "end": 11.55,
+    "caps": [
+     [
+      "Every site",
+      10.25,
+      11.55
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "reports",
+    "ss": 7.0,
+    "end": 13.05,
+    "caps": [
+     [
+      "Every number",
+      11.65,
+      13.05
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 18.0,
+    "tagline": "In one private place."
+   }
+  ]
+ },
+ "reel-6-history": {
+  "vo": "vo6",
+  "total": 13.0,
+  "segs": [
+   {
+    "kind": "app",
+    "src": "history",
+    "ss": 2.8,
+    "end": 2.85,
+    "caps": [
+     [
+      "Every entry you've ever logged",
+      0.55,
+      2.85
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "history",
+    "ss": 5.6,
+    "end": 4.0,
+    "caps": [
+     [
+      "In a list",
+      2.95,
+      4.0
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "history",
+    "ss": 10.0,
+    "end": 5.25,
+    "caps": [
+     [
+      "On a calendar",
+      4.05,
+      5.25
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "reports",
+    "ss": 2.8,
+    "end": 6.55,
+    "caps": [
+     [
+      "Summed up every month",
+      5.25,
+      6.55
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "reports",
+    "ss": 5.2,
+    "end": 8.95,
+    "caps": [
+     [
+      "Your history, organized",
+      6.65,
+      8.95
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 13.0,
+    "tagline": "Your history, organized."
+   }
+  ]
+ },
+ "reel-7-consistency": {
+  "vo": "vo7",
+  "total": 13.0,
+  "segs": [
+   {
+    "kind": "broll",
+    "src": "b4",
+    "ss": 0.3,
+    "end": 3.75,
+    "style": "MID",
+    "caps": [
+     [
+      "Consistency is easier when you can see it.",
+      0.55,
+      3.75
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "home",
+    "ss": 1.4,
+    "end": 5.35,
+    "caps": [
+     [
+      "Your streak",
+      3.95,
+      5.35
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "reports",
+    "ss": 3.4,
+    "end": 6.85,
+    "caps": [
+     [
+      "Your week",
+      5.45,
+      6.85
+     ]
+    ]
+   },
+   {
+    "kind": "app",
+    "src": "history",
+    "ss": 10.0,
+    "end": 8.65,
+    "caps": [
+     [
+      "Your whole routine",
+      6.95,
+      8.65
+     ]
+    ]
+   },
+   {
+    "kind": "end",
+    "end": 13.0,
+    "tagline": "See your consistency."
+   }
+  ]
+ }
+}

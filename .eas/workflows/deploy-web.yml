@@ -1,0 +1,18 @@
+# Puts the web app on EAS Hosting (production). Run it from the Workflows
+# page on expo.dev, or push main's code to the release/web branch, the same
+# way release/ios starts an iPhone build. No terminal needed.
+#
+# The web build has no store and no demo data: every tool is open and each
+# visitor's records stay in their own browser.
+name: Deploy web
+
+on:
+  push:
+    branches: ['release/web']
+
+jobs:
+  deploy:
+    name: Deploy to production
+    type: deploy
+    params:
+      prod: true

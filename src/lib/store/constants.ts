@@ -11,6 +11,13 @@ export const PREMIUM_LIFETIME_ID = 'com.monarchprime.pin.premium.lifetime';
 export const SUBSCRIPTION_IDS = [PREMIUM_MONTHLY_ID, PREMIUM_ANNUAL_ID] as const;
 
 /**
+ * What the paywall sells. 2.0 launches with the one-time Lifetime Premium only
+ * (owner decision, 2026-11-15); the subscription IDs above stay defined so a
+ * subscription can be added later without touching the entitlement code.
+ */
+export const OFFERED_PLANS = ['lifetime'] as const;
+
+/**
  * The $9.99 Lifetime Pro non-consumable sold in 1.x. It comes off sale after
  * 2.0, but every check keeps honoring it: these buyers are paid founders.
  * TODO(owner): confirm in App Store Connect (this is the ID the 1.x code sells).

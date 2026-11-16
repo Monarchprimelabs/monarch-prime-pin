@@ -5,6 +5,10 @@ import { Image, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { loadTheme } from './src/theme';
 import { snapshotFounderEvidence } from './src/lib/founderEvidence';
+import { installWebAlert } from './src/lib/webAlert';
+
+// Web only: show the app's messages and confirmations as browser dialogs.
+installWebAlert();
 
 // The saved theme must be applied before any screen module is evaluated,
 // because StyleSheets capture theme values at import time. The app tree is

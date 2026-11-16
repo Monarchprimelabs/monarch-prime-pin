@@ -14,6 +14,7 @@ export type PaywallPlacement =
   | { kind: 'thirdPlan' }
   | { kind: 'labsTab' }
   | { kind: 'settings' }
+  | { kind: 'logLimit' }
   | { kind: AutoPlacement };
 
 type PaywallContextValue = {

@@ -1,8 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as DocumentPicker from 'expo-document-picker';
-import { File, Paths } from 'expo-file-system';
-import { readAsStringAsync } from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
+import { pickBackupText, saveBackupFile } from './backupFile';
 import { Injection } from '../data/peptides';
 import {
   getDoseSkips, getInjections, getInventory, getLabReports, getLabResults, getProtocols, getRecordTemplates, getSchedules, getVials,
@@ -14,7 +11,7 @@ import { syncProtocolReminders } from './protocolReminders';
 import { PHOTO_SCHEME, readPhotoBase64, writePhotoBase64 } from './photos';
 import type { LabReport, LabResult } from './labs/types';
 import { readReportFileBase64, writeReportFileBase64 } from './labs/reportFiles';
-import { reportsNewestFirst, restoreReports } from './labs/reports';
+import { LAB_FILE_PREFIX, reportsNewestFirst, restoreReports } from './labs/reports';
 
 // Full local-data backup and restore, free for all users — data portability
 // is never paywalled. Deliberately excludes the Pro entitlement (purchases
@@ -23,6 +20,11 @@ import { reportsNewestFirst, restoreReports } from './labs/reports';
 // MAX_PHOTO_BYTES; without them, photo references are stripped on restore.
 // Saved lab report pages count as photos here: they travel with them, share
 // the same cap, and a report with no pages in the backup isn't restored.
+//
+// One format everywhere: the iPhone and Android apps and the web app all
+// write and read the same file, so a backup moves between them. Inside the
+// file a photo is always "mpp-photo:<name>" and a report page
+// "mpp-labfile:<name>", whatever the device stored locally.
 
 // Large enough for a few hundred phone photos, small enough to stay under
 // the memory a JSON string can use on an older iPhone.
@@ -74,17 +76,20 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
   ]);
 
   const photos: Record<string, string> = {};
+  // Record id -> the name its photo has inside the file.
+  const photoNames = new Map<string, string>();
   let photoBytes = 0;
   let photosSkipped = 0;
   if (includePhotos) {
     // Newest first, so the size cap drops the oldest photos.
     const withPhotos = injections
-      .filter(r => r.photoUri?.startsWith(PHOTO_SCHEME))
+      .filter(r => !!r.photoUri && (r.photoUri.startsWith(PHOTO_SCHEME) || /^(data|blob):/.test(r.photoUri)))
       .sort((a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`));
     for (const record of withPhotos) {
       const photo = await readPhotoBase64(record.photoUri!).catch(() => null);
+      if (photo) photoNames.set(record.id, photo.name);
       if (!photo) continue;
-      if (photoBytes + photo.base64.length > MAX_PHOTO_BYTES) { photosSkipped += 1; continue; }
+      if (photoBytes + photo.base64.length > MAX_PHOTO_BYTES) { photosSkipped += 1; photoNames.delete(record.id); continue; }
       photos[photo.name] = photo.base64;
       photoBytes += photo.base64.length;
     }
@@ -102,7 +107,7 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
       if (photoBytes + size > MAX_PHOTO_BYTES) { photosSkipped += 1; continue; }
       pages.forEach(page => { labFiles[page!.name] = page!.base64; });
       photoBytes += size;
-      labReports.push(report);
+      labReports.push({ ...report, files: report.files.map((f, i) => ({ ...f, ref: LAB_FILE_PREFIX + pages[i]!.name })) });
     }
   }
 
@@ -110,7 +115,10 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
     app: BACKUP_APP_ID,
     backupVersion: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    injections,
+    injections: injections.map(record => {
+      const name = photoNames.get(record.id);
+      return name && photos[name] ? { ...record, photoUri: PHOTO_SCHEME + name } : record;
+    }),
     schedules,
     inventory,
     templates,
@@ -123,21 +131,7 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
   };
 
   const stamp = payload.exportedAt.slice(0, 10);
-  const file = new File(Paths.cache, `monarch-prime-pin-backup-${stamp}.json`);
-  if (file.exists) file.delete();
-  file.create();
-  file.write(JSON.stringify(payload));
-
-  const canShare = await Sharing.isAvailableAsync();
-  if (!canShare) {
-    throw new Error('Sharing is not available on this device.');
-  }
-
-  await Sharing.shareAsync(file.uri, {
-    mimeType: 'application/json',
-    dialogTitle: 'Export Monarch Prime Pin backup',
-    UTI: 'public.json',
-  });
+  await saveBackupFile(`monarch-prime-pin-backup-${stamp}.json`, JSON.stringify(payload));
 
   await AsyncStorage.setItem(KEY_LAST_BACKUP_AT, payload.exportedAt).catch(() => undefined);
 
@@ -155,14 +149,13 @@ export async function exportBackup({ includePhotos = false }: { includePhotos?: 
 }
 
 export async function pickBackupFile(): Promise<{ payload: BackupPayload; counts: BackupCounts } | null> {
-  const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/json', 'public.json'],
-    copyToCacheDirectory: true,
-    multiple: false,
-  });
-  if (result.canceled || !result.assets?.[0]?.uri) return null;
+  const text = await pickBackupText();
+  if (text === null) return null;
+  return parseBackup(text);
+}
 
-  const text = await readAsStringAsync(result.assets[0].uri);
+/** Reads and checks a backup file's text. Exported for tests. */
+export function parseBackup(text: string): { payload: BackupPayload; counts: BackupCounts } {
   let parsed: any;
   try {
     parsed = JSON.parse(text);

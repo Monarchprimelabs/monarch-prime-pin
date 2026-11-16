@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch, Platform } from 'react-native';
 import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +17,8 @@ import { LanguageSelect } from '../components/LanguageSelect';
 import { getHeatHalfLife, setHeatHalfLife, HALF_LIFE_OPTIONS, DEFAULT_HALF_LIFE_DAYS } from '../lib/heat';
 import { THEMES, ThemeId, getTheme, setThemeSetting } from '../theme';
 import { Language, useI18n } from '../lib/i18n';
-import { FREE_INJECTION_LIMIT, LIFETIME_PRO_PRICE_LABEL, useEntitlements } from '../lib/entitlements';
+import { useEntitlements } from '../lib/entitlements';
+import { FREE_LOG_LIMIT } from '../lib/freeTier';
 import { cancelAllLocalReminders } from '../lib/notifications';
 import { SUPABASE_CONFIGURED } from '../lib/supabase';
 import { disableHealth, enableHealth, getHealthEnabled, healthSupported } from '../lib/health';
@@ -381,7 +382,7 @@ function RemindersTab() {
       <Card>
         <CardLabel icon="💾">{t('settings.localDataLabel')}</CardLabel>
         <Text style={s.localDataText}>
-          {t('settings.localDataBody')}
+          {t(Platform.OS === 'web' ? 'settings.localDataBodyWeb' : 'settings.localDataBody')}
         </Text>
       </Card>
 
@@ -463,6 +464,16 @@ function AccessTab() {
   const { t, dateLocale } = useI18n();
   const paidFounder = founder === 'paidFounder'
     || premium.source === 'legacyLifetime' || premium.source === 'paidApp' || premium.source === 'legacyInstall';
+  // The web app has no store: everything is open there, with nothing to buy or restore.
+  if (Platform.OS === 'web') {
+    return (
+      <Card>
+        <CardLabel icon="◆">{t('access.label')}</CardLabel>
+        <Text style={s.accessTitle}>{t('access.webTitle')}</Text>
+        <Text style={s.localDataText}>{t('access.bodyWeb', { max: FREE_LOG_LIMIT })}</Text>
+      </Card>
+    );
+  }
   const label = paidFounder
     ? t('premium.statusPaidFounder')
     : premium.source === 'lifetimePremium'
@@ -482,7 +493,7 @@ function AccessTab() {
           {t('paywall.renews', { date: new Date(premium.expires).toLocaleDateString(dateLocale, { month: 'long', day: 'numeric', year: 'numeric' }) })}
         </Text>
       )}
-      <Text style={s.localDataText}>{t('access.body')}</Text>
+      <Text style={s.localDataText}>{t('access.body', { max: FREE_LOG_LIMIT })}</Text>
       {!monetizationEnabled && (
         <Text style={s.accessPreview}>{t('access.earlyNote')}</Text>
       )}
