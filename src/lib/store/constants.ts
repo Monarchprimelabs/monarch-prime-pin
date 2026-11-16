@@ -38,14 +38,17 @@ export const PAID_APP_FREE_DATE: Date | null = null;
 /**
  * The 2.0 release date. Anyone whose production originalPurchaseDate is before
  * it is a free founder (covers people who deleted and reinstalled).
- * TODO(owner): set to the 2.0 release date before submitting.
+ * Set a little after the planned release (owner decision, 2026-11-16): too
+ * early would miss real 1.x users after a reinstall; too late only gives
+ * unlimited logging to the first new 2.0 users. Everyone who downloaded
+ * through November 30, 2026 counts.
  */
-export const FOUNDER_CUTOFF: Date | null = null;
+export const FOUNDER_CUTOFF: Date | null = new Date('2026-12-01T00:00:00Z');
 
 /** TODO(owner): the custom offer code created on the annual plan for founders. */
 export const FOUNDER_CODE = '';
 
-/** Apple's standard EULA. TODO(owner): replace if you publish your own terms. */
-export const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
-/** TODO(owner): the privacy policy URL from App Store Connect > App Information. */
-export const PRIVACY_URL = '';
+/** Terms of Use, which point to Apple's standard EULA for the App Store version. */
+export const TERMS_URL = 'https://monarchprimelabs.github.io/apps/monarch-prime-pin/terms.html';
+/** The privacy policy, the same URL as App Store Connect > App Information. */
+export const PRIVACY_URL = 'https://monarchprimelabs.github.io/apps/monarch-prime-pin/privacy.html';
