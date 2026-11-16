@@ -45,3 +45,17 @@ test('a saved status persists and never drops', () => {
     .toBe('paidFounder');
   expect(higherStatus('paidFounder', 'none')).toBe('paidFounder');
 });
+
+import { FOUNDER_CUTOFF } from '../store/constants';
+
+test('the founder cutoff is set, so 1.x users stay founders after a reinstall', () => {
+  expect(FOUNDER_CUTOFF).toBeInstanceOf(Date);
+  // Someone who first downloaded the app in 1.x, deleted it and installs 2.0 fresh:
+  // no 1.x data on the phone, but the App Store's first-download date is before the cutoff.
+  const firstDownload = new Date('2026-08-01T12:00:00Z').getTime();
+  const reinstalled = downloadedBefore2({ environment: 'Production', originalPurchaseDate: firstDownload }, FOUNDER_CUTOFF);
+  expect(reinstalled).toBe(true);
+  expect(decideFounder({ stored: null, had1xData: false, paidFounderPurchase: false, downloadedBefore: reinstalled })).toEqual({ status: 'freeFounder', settled: true });
+  // TestFlight and App Review never count.
+  expect(downloadedBefore2({ environment: 'Sandbox', originalPurchaseDate: firstDownload }, FOUNDER_CUTOFF)).toBe(false);
+});

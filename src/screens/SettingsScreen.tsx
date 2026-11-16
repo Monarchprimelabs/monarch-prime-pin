@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, TextInput, Modal, Switch, Platform, Linking } from 'react-native';
 import { ReadableScrollView as ScrollView, SplitColumns, wideColumn } from '../components/Columns';
 import { useWideLayout } from '../lib/layout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,7 +26,7 @@ import { usePaywall } from '../lib/paywall';
 import { useFounder } from '../lib/founders';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { ActivityCard } from '../components/ActivityCard';
-import { PREMIUM_ANNUAL_ID, PREMIUM_MONTHLY_ID } from '../lib/store/constants';
+import { PREMIUM_ANNUAL_ID, PREMIUM_MONTHLY_ID, PRIVACY_URL, TERMS_URL } from '../lib/store/constants';
 
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [tab, setTab] = useState<'rem' | 'acc' | 'leg'>('rem');
@@ -570,6 +570,14 @@ function LegalTab() {
       <Text style={s.legalP}>{t('legal.p6')}</Text>
 
       <Text style={s.legalFooter}>{t('legal.footer')}</Text>
+      <View style={s.legalLinks}>
+        <Pressable onPress={() => { Linking.openURL(TERMS_URL).catch(() => undefined); }} accessibilityRole="link" hitSlop={8}>
+          <Text style={s.legalLink}>{t('paywall.terms')}</Text>
+        </Pressable>
+        <Pressable onPress={() => { Linking.openURL(PRIVACY_URL).catch(() => undefined); }} accessibilityRole="link" hitSlop={8}>
+          <Text style={s.legalLink}>{t('paywall.privacy')}</Text>
+        </Pressable>
+      </View>
     </Card>
     </SplitColumns>
   );
@@ -701,6 +709,8 @@ const s = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 4,
   },
+  legalLinks: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 12 },
+  legalLink: { color: colors.primary, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline', paddingVertical: 4 },
   legalFooter: {
     textAlign: 'center',
     color: colors.textFaint,
