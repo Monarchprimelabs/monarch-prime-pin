@@ -51,7 +51,9 @@ export const FOUNDER_FREE_FEATURES: ReadonlySet<Feature> = new Set<Feature>([
 export const FREE_ACTIVE_PLANS = 2;
 
 export function allows(feature: Feature, who: { premium: boolean; founder: FounderStatus }): boolean {
-  if (who.premium) return true;
-  if (who.founder === 'freeFounder' || who.founder === 'paidFounder') return FOUNDER_FREE_FEATURES.has(feature);
+  // Paid founders (Lifetime Pro or the paid download) own Premium for life
+  // (docs/V2_PLAN.md), even before StoreKit confirms the purchase again.
+  if (who.premium || who.founder === 'paidFounder') return true;
+  if (who.founder === 'freeFounder') return FOUNDER_FREE_FEATURES.has(feature);
   return false;
 }
