@@ -14,7 +14,7 @@ Private injection & site log
 
 ## Promotional text (170)
 ```
-New: plans with reminders, a Today view, vial tracking and Apple Health weight. Your records stay on your phone, with no account and no tracking.
+New in 2.0: lab results, a weight trend you can step through, iPad layouts and your first reminder in onboarding. Start free. Premium is one purchase, no subscription.
 ```
 
 ## Keywords (100, comma-separated, no spaces)
@@ -64,16 +64,15 @@ Monarch Prime Pin is a personal log for adults. It does not give medical advice,
 
 ## What's New
 ```
-• Protocols: plan days and times, with reminders
-• Today's plan: log or skip planned entries, see your week
-• Vials: what's left and how far it covers your plan
-• See when each site was last logged
-• Optional Apple Health weight, body fat and steps (read-only)
-• Photos are now kept safely through app updates, and backups can include them
-• CSV export includes plans, vials and skipped entries
-• Syringe sizes in the concentration worksheet
-• Clearer wording: a personal log, not medical advice
-• No account needed: your records stay on this phone
+• Premium, one purchase with no subscription: lab results with charts, summaries of your own entries, more Apple Health trends, the full heat map history, unlimited plans, photo compare and monthly PDF reports
+• Start free with 30 entries. If you used the app before 2.0, you keep unlimited logging
+• Bought Lifetime Pro or paid for the app? Premium is yours free
+• Set up your first reminder right in onboarding
+• A weight trend you can step through, with Apple Health and your logged weights together
+• More compounds, including SS-31
+• A new glass design, smoother animation, and layouts made for iPad
+• Every notification has its own switch, with quiet hours
+• Backups now move between the app and the web version
 ```
 
 ## Fact check (every claim is backed by the code)
@@ -106,15 +105,16 @@ The first three screenshots carry the listing, because they are all most people 
 
 ### Rules for the screenshots
 
-- **No old banner.** Capture from the PR #24 build, so the banner reads "PERSONAL LOG — Not medical advice". Leave it visible; it helps in review.
+- **Build:** capture from the 2.0 build (build 44 or later), so the banner reads "PERSONAL LOG — Not medical advice". Leave it visible; it helps in review.
 - **Sample data:** use a test install with made-up records. Amounts in screenshots can read as dose advice (guideline 1.4.2), so:
   - keep amounts small and varied rather than showing one "standard" number many times
   - leave the concentration worksheet out of the screenshots entirely
   - never put an amount in a caption
 - **No brand-name drugs** (Ozempic, Mounjaro and so on) on screen or in captions. Use peptide names from the built-in list, or a custom name.
 - **No faces or real people**, and no other app's name, icon or look.
-- **Sizes:** App Store Connect asks for the 6.9-inch iPhone set (1320 × 2868) and scales it for smaller phones. Check the upload page, because the required sizes change. The app is iPhone-only (`supportsTablet: false`), so no iPad set.
-- **Light or dark:** pick one for all nine so they look like a set. Dark matches the app icon.
+- **Sizes:** App Store Connect asks for the 6.9-inch iPhone set (1320 × 2868) and scales it for smaller phones. **2.0 supports iPad** (`supportsTablet: true`), so it also needs the 13-inch iPad set (2064 × 2752). Check the upload page, because the required sizes change.
+- **Light or dark:** pick one for the whole set so they look alike. Dark matches the app icon.
+- **Screenshots 5 and 9 need a phone:** the lock-screen reminder (5) only appears on a real device, and the Premium screen (9) shows the price only once Lifetime Premium exists in App Store Connect. Leave them out rather than show an empty or broken screen; the set works with 7.
 - **Screenshot 7 needs Apple Health** (PR #24). If that release ships without it, swap the smaller line for "Weekly summaries, site usage and weight trend".
 
 ### Spanish (México / Latin America)
@@ -172,9 +172,9 @@ Monarch Prime Pin
 Registro privado de aplicación
 ```
 
-**Promotional text** (150 characters)
+**Promotional text** (157 characters)
 ```
-Nuevo: planes con recordatorios, vista de hoy, control de viales y peso de Apple Salud. Tus registros se quedan en tu teléfono, sin cuenta ni rastreo.
+Nuevo en la 2.0: resultados de laboratorio, una tendencia de peso que puedes recorrer, pantallas para iPad y tu primer recordatorio. Premium es un solo pago.
 ```
 
 **Keywords** (100 characters)
@@ -221,18 +221,17 @@ Empieza gratis con 30 registros, 2 protocolos con recordatorios, viales, el cale
 Monarch Prime Pin es un registro personal para adultos. No da consejo médico y nunca sugiere ni calcula una dosis: cada cantidad la pones tú. Habla con un profesional de la salud autorizado sobre cualquier cosa que uses.
 ```
 
-**What's New** (606 characters)
+**What's New** (820 characters)
 ```
-• Protocolos: planifica días y horas, con recordatorios
-• Plan de hoy: registra u omite entradas planificadas y ve tu semana
-• Viales: lo que queda y hasta cuándo cubre tu plan
-• Ve cuándo registraste cada sitio por última vez
-• Peso, grasa corporal y pasos de Apple Salud, opcional (solo lectura)
-• Las fotos ahora se conservan con las actualizaciones y los respaldos pueden incluirlas
-• La exportación CSV incluye planes, viales y entradas omitidas
-• Tamaños de jeringa en la hoja de concentración
-• Texto más claro: un registro personal, no consejo médico
-• Sin cuenta: tus registros se quedan en este teléfono
+• Premium, un solo pago sin suscripción: resultados de laboratorio con gráficas, resúmenes de tus propios registros, más tendencias de Apple Salud, el historial completo del mapa de calor, planes ilimitados, comparación de fotos y reportes mensuales en PDF
+• Empieza gratis con 30 registros. Si usabas la app antes de la 2.0, conservas el registro ilimitado
+• ¿Compraste Lifetime Pro o pagaste por la app? Premium es tuyo gratis
+• Configura tu primer recordatorio desde el inicio
+• Una tendencia de peso que puedes recorrer, con Apple Salud y tus pesos registrados juntos
+• Más compuestos, incluido SS-31
+• Un nuevo diseño de vidrio, animaciones más fluidas y pantallas pensadas para iPad
+• Cada notificación tiene su propio interruptor, con horas de silencio
+• Los respaldos ahora se pasan entre la app y la versión web
 ```
 
 ### Portuguese (Brazil)
@@ -247,9 +246,9 @@ Monarch Prime Pin
 Registro privado de aplicação
 ```
 
-**Promotional text** (152 characters)
+**Promotional text** (146 characters)
 ```
-Novo: planos com lembretes, visão de hoje, controle de frascos e peso do Apple Saúde. Seus registros ficam no seu celular, sem conta e sem rastreamento.
+Novo na 2.0: resultados de exames, uma tendência de peso que você percorre, telas para iPad e seu primeiro lembrete. O Premium é uma compra única.
 ```
 
 **Keywords** (94 characters)
@@ -296,16 +295,15 @@ Comece grátis com 30 registros, 2 protocolos com lembretes, frascos, o calendá
 O Monarch Prime Pin é um registro pessoal para adultos. Ele não oferece aconselhamento médico e nunca sugere nem calcula uma dose: cada quantidade vem de você. Converse com um profissional de saúde habilitado sobre qualquer coisa que você use.
 ```
 
-**What's New** (600 characters)
+**What's New** (794 characters)
 ```
-• Protocolos: planeje dias e horários, com lembretes
-• Plano de hoje: registre ou pule entradas planejadas e veja sua semana
-• Frascos: o que resta e até quando cobre seu plano
-• Veja quando cada local foi registrado por último
-• Peso, gordura corporal e passos do Apple Saúde, opcional (somente leitura)
-• As fotos agora são mantidas nas atualizações e os backups podem incluí-las
-• A exportação CSV inclui planos, frascos e entradas puladas
-• Tamanhos de seringa na planilha de concentração
-• Texto mais claro: um registro pessoal, não aconselhamento médico
-• Sem conta: seus registros ficam neste aparelho
+• Premium, uma compra única sem assinatura: resultados de exames com gráficos, resumos dos seus próprios registros, mais tendências do Apple Saúde, o histórico completo do mapa de calor, planos ilimitados, comparação de fotos e relatórios mensais em PDF
+• Comece grátis com 30 registros. Se você usava o app antes da 2.0, mantém o registro ilimitado
+• Comprou o Lifetime Pro ou pagou pelo app? O Premium é seu, de graça
+• Configure seu primeiro lembrete já na abertura do app
+• Uma tendência de peso que você percorre, com o Apple Saúde e seus pesos registrados juntos
+• Mais compostos, incluindo SS-31
+• Um novo visual de vidro, animações mais suaves e telas feitas para iPad
+• Cada notificação tem seu próprio botão, com horário silencioso
+• Os backups agora passam entre o app e a versão web
 ```
