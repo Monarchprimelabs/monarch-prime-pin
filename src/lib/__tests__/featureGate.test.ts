@@ -15,6 +15,12 @@ test('free founders keep exactly what 1.x gave them, and nothing paid', () => {
   expect(allows('labResults', { premium: false, founder: 'freeFounder' })).toBe(false);
 });
 
+test('paid founders get every Premium feature, as the paywall promises', () => {
+  for (const feature of ALL_FEATURES) {
+    expect(allows(feature, { premium: false, founder: 'paidFounder' })).toBe(true);
+  }
+});
+
 test('the free tier includes 2 active plans', () => {
   expect(FREE_ACTIVE_PLANS).toBe(2);
 });
